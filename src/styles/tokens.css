@@ -1,0 +1,32 @@
+:root {
+  --white: #ffffff;
+  --bone: #f4f1ec;
+  --paper: #faf8f5;
+  --ink: #14131a;
+  --stone: #8a867f;
+  --crimson: #8e1b23;
+  /* Hero V2 editorial palette */
+  --paper-warm: #f3f1ec;
+  --burgundy: #7a1d25;
+
+  --serif: 'Bodoni Moda', Didot, 'Times New Roman', serif;
+  --mono: 'DM Mono', ui-monospace, Menlo, monospace;
+
+  --pad-x: clamp(1.25rem, 4.5vw, 5rem);
+  --pad-y: clamp(1rem, 3vh, 3.25rem);
+  --nav: clamp(0.6rem, 0.3vw + 0.5rem, 0.78rem);
+  --micro: clamp(0.55rem, 0.25vw + 0.45rem, 0.68rem);
+  --h1: clamp(2.4rem, 5.4vw + 0.5rem, 6.6rem);
+  --body: clamp(0.75rem, 0.35vw + 0.6rem, 0.95rem);
+  --corner: clamp(0.7rem, 0.5vw + 0.4rem, 1.05rem);
+
+  /* small shared system for the sections beyond the hero */
+  --container: min(1400px, 92vw);
+  --section-pad-y: clamp(4rem, 12vh, 8rem);
+  --hairline: 1px solid rgba(20, 19, 26, 0.12);
+
+  --dur-fast: 0.25s;
+  --dur-med: 0.45s;
+  --dur-slow: 0.8s;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}

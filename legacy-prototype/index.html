@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Younes Tattoo — the work is already in you</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,700;1,6..96,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bone:#F4F1EC; --paper:#FAF8F5; --ink:#14131A; --stone:#8A867F;
+  --crimson:#8E1B23; --ember:#C8323C;
+  --serif:"Bodoni Moda",Didot,"Times New Roman",serif;
+  --mono:"DM Mono",ui-monospace,Menlo,monospace;
+
+  --pad-x:clamp(1.25rem,4.5vw,5rem);
+  --pad-y:clamp(1rem,3vh,3.25rem);
+  --nav:clamp(.6rem,.3vw + .5rem,.78rem);
+  --micro:clamp(.55rem,.25vw + .45rem,.68rem);
+  --h1:clamp(2.4rem,5.4vw + .5rem,6.6rem);
+  --body:clamp(.75rem,.35vw + .6rem,.95rem);
+  --corner:clamp(.7rem,.5vw + .4rem,1.05rem);
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bone);color:var(--ink);
+  overflow:hidden;-webkit-font-smoothing:antialiased;
+  font-family:var(--mono)}
+body{selection-color:var(--bone)}
+::selection{background:var(--ink);color:var(--bone)}
+
+/* ---------- stage ---------- */
+#stage{position:fixed;inset:0;z-index:0;overflow:hidden;
+  background:
+    radial-gradient(120% 90% at 62% 38%, #FFFFFF 0%, var(--paper) 42%, var(--bone) 100%)}
+#figure{position:absolute;inset:0}
+.plate{position:absolute;height:min(112vh,124vw);width:auto;aspect-ratio:1054/1492;
+  left:50%;top:50%;translate:-50% -50%;
+  background-repeat:no-repeat;background-size:100% 100%;background-position:center;
+  will-change:transform}
+@media (min-width:900px){ .plate{left:62%} }
+#clean{background-image:url("./assets/statue_clean.webp")}
+#inked{background-image:url("./assets/ink_layer.webp");
+  --mx:50%; --my:45%; --r:160px;
+  --spot:radial-gradient(circle var(--r) at var(--mx) var(--my),
+    rgba(255,255,255,1) 0%, rgba(255,255,255,1) 40%,
+    rgba(255,255,255,.78) 60%, rgba(255,255,255,.42) 75%,
+    rgba(255,255,255,.13) 88%, rgba(255,255,255,0) 100%);
+  -webkit-mask-image:var(--spot);mask-image:var(--spot);
+  -webkit-mask-size:100% 100%;mask-size:100% 100%;
+  -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat}
+
+/* ---------- grid + vignette ---------- */
+#grid{position:fixed;inset:0;z-index:5;pointer-events:none;opacity:.10}
+.vig{position:fixed;inset:0;z-index:6;pointer-events:none;
+  background:radial-gradient(130% 100% at 55% 45%,transparent 46%,rgba(24,22,20,.30) 100%)}
+
+/* ---------- ui ---------- */
+#ui{position:fixed;inset:0;z-index:10;pointer-events:none;
+  padding:var(--pad-y) var(--pad-x);display:flex;flex-direction:column;justify-content:space-between}
+.row{display:flex;justify-content:space-between;align-items:flex-start;gap:clamp(1rem,3vw,3rem)}
+.brand{font-family:var(--serif);font-weight:700;font-size:clamp(1rem,.9vw + .7rem,1.5rem);
+  letter-spacing:.14em;text-transform:uppercase;line-height:1}
+.brand span{color:var(--crimson)}
+nav{display:flex;gap:clamp(.9rem,2vw,2.1rem);pointer-events:auto}
+nav button{font-family:var(--mono);font-size:var(--nav);letter-spacing:.2em;text-transform:uppercase;
+  background:none;border:0;padding:.35rem 0;color:var(--ink);cursor:pointer;position:relative}
+nav button::after{content:"";position:absolute;left:0;right:100%;bottom:0;height:1px;
+  background:var(--crimson);transition:right .45s cubic-bezier(.16,1,.3,1)}
+nav button:hover::after,nav button[aria-expanded="true"]::after{right:0}
+
+.hero{max-width:min(46ch,52vw);pointer-events:none}
+h1{font-family:var(--serif);font-weight:400;font-size:var(--h1);line-height:.94;
+  letter-spacing:-.015em;margin:0 0 clamp(.9rem,2vh,1.6rem)}
+h1 em{font-style:italic}
+h1 b{font-weight:700;color:var(--crimson)}
+.sub{font-size:var(--body);line-height:1.7;color:#4A4740;max-width:34ch;margin:0}
+.cta{margin-top:clamp(1.1rem,2.4vh,2rem);pointer-events:auto;display:inline-flex;align-items:center;
+  gap:.7rem;font-family:var(--mono);font-size:var(--nav);letter-spacing:.2em;text-transform:uppercase;
+  padding:.85rem 1.5rem;border:1px solid rgba(20,19,26,.28);background:transparent;color:var(--ink);
+  cursor:pointer;transition:background .4s,color .4s,border-color .4s}
+.cta:hover{background:var(--ink);color:var(--bone);border-color:var(--ink)}
+.cta svg{width:.85em;height:.85em;transition:transform .4s cubic-bezier(.16,1,.3,1)}
+.cta:hover svg{transform:translate(2px,-2px)}
+
+.foot{align-items:flex-end}
+.legend{font-size:var(--micro);letter-spacing:.18em;text-transform:uppercase;color:var(--stone)}
+.zone{font-family:var(--serif);font-style:italic;font-size:clamp(.95rem,1.1vw + .6rem,1.5rem);
+  color:var(--ink);min-height:1.5em;text-align:right;transition:opacity .4s}
+.zone small{display:block;font-family:var(--mono);font-style:normal;font-size:var(--micro);
+  letter-spacing:.18em;text-transform:uppercase;color:var(--stone);margin-top:.35rem}
+
+/* registration brackets - transfer-paper alignment marks, not sci-fi furniture */
+.reg{position:fixed;z-index:9;width:var(--corner);height:var(--corner);pointer-events:none;
+  border:0;opacity:.42}
+.reg::before,.reg::after{content:"";position:absolute;background:var(--ink)}
+.reg::before{left:0;top:0;width:100%;height:1px}
+.reg::after{left:0;top:0;width:1px;height:100%}
+.reg.tl{left:calc(var(--pad-x) * .52);top:calc(var(--pad-y) * .62)}
+.reg.tr{right:calc(var(--pad-x) * .52);top:calc(var(--pad-y) * .62);rotate:90deg}
+.reg.bl{left:calc(var(--pad-x) * .52);bottom:calc(var(--pad-y) * .62);rotate:270deg}
+.reg.br{right:calc(var(--pad-x) * .52);bottom:calc(var(--pad-y) * .62);rotate:180deg}
+
+/* ---------- drawer ---------- */
+#scrim{position:fixed;inset:0;z-index:20;background:rgba(20,19,26,.28);backdrop-filter:blur(3px);
+  opacity:0;visibility:hidden;transition:opacity .5s,visibility 0s .5s}
+#scrim.on{opacity:1;visibility:visible;transition:opacity .5s}
+#drawer{position:fixed;top:0;right:0;bottom:0;z-index:21;width:min(30rem,88vw);
+  background:var(--paper);border-left:1px solid rgba(20,19,26,.12);
+  padding:clamp(1.5rem,3vw,2.5rem);overflow-y:auto;
+  transform:translateX(101%);transition:transform .62s cubic-bezier(.16,1,.3,1)}
+#drawer.on{transform:none}
+#drawer h2{font-family:var(--serif);font-weight:400;font-size:clamp(1.6rem,2.4vw,2.4rem);
+  margin:0 0 .2rem}
+#drawer .kicker{font-size:var(--micro);letter-spacing:.2em;text-transform:uppercase;
+  color:var(--stone);margin-bottom:2rem}
+#close{position:absolute;top:1.4rem;right:1.4rem;background:none;border:0;cursor:pointer;
+  font-family:var(--mono);font-size:var(--nav);letter-spacing:.16em;color:var(--ink)}
+.item{padding:1.1rem 0;border-top:1px solid rgba(20,19,26,.10)}
+.item h3{font-family:var(--serif);font-weight:400;font-size:1.15rem;margin:0 0 .3rem}
+.item p{font-size:var(--body);line-height:1.6;color:#5A564F;margin:0}
+.item .tag{font-size:var(--micro);letter-spacing:.18em;text-transform:uppercase;color:var(--crimson)}
+
+#cursor{position:fixed;z-index:15;pointer-events:none;width:14px;height:14px;margin:-7px 0 0 -7px;
+  border:1px solid rgba(20,19,26,.5);border-radius:50%;
+  transform:translate3d(-100px,-100px,0);transition:width .3s,height .3s,margin .3s}
+.fine #cursor{display:block}
+@media (pointer:coarse){ #cursor{display:none} }
+@media (prefers-reduced-motion:reduce){ .plate{transition:none} }
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div id="figure">
+    <div class="plate" id="clean"></div>
+    <div class="plate" id="inked"></div>
+  </div>
+</div>
+
+<svg id="grid" aria-hidden="true"><defs><pattern id="p" width="48" height="48" patternUnits="userSpaceOnUse"><path d="M48 0 L0 0 0 48" fill="none" stroke="#8A867F" stroke-width=".6"/></pattern></defs><rect width="100%" height="100%" fill="url(#p)"/></svg>
+<div class="vig"></div>
+
+<i class="reg tl"></i><i class="reg tr"></i><i class="reg bl"></i><i class="reg br"></i>
+
+<div id="ui">
+  <div class="row">
+    <div class="brand">Younes<span>&thinsp;/&thinsp;</span>Tattoo</div>
+    <nav>
+      <button data-d="work" aria-expanded="false">Work</button>
+      <button data-d="studio" aria-expanded="false">Studio</button>
+      <button data-d="book" aria-expanded="false">Book</button>
+    </nav>
+  </div>
+
+  <div class="row foot">
+    <div class="hero">
+      <h1>The work is <em>already</em><br><b>in you.</b></h1>
+      <p class="sub">Move across the marble. Every piece you uncover was drawn, placed and healed by hand.</p>
+      <button class="cta" data-d="book">Begin a consultation
+        <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M3 9L9 3M9 3H4M9 3v5"/></svg>
+      </button>
+    </div>
+    <div>
+      <div class="zone" id="zone"><small>Move to reveal</small></div>
+      <div class="legend" style="margin-top:1.2rem">Beirut &middot; by appointment</div>
+    </div>
+  </div>
+</div>
+
+<div id="cursor"></div>
+<div id="scrim"></div>
+<aside id="drawer" aria-hidden="true">
+  <button id="close">Close &times;</button>
+  <h2 id="dTitle">Work</h2>
+  <div class="kicker" id="dKick">Selected pieces</div>
+  <div id="dBody"></div>
+</aside>
+
+<script>
+"use strict";
+/* ---------------------------------------------------------------------------
+   The reveal. Two identical plates stacked: the clean marble always visible,
+   the ink layer masked to a soft spotlight that eases toward the cursor.
+   The ink layer is transparent everywhere except the linework, so nothing but
+   ink can ever change - the serpent, skull and laurel never shimmer.
+   --------------------------------------------------------------------------- */
+const inked = document.getElementById('inked');
+const cleanEl = document.getElementById('clean');
+const cursor = document.getElementById('cursor');
+const zone = document.getElementById('zone');
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (matchMedia('(pointer:fine)').matches) document.body.classList.add('fine');
+
+const M = { x: innerWidth * 0.62, y: innerHeight * 0.45, sx: 0, sy: 0, has: false };
+M.sx = M.x; M.sy = M.y;
+
+let radius = 160;
+function sizeMask(){
+  radius = Math.round(Math.min(220, Math.max(90, innerWidth * 0.08)));
+  inked.style.setProperty('--r', radius + 'px');
+}
+sizeMask();
+addEventListener('resize', sizeMask);
+
+addEventListener('pointermove', (e) => {
+  M.x = e.clientX; M.y = e.clientY; M.has = true;
+  cursor.style.transform = `translate3d(${e.clientX}px,${e.clientY}px,0)`;
+}, { passive:true });
+
+/* Region labels. Coordinates are fractions of the plate box, measured from the
+   artwork: the raised forearm, chest, left arm and abdomen are the four
+   surfaces with enough clean marble to carry a piece. */
+const ZONES = [
+  { x:[0.70,0.95], y:[0.24,0.40], t:'Forearm sleeve',  s:'Botanical &middot; 3 sessions' },
+  { x:[0.26,0.62], y:[0.26,0.40], t:'Chest piece',     s:'Ornamental &middot; 2 sessions' },
+  { x:[0.06,0.28], y:[0.36,0.62], t:'Full left sleeve',s:'Floral &middot; 5 sessions' },
+  { x:[0.30,0.60], y:[0.40,0.56], t:'Stomach',         s:'Filigree &middot; 2 sessions' }
+];
+let curZone = null;
+
+function plateBox(){
+  const r = cleanEl.getBoundingClientRect();
+  return r;
+}
+
+function updateZone(){
+  const r = plateBox();
+  const u = (M.sx - r.left) / r.width, v = (M.sy - r.top) / r.height;
+  let hit = null;
+  for (const z of ZONES){
+    if (u>=z.x[0] && u<=z.x[1] && v>=z.y[0] && v<=z.y[1]){ hit = z; break; }
+  }
+  if (hit !== curZone){
+    curZone = hit;
+    zone.style.opacity = 0;
+    setTimeout(() => {
+      zone.innerHTML = hit ? (hit.t + '<small>' + hit.s + '</small>')
+                           : '<small>Move to reveal</small>';
+      zone.style.opacity = 1;
+    }, 180);
+  }
+}
+
+let raf = 0;
+function frame(){
+  raf = requestAnimationFrame(frame);
+
+  // exponential easing - identical feel at 60 and 144Hz
+  M.sx += (M.x - M.sx) * 0.12;
+  M.sy += (M.y - M.sy) * 0.12;
+
+  // mask position is element-local, so convert from viewport coords
+  const box = inked.getBoundingClientRect();
+  inked.style.setProperty('--mx', (M.sx - box.left).toFixed(1) + 'px');
+  inked.style.setProperty('--my', (M.sy - box.top ).toFixed(1) + 'px');
+
+  // the plates drift very slightly against each other - depth without parallax gimmickry
+  if (!REDUCED){
+    const px = (M.sx/innerWidth - .5), py = (M.sy/innerHeight - .5);
+    const t = `translate3d(${(-px*10).toFixed(2)}px,${(-py*8).toFixed(2)}px,0)`;
+    cleanEl.style.transform = t;
+    inked.style.transform  = t;
+  }
+
+  updateZone();
+}
+frame();
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) cancelAnimationFrame(raf); else frame();
+});
+
+/* Touch has no hover, so the spotlight drifts on a slow lissajous until touched. */
+if (matchMedia('(pointer:coarse)').matches){
+  let t0 = performance.now();
+  (function drift(now){
+    if (!M.has){
+      const t = (now - t0)/1000;
+      M.x = innerWidth  * (0.5 + 0.30*Math.sin(t*0.42));
+      M.y = innerHeight * (0.46 + 0.20*Math.sin(t*0.63 + 1.1));
+    }
+    requestAnimationFrame(drift);
+  })(performance.now());
+  addEventListener('pointerdown', e => { M.has = true; M.x=e.clientX; M.y=e.clientY; },{passive:true});
+}
+
+/* ---------------------------------------------------------------- drawers */
+const DATA = {
+  work:{ title:'Work', kick:'Selected pieces', items:[
+    ['Ornamental','Sternum &amp; chest','Symmetry built around the body\u2019s own centre line. Two sessions, four weeks apart.'],
+    ['Botanical','Full sleeve','Drawn freehand onto the arm before a single needle touches it.'],
+    ['Fine line','Forearm &amp; ribs','Single-needle work that heals soft and stays readable for decades.'],
+    ['Blackwork','Back &amp; shoulder','Weight and negative space. The skin does half the drawing.']
+  ]},
+  studio:{ title:'Studio', kick:'How it works', items:[
+    ['01','The conversation','You describe what you are carrying. Not a design brief \u2014 a reason.'],
+    ['02','The drawing','Younes draws for your body, not for a catalogue. One design, one person.'],
+    ['03','The session','Private room, one client at a time. However long it takes.'],
+    ['04','The healing','Four weeks of aftercare, checked in person before it is called finished.']
+  ]},
+  book:{ title:'Book', kick:'By appointment only', items:[
+    ['Consultation','Free &middot; 30 minutes','In person or by call. Bring references, or bring nothing at all.'],
+    ['Deposit','Held against the first session','Applied to the final cost. Moves with you if the date does.'],
+    ['Waiting list','Currently 6\u20138 weeks','Larger work is scheduled across multiple sessions.']
+  ]}
+};
+const scrim=document.getElementById('scrim'), drawer=document.getElementById('drawer');
+function open(k){
+  const d=DATA[k]; if(!d) return;
+  document.getElementById('dTitle').textContent=d.title;
+  document.getElementById('dKick').innerHTML=d.kick;
+  document.getElementById('dBody').innerHTML=d.items.map(([tag,h,p])=>
+    `<div class="item"><div class="tag">${tag}</div><h3>${h}</h3><p>${p}</p></div>`).join('');
+  scrim.classList.add('on'); drawer.classList.add('on'); drawer.setAttribute('aria-hidden','false');
+  document.querySelectorAll('nav button').forEach(b=>
+    b.setAttribute('aria-expanded', b.dataset.d===k ? 'true':'false'));
+}
+function shut(){
+  scrim.classList.remove('on'); drawer.classList.remove('on'); drawer.setAttribute('aria-hidden','true');
+  document.querySelectorAll('nav button').forEach(b=>b.setAttribute('aria-expanded','false'));
+}
+document.querySelectorAll('[data-d]').forEach(b=>b.addEventListener('click',()=>open(b.dataset.d)));
+document.getElementById('close').addEventListener('click',shut);
+scrim.addEventListener('click',shut);
+addEventListener('keydown',e=>{ if(e.key==='Escape') shut(); });
+</script>
+</body>
+</html>

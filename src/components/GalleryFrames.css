@@ -1,0 +1,80 @@
+.galleryFrames {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.frame {
+  position: absolute;
+  border: 1px solid rgba(20, 19, 26, 0.16);
+  background: rgba(250, 248, 245, 0.4);
+  color: var(--stone);
+  opacity: 0.4;
+  display: none;
+}
+
+@media (min-width: 900px) {
+  .frame {
+    display: block;
+  }
+}
+
+.frame__art {
+  width: 100%;
+  height: 100%;
+  padding: 14%;
+}
+
+.frame__art img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.frame--a {
+  left: 6vw;
+  top: 12vh;
+  width: clamp(90px, 9vw, 150px);
+  height: clamp(120px, 12vw, 200px);
+  rotate: -1.4deg;
+}
+
+.frame--b {
+  right: 9vw;
+  top: 8vh;
+  width: clamp(80px, 8vw, 130px);
+  height: clamp(80px, 8vw, 130px);
+  rotate: 1.1deg;
+  opacity: 0.32;
+  filter: blur(0.3px);
+}
+
+.frame--c {
+  left: 1.5vw;
+  top: 42vh;
+  width: clamp(100px, 10vw, 170px);
+  height: clamp(72px, 7.5vw, 128px);
+  rotate: 0.8deg;
+}
+
+.frame--d {
+  right: 13vw;
+  bottom: 18vh;
+  width: clamp(70px, 7vw, 110px);
+  height: clamp(96px, 9.5vw, 150px);
+  rotate: -1.6deg;
+  opacity: 0.3;
+  filter: blur(0.4px);
+}
+
+.frame--e {
+  left: 39vw;
+  bottom: 9vh;
+  width: clamp(56px, 5.5vw, 86px);
+  height: clamp(56px, 5.5vw, 86px);
+  rotate: 2.2deg;
+  opacity: 0.24;
+  filter: blur(0.5px);
+}

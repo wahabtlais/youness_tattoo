@@ -1,0 +1,799 @@
+/*
+ * Hero V2 - editorial typography experiment.
+ *
+ * Every scroll motion derives from one number, --p (0 -> 1 as the hero
+ * leaves the viewport, written by useScrollProgress). Phases:
+ *   --p1  phase 1: the letters loosen and start to drift
+ *   --p2  phase 2: the portrait rises slower than the page, scaling a touch
+ *   --q   phase 3: the word collapses up-left into the nav's logo position
+ *   phase 4 is just the next section arriving underneath as the hero fades.
+ * --p1 and --q are smoothstepped so each phase eases in and out rather than
+ * starting and stopping at hard scroll positions.
+ * With reduced motion the hook never writes --p, so everything stays at 0.
+ *
+ * Breathing: portrait, type and construction marks share one 8s cycle so
+ * the page reads as a single living composition (portrait sinks while the
+ * word lifts). Amplitudes are a few px - felt, not seen.
+ */
+.hv2 {
+  --p: 0;
+  --p1l: clamp(0, calc(var(--p) / 0.35), 1);
+  --p1: calc(var(--p1l) * var(--p1l) * (3 - 2 * var(--p1l)));
+  --p2: clamp(0, calc((var(--p) - 0.08) / 0.55), 1);
+  --ql: clamp(0, calc((var(--p) - 0.18) / 0.47), 1);
+  --q: calc(var(--ql) * var(--ql) * (3 - 2 * var(--ql)));
+  --breath: 8s;
+
+  /* composition: the artist on the true centre line, the name built around him */
+  --sh: max(100svh, 600px);
+  --ph: min(calc(var(--sh) * 0.98), 128vw);
+  --pw: calc(var(--ph) * 0.6357);
+  --pcx: 50%;
+  --pl: calc(var(--pcx) - var(--pw) / 2);
+  --ptop: calc(var(--sh) - var(--ph));
+  /* YOUNES in Bodoni Moda runs ~3.83em wide: margin to margin, but capped
+     against the portrait's height so on wide screens the word never
+     outweighs the man */
+  --fs: min(calc((100vw - var(--pad-x) * 2) / 3.86), calc(var(--ph) * 0.38));
+  /* cap-top sits just under the beard: the face stays completely clear */
+  --type-top: calc(var(--ptop) + var(--ph) * 0.37);
+  /* the burgundy token, deepened toward ink at display size so two giant
+     accent letters anchor the portrait without outshouting his face */
+  --accent-type: color-mix(in oklab, var(--burgundy) 82%, var(--ink));
+
+  position: relative;
+  height: var(--sh);
+  overflow: hidden;
+  background: var(--paper-warm);
+  color: var(--ink);
+  isolation: isolate;
+}
+
+/* ---------- background ---------- */
+
+.hv2Grain {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  pointer-events: none;
+  opacity: 0.075;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.08 0 0 0 0 0.07 0 0 0 0 0.06 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.hv2Marks {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  will-change: transform;
+  animation: hv2BreatheMarks var(--breath) ease-in-out infinite;
+}
+.hv2Marks__circle {
+  position: absolute;
+  width: calc(var(--ph) * 0.82);
+  aspect-ratio: 1;
+  left: calc(var(--pcx) - var(--ph) * 0.41);
+  top: calc(var(--ptop) + var(--ph) * 0.02);
+  overflow: visible;
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 0.12;
+  opacity: 0.16;
+  transform: translate3d(0, calc(var(--p) * var(--sh) * 0.12), 0);
+}
+.hv2Marks__circle path {
+  stroke-width: 0.16;
+}
+.hv2Marks__cross {
+  position: absolute;
+  left: calc(var(--pcx) + var(--ph) * 0.3);
+  top: calc(var(--ptop) + var(--ph) * 0.12);
+  width: 18px;
+  height: 18px;
+  opacity: 0.35;
+}
+.hv2Marks__cross::before,
+.hv2Marks__cross::after {
+  content: '';
+  position: absolute;
+  background: var(--ink);
+}
+.hv2Marks__cross::before {
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+}
+.hv2Marks__cross::after {
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+}
+.hv2Marks__rule {
+  position: absolute;
+  left: calc(var(--pad-x) * 0.52);
+  top: calc(var(--sh) * 0.24);
+  height: calc(var(--sh) * 0.46);
+  width: 1px;
+  background: var(--ink);
+  opacity: 0.22;
+}
+.hv2Marks__rule b {
+  position: absolute;
+  top: -2.4em;
+  left: 50%;
+  translate: -50% 0;
+  rotate: -90deg;
+  font-family: var(--mono);
+  font-weight: 400;
+  font-size: var(--micro);
+  letter-spacing: 0.1em;
+}
+
+/* ---------- typography planes ---------- */
+
+.hv2Type {
+  position: absolute;
+  left: 0;
+  right: 0;
+  padding: 0 var(--pad-x);
+  top: var(--type-top);
+  text-align: center;
+  pointer-events: none;
+  will-change: transform;
+}
+.hv2Type--back {
+  z-index: 2;
+}
+.hv2Type--knock {
+  z-index: 4;
+}
+.hv2Type--ink {
+  z-index: 5;
+  /* multiplied onto the photograph: burgundy that crosses skin reads as ink
+     in the skin, and sinks away into the black shirt */
+  mix-blend-mode: multiply;
+}
+.hv2Type--fragments {
+  z-index: 5;
+}
+
+/* phase 1 + 3: counter the page scroll so the word stays in view, then
+   shrink it up into the logo slot at top-left */
+.hv2Type__scroll {
+  transform-origin: var(--pad-x) 0;
+  transform: translate3d(
+      0,
+      calc(var(--p) * var(--sh) - var(--q) * (var(--type-top) - var(--pad-y) * 1.05)),
+      0
+    )
+    scale(calc(1 - var(--q) * 0.88));
+  opacity: calc(1 - clamp(0, calc((var(--q) - 0.45) / 0.45), 1));
+}
+
+.hv2Word {
+  font-family: var(--serif);
+  font-variation-settings: 'opsz' 96;
+  font-weight: 500;
+  font-size: var(--fs);
+  line-height: 0.74;
+  letter-spacing: -0.035em;
+  white-space: nowrap;
+  color: var(--ink);
+  user-select: none;
+  /* counter-breath: lifts as the portrait settles */
+  animation: hv2BreatheType var(--breath) ease-in-out infinite;
+}
+.hv2Word span {
+  display: inline-block;
+  transform: translate3d(
+    calc((var(--i) - 2.5) * var(--p1) * 1.1vw),
+    calc(var(--dy) * var(--p1) * 2.2vh),
+    0
+  );
+  animation: hv2LetterIn 1.6s var(--ease) backwards;
+  animation-delay: calc(0.25s + var(--i) * 0.07s);
+}
+.hv2Word .is-accent {
+  color: var(--accent-type);
+}
+
+/* the knockout planes: visible only inside the portrait's silhouette (mask
+   registered each frame by useRegisteredMask) */
+.hv2Type--knock .hv2Word,
+.hv2Type--ink .hv2Word {
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: var(--mask-pos, -9999px -9999px);
+  mask-position: var(--mask-pos, -9999px -9999px);
+  -webkit-mask-size: var(--mask-size, 0 0);
+  mask-size: var(--mask-size, 0 0);
+}
+/* paper veil for the black letters: enough of the body shows through that
+   the letters clearly wrap him rather than sit on him */
+.hv2Type--knock .hv2Word {
+  color: var(--paper-warm);
+  opacity: 0.7;
+}
+.hv2Type--ink .hv2Word {
+  opacity: 0.8;
+}
+.hv2Type--knock .is-accent,
+.hv2Type--ink span:not(.is-accent) {
+  visibility: hidden;
+}
+
+/* ---------- ink fragments ----------
+   Almost invisible at rest. When the reveal wakes (and more so as the
+   cursor nears each one, --near from HeroV2) they surface and drift a few
+   px on their own stagger - ink being discovered, not particles. */
+.hv2Type--fragments .hv2Word span {
+  position: relative;
+  color: transparent;
+}
+.hv2[data-reveal='on'] {
+  --act: 1;
+  --lift: 0.08;
+}
+.ink {
+  position: absolute;
+  left: calc(var(--x) * 1em);
+  top: calc(var(--y) * 1em);
+  width: calc(var(--s) * 1em);
+  height: calc(var(--s) * 1em);
+  color: var(--ink);
+  pointer-events: none;
+  rotate: var(--rot);
+  opacity: calc(var(--o) + var(--lift, 0) + var(--near, 0) * 0.14);
+  translate: calc(var(--dx) * var(--act, 0) * 1px) calc(var(--dy2) * var(--act, 0) * 1px);
+  scale: calc(1 + var(--act, 0) * 0.03);
+  transition:
+    opacity 1.4s cubic-bezier(0.4, 0, 0.2, 1) var(--d),
+    translate 2.4s var(--ease) var(--d),
+    scale 2.4s var(--ease) var(--d);
+}
+.ink--stroke {
+  height: calc(var(--s) * 0.12em);
+}
+.ink--accent {
+  color: var(--burgundy);
+}
+.ink svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  fill: currentColor;
+}
+.ink .ink__line {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 0.8;
+  stroke-linecap: round;
+}
+.ink .ink__line path {
+  vector-effect: non-scaling-stroke;
+}
+.ink .ink__line circle {
+  fill: currentColor;
+  stroke: none;
+}
+
+@keyframes hv2LetterIn {
+  from {
+    opacity: 0;
+    translate: 0 0.12em;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+/* ---------- portrait ---------- */
+
+.hv2Portrait {
+  position: absolute;
+  z-index: 3;
+  left: var(--pl);
+  top: var(--ptop);
+  width: var(--pw);
+  height: var(--ph);
+  pointer-events: none;
+  will-change: transform;
+}
+.hv2Portrait__scroll {
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 100%;
+  transform: translate3d(0, calc(var(--p) * var(--sh) * 0.3), 0) scale(calc(1 + var(--p2) * 0.06));
+  opacity: calc(1 - clamp(0, calc((var(--p) - 0.55) / 0.4), 1));
+}
+.hv2Portrait--reveal {
+  /* above every type plane: the spotlight cuts through the print, letters
+     included, to the photograph beneath */
+  z-index: 6;
+}
+.hv2Portrait__breathe {
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 100%;
+  animation: hv2Breathe var(--breath) ease-in-out infinite;
+}
+.hv2Portrait__plate {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.hv2Portrait--rest .hv2Portrait__plate {
+  animation: hv2PortraitIn 1.8s var(--ease) 0.1s backwards;
+}
+.hv2Portrait__plate img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  user-select: none;
+}
+
+/*
+ * The reveal: a small feathered loupe. Inside it the sharper, closer plate
+ * (clarity, micro-detail, deeper blacks) replaces the soft print, magnified
+ * a hair around the cursor so it feels nearer rather than just brighter.
+ * The long feather is what keeps it from reading as a torch beam.
+ */
+.hv2Portrait--reveal .hv2Portrait__plate {
+  --mx: 50%;
+  --my: 45%;
+  --r: 52px;
+  --spot: radial-gradient(
+    circle var(--r) at var(--mx) var(--my),
+    #000 0%,
+    rgba(0, 0, 0, 0.96) 22%,
+    rgba(0, 0, 0, 0.78) 42%,
+    rgba(0, 0, 0, 0.46) 62%,
+    rgba(0, 0, 0, 0.18) 80%,
+    rgba(0, 0, 0, 0.04) 93%,
+    transparent 100%
+  );
+  -webkit-mask-image: var(--spot);
+  mask-image: var(--spot);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  opacity: 0;
+  transition: opacity 0.9s var(--ease);
+}
+.hv2[data-reveal='on'] .hv2Portrait--reveal .hv2Portrait__plate {
+  opacity: 1;
+}
+.hv2Portrait__loupe {
+  position: absolute;
+  inset: 0;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  transform-origin: var(--mx) var(--my);
+  scale: 1.06;
+}
+
+@keyframes hv2PortraitIn {
+  from {
+    opacity: 0;
+    translate: 0 18px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+@keyframes hv2Breathe {
+  0%,
+  100% {
+    translate: 0 -4px;
+    scale: 1;
+  }
+  50% {
+    translate: 0 4px;
+    scale: 1.008;
+  }
+}
+@keyframes hv2BreatheType {
+  0%,
+  100% {
+    translate: 0 2px;
+  }
+  50% {
+    translate: 0 -2px;
+  }
+}
+@keyframes hv2BreatheMarks {
+  0%,
+  100% {
+    translate: 0 -1px;
+  }
+  50% {
+    translate: 0 1px;
+  }
+}
+
+/* soft hand-off into the next section (phase 4) */
+.hv2Fade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 16%;
+  z-index: 7;
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent, var(--paper));
+}
+
+/* ---------- UI copy ---------- */
+
+.hv2Ui {
+  position: absolute;
+  inset: 0;
+  z-index: 9;
+  pointer-events: none;
+  padding: var(--pad-y) var(--pad-x);
+  opacity: calc(1 - clamp(0, calc(var(--p) / 0.1), 1));
+}
+
+/* quiet technical metadata, hung under the masthead - not a headline */
+.hv2Title {
+  position: absolute;
+  left: var(--pad-x);
+  top: calc(var(--pad-y) + clamp(2.6rem, 4.4vh, 3.6rem));
+  margin: 0;
+  font: inherit;
+}
+.hv2Meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55em;
+  font-family: var(--mono);
+  font-size: var(--micro);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--stone);
+  animation: hv2FadeIn 1.4s var(--ease) 0.7s backwards;
+}
+.hv2Meta__sep {
+  display: none;
+}
+
+/* supporting line, down in the lower-left information block */
+.hv2Line {
+  position: absolute;
+  left: var(--pad-x);
+  bottom: calc(var(--pad-y) * 1.3 + 2.4rem);
+  margin: 0;
+  max-width: 22ch;
+  font-family: var(--serif);
+  font-size: clamp(1rem, 0.45vw + 0.8rem, 1.3rem);
+  line-height: 1.3;
+  color: var(--ink);
+  animation: hv2FadeIn 1.4s var(--ease) 0.9s backwards;
+}
+/* "you." shares the burgundy of the O and E in the name */
+.hv2Line em {
+  font-style: italic;
+  color: var(--burgundy);
+}
+
+.hv2Hint {
+  position: absolute;
+  left: var(--pad-x);
+  bottom: calc(var(--pad-y) * 1.3);
+  display: flex;
+  align-items: center;
+  gap: 1em;
+  font-family: var(--mono);
+  font-size: var(--micro);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--ink);
+  opacity: 0.66;
+  transition:
+    opacity var(--dur-slow) var(--ease),
+    letter-spacing var(--dur-slow) var(--ease);
+  animation: hv2FadeIn 1.4s var(--ease) 1.1s backwards;
+}
+.hv2Hint::after {
+  content: '';
+  width: clamp(2.5rem, 5vw, 4.5rem);
+  height: 1px;
+  background: currentColor;
+  opacity: 0.5;
+  transition: translate var(--dur-slow) var(--ease);
+}
+.hv2[data-reveal='on'] .hv2Hint {
+  opacity: 1;
+  letter-spacing: 0.27em;
+}
+.hv2[data-reveal='on'] .hv2Hint::after {
+  translate: 8px 0;
+}
+.hv2Hint__dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--burgundy);
+  animation: hv2Pulse 3.2s ease-in-out infinite;
+}
+
+.hv2Voice {
+  position: absolute;
+  right: var(--pad-x);
+  bottom: var(--pad-y);
+  pointer-events: auto;
+  animation: hv2FadeIn 1.4s var(--ease) 1.2s backwards;
+}
+
+@keyframes hv2FadeIn {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes hv2Pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* ---------- voice trigger ---------- */
+
+.voice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+  color: var(--ink);
+}
+.voice__dial {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 66px;
+  height: 66px;
+  transition: scale var(--dur-med) var(--ease);
+}
+.voice__ring {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  fill: none;
+  rotate: -90deg;
+}
+.voice__track {
+  stroke: var(--ink);
+  stroke-width: 1;
+  opacity: 0.28;
+}
+.voice__trace {
+  stroke: var(--burgundy);
+  stroke-width: 1.2;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  transition: stroke-dashoffset 1.1s var(--ease);
+}
+.voice__tick {
+  stroke: var(--burgundy);
+  stroke-width: 1.2;
+  rotate: 90deg;
+  transform-origin: 33px 33px;
+}
+.voice__mic {
+  width: 21px;
+  height: 21px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.3;
+  stroke-linecap: round;
+  transition: translate var(--dur-med) var(--ease);
+}
+.voice__capsule {
+  transition: fill var(--dur-med) var(--ease), stroke var(--dur-med) var(--ease);
+}
+.voice__wave {
+  stroke: var(--burgundy);
+  opacity: 0;
+  transition: opacity var(--dur-med) var(--ease);
+}
+
+.voice__label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+.voice__name {
+  font-family: var(--mono);
+  font-size: var(--nav);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  transition: letter-spacing var(--dur-slow) var(--ease);
+}
+.voice__meta {
+  position: relative;
+  display: grid;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: var(--micro);
+  color: var(--stone);
+}
+.voice__meta span {
+  grid-area: 1 / 1;
+  text-align: center;
+  transition:
+    opacity var(--dur-med) var(--ease),
+    translate var(--dur-med) var(--ease);
+}
+.voice__meta span + span {
+  opacity: 0;
+  translate: 0 4px;
+  color: var(--burgundy);
+}
+
+.voice:hover .voice__dial,
+.voice:focus-visible .voice__dial {
+  scale: 1.04;
+}
+.voice:hover .voice__trace,
+.voice:focus-visible .voice__trace {
+  stroke-dashoffset: 0;
+}
+.voice:hover .voice__mic,
+.voice:focus-visible .voice__mic {
+  translate: 0 -1px;
+}
+.voice:hover .voice__capsule,
+.voice:focus-visible .voice__capsule {
+  fill: var(--ink);
+}
+.voice:hover .voice__wave,
+.voice:focus-visible .voice__wave {
+  opacity: 1;
+  animation: hv2Wave 1.8s ease-in-out infinite;
+}
+@keyframes hv2Wave {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+.voice:hover .voice__name,
+.voice:focus-visible .voice__name {
+  letter-spacing: 0.3em;
+}
+.voice:hover .voice__meta span:first-child,
+.voice:focus-visible .voice__meta span:first-child {
+  opacity: 0;
+  translate: 0 -4px;
+}
+.voice:hover .voice__meta span + span,
+.voice:focus-visible .voice__meta span + span {
+  opacity: 1;
+  translate: 0 0;
+}
+.voice:focus-visible {
+  outline-offset: 6px;
+}
+
+/* ---------- tablet ---------- */
+
+@media (max-width: 1099px) {
+  .hv2 {
+    --ph: min(calc(var(--sh) * 0.92), 118vw);
+    --type-top: calc(var(--ptop) + var(--ph) * 0.37);
+  }
+}
+
+/* ---------- mobile: its own composition, not a shrunk desktop ---------- */
+
+@media (max-width: 699px) {
+  .hv2 {
+    --sh: max(100svh, 560px);
+    --ph: min(calc(var(--sh) * 0.8), 172vw);
+    --pcx: 50%;
+    --fs: calc((100vw - var(--pad-x) * 2) / 3.86);
+    --breath: 9s;
+    /* the name runs across the top as a masthead; the head rises in front
+       of the lower half of the letters */
+    --type-top: calc(var(--ptop) + var(--ph) * 0.1 - var(--fs) * 0.55);
+  }
+
+  .hv2Type__scroll {
+    transform-origin: 50% 0;
+  }
+  .hv2Type--knock,
+  .hv2Type--ink,
+  .ink--desktop {
+    display: none;
+  }
+
+  .hv2Marks__rule,
+  .hv2Marks__cross {
+    display: none;
+  }
+  .hv2Marks__circle {
+    width: calc(var(--pw) * 1.02);
+    left: calc(var(--pcx) - var(--pw) * 0.51);
+    top: calc(var(--ptop) + var(--ph) * 0.12);
+  }
+
+  .hv2Title {
+    top: calc(var(--pad-y) + 2.2rem);
+  }
+
+  .hv2Line {
+    bottom: calc(var(--pad-y) + 4.4rem);
+    max-width: 14ch;
+    font-size: 1.15rem;
+  }
+  .hv2Hint {
+    bottom: calc(var(--pad-y) + 1.9rem);
+  }
+  .hv2Hint::after {
+    display: none;
+  }
+  .hv2Voice {
+    bottom: calc(var(--pad-y) + 0.4rem);
+  }
+  .voice__dial {
+    width: 56px;
+    height: 56px;
+  }
+  .voice__meta {
+    display: none;
+  }
+  .hv2Fade {
+    height: 30%;
+    background: linear-gradient(to bottom, transparent, var(--paper-warm) 55%);
+  }
+}
+
+/* ---------- reduced motion ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .hv2Word,
+  .hv2Word span,
+  .hv2Marks,
+  .hv2Portrait__breathe,
+  .hv2Portrait--rest .hv2Portrait__plate,
+  .voice:hover .voice__wave,
+  .hv2Meta,
+  .hv2Line,
+  .hv2Hint,
+  .hv2Hint__dot,
+  .hv2Voice {
+    animation: none;
+  }
+  .voice__dial,
+  .voice__trace,
+  .voice__name,
+  .voice__mic,
+  .voice__meta span,
+  .hv2Hint,
+  .hv2Hint::after,
+  .hv2Portrait--reveal .hv2Portrait__plate {
+    transition-duration: 0.01s;
+  }
+  .ink {
+    translate: none;
+    scale: none;
+    transition-duration: 0.01s;
+    transition-delay: 0s;
+  }
+}

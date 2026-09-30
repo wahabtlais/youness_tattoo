@@ -1,0 +1,17 @@
+.cursorRing {
+  position: fixed;
+  z-index: 15;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border: 1px solid rgba(20, 19, 26, 0.5);
+  border-radius: 50%;
+  transform: translate3d(-100px, -100px, 0);
+  transition:
+    width 0.3s,
+    height 0.3s,
+    margin 0.3s;
+}
