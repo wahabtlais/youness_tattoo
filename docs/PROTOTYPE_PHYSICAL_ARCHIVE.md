@@ -78,10 +78,20 @@ The strip is made seamless once (its tail cross-faded over its head) so it can t
 
 ## The arm
 
-**Model:** "Right_Arm tattoo Mhest" by Miguelhest, CC BY 4.0 (credit in [THIRD_PARTY_ASSETS.md](THIRD_PARTY_ASSETS.md)).
-- A static mesh: no skeleton, no bones, no animation clips. It is a relaxed right arm whose sleeve (black-and-grey realism with red roses) is textured on the outer side only.
-- It was chosen over `arm_for_tattoo.glb`, which is a stiff T-pose with flat spread fingers and 13.7 MB of textures.
-- It ships as `src/assets/work/arm/tattooed-arm.glb` (1.1 MB). The 2048² colour texture was recompressed from PNG to JPEG and the buffers repacked; there are no geometry changes. The originals stay local in `assets-src/arm/` (git-ignored).
+**Model:** `src/assets/work/glb/younes_tattoo_arm_rigged.glb`, the prepared arm described in [YOUNES_ARM_ASSET_NOTES.md](YOUNES_ARM_ASSET_NOTES.md). It's derived from "Right_Arm tattoo Mhest" by Miguelhest, CC BY 4.0 (credit in [THIRD_PARTY_ASSETS.md](THIRD_PARTY_ASSETS.md)).
+- **Mesh:** a relaxed right arm whose sleeve (black-and-grey realism with red roses) is textured on the outer side only.
+- **Rig:** three joints (`ArmRoot`, `Forearm`, `WristHand`) and three clips (`Reach` 1.0s, `Grip` 0.48s, `Pull` 0.95s), used as prepared.
+- **Optimisation:** the shipped copy only recompresses the 2048² colour texture (PNG to JPEG) and repacks the buffers, taking it from 3.1 MB to 1.3 MB. The rig, weights and clips are untouched. The original package stays local in `assets-src/arm/` (git-ignored).
+
+**How the clips are used:** GSAP controls where the arm is, on screen and aimed at the selected print. The clips provide the local forearm and wrist motion. Each clip's progress (`pose.reach`, `pose.grip`, `pose.pull`, 0..1) is tweened on the same beats as the screen-space motion and applied by the mixer every frame, so they never run on their own clock. The clips' boundaries line up (Reach ends where Grip starts, and Grip ends where Pull starts), so they hand over without blending.
+
+**Known issue in the prepared rig:**
+- **Inverted rig:** the mesh is oriented hand-down (hand at y≈0, shoulder at y=1.615), but the joints were placed as if the hand were at the top.
+  - `ArmRoot` (y=0) carries the hand, wrist and forearm (8,765 vertices). They are rigid.
+  - `Forearm` (y=0.94) moves the upper arm, and `WristHand` (y=1.23) moves the shoulder cap.
+  - So the clips' wrist rotations (7–16°) bend the upper arm, which is off-screen, and the hand itself never articulates.
+- **Hard weights:** each vertex follows one joint, so a larger bend would crease the sleeve at y≈0.75 and y≈1.14. At the clips' angles that is not visible on screen.
+- **Fix:** re-skin with the joints at the wrist and elbow of the hand-down mesh (or flip the mesh) and soft weights across the joints. No code change is needed; the clip names and timeline stay the same.
 
 **Rendering:** one transparent WebGL canvas lives in the detail dialog, above the flying print (`armStage.ts`).
 - **Loading:** three.js, the loader and the model load lazily when the archive comes into view, in their own chunk. The model loads once and is reused for every pick.
@@ -104,7 +114,7 @@ The strip is made seamless once (its tail cross-faded over its head) so it can t
 
 | | Status |
 |---|---|
-| **Arm** (`tattooed-arm.glb`) | A licensed stock model (CC BY 4.0). **Its sleeve is someone else's tattoo design, not Younes's work.** Before this ships, either credit it visibly and make clear it isn't his, or replace it with a model wearing his own work. The public site also needs a visible attribution line. |
+| **Arm** (`younes_tattoo_arm_rigged.glb`) | A licensed stock model (CC BY 4.0). **Its sleeve is someone else's tattoo design, not Younes's work.** Before this ships, either credit it visibly and make clear it isn't his, or replace it with a model wearing his own work. The public site also needs a visible attribution line. |
 | **Rope** (`src/assets/work/rope.png`) | Provided for this prototype. **Its source and licence are not recorded yet.** Record them (as in INK_ASSETS.md) before it ships. |
 | **Detail copy** | Title is the archive's neutral label. Style, placement and the story are marked "to be added": nothing is invented. |
 | **Intro copy** | Draft ("Original pieces / no repeats" is from the brief, so confirm it is accurate). "View all works" jumps to the archive, which holds all eight works. |
@@ -114,5 +124,5 @@ The strip is made seamless once (its tail cross-faded over its head) so it can t
 - The archive loops (it is a lap of eight prints), so a print leaves on the left and re-enters on the right.
 - The detail view is sized when it opens; resizing the window while it is open doesn't re-flow the flight.
 - GSAP (3.15, free standard licence) runs the pick choreography; three.js (r186) renders the arm.
-- The arm is static: the grab is sold by staging (pass behind, close over, attach), not by moving fingers.
+- The fingers are not rigged (by design), and with the rig issue above the wrist doesn't articulate yet either. The grab is sold by staging: pass behind, close over, attach.
 - three.js is about 155 kB gzipped, loaded lazily. Vite's 500 kB chunk-size notice for it is expected.

@@ -9,12 +9,12 @@ Every external asset the site ships, with its licence. The ink footage has its o
 | Title | "Right_Arm tattoo Mhest" |
 | Creator | Miguelhest (https://sketchfab.com/Miguelhest) |
 | Source | https://sketchfab.com/3d-models/right-arm-tattoo-mhest-1bd9b5b57c03427383e519d095c65a18 |
-| Licence | [CC BY 4.0](http://creativecommons.org/licenses/by/4.0/), as read from the file's embedded metadata. Confirm it on the source page. |
+| Licence | [CC BY 4.0](http://creativecommons.org/licenses/by/4.0/), as read from the original file's embedded metadata. **Confirm it on the source page before public release.** |
 | Commercial use | Yes |
 | Attribution required | **Yes**: title, creator, source, licence, and that it was modified |
-| Modified | Yes. The colour texture was recompressed (PNG to JPEG, same resolution) and the file repacked. It is posed, lit and rendered in the browser. |
-| Shipped as | `src/assets/work/arm/tattooed-arm.glb` (1.1 MB) |
-| Local source | `assets-src/arm/right_arm_tattoo_mhest.glb` (git-ignored, 2.9 MB) |
+| Modified | Yes. It was normalised and given a 3-bone skin with Reach/Grip/Pull clips ([YOUNES_ARM_ASSET_NOTES.md](YOUNES_ARM_ASSET_NOTES.md)). The colour texture was then recompressed (PNG to JPEG, same resolution). It is posed, lit and rendered in the browser. |
+| Shipped as | `src/assets/work/glb/younes_tattoo_arm_rigged.glb` (1.3 MB). Its file no longer carries the original author/licence metadata, so this record is the attribution. |
+| Local source | `assets-src/arm/` (git-ignored): the original `right_arm_tattoo_mhest.glb` (2.9 MB), the prepared `younes_tattoo_arm_rigged.glb` (3.1 MB) and its package zip |
 | Used for | The arm that takes a print down in the Work archive prototype (`components/work/physical-archive/arm/`) |
 
 **Credit line** for the site's credits:

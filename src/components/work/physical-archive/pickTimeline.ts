@@ -98,11 +98,11 @@ export function playPick(p: PickParts, onDetail: () => void): PickRun {
   gsap.set(text, { autoAlpha: 0, y: 14 });
   gsap.set([p.paper, p.slot], { autoAlpha: 0 });
 
-  // anticipation (on the rope itself), then a short held beat
+  // anticipation (~250ms, on the rope itself): the archive stops, the
+  // others recede, the print lifts; the arm is still below the screen
   const select = gsap.timeline({ onComplete: () => void takeDown() });
-  select.to(others, { opacity: 0.45, filter: 'saturate(0.6)', duration: 0.45, ease: 'power2.out' }, 0);
-  select.to(print, { y: -10, duration: 0.38, ease: 'power2.out' }, 0);
-  select.to({}, { duration: 0.24 });
+  select.to(others, { opacity: 0.45, filter: 'saturate(0.6)', duration: 0.4, ease: 'power2.out' }, 0);
+  select.to(print, { y: -10, duration: 0.26, ease: 'power2.out' }, 0);
   current = select;
 
   async function takeDown() {
@@ -146,21 +146,26 @@ export function playPick(p: PickParts, onDetail: () => void): PickRun {
         rz: lean + t.rotation[2],
       };
     };
-    gsap.set(stage.pose, at(ARM.rest, vh + hand * 0.5));
+    gsap.set(stage.pose, { ...at(ARM.rest, vh + hand * 0.5), reach: 0, grip: 0, pull: 0 });
     stage.start();
 
+    // screen-space choreography (where the arm is) with the GLB's own clips
+    // (what the forearm and wrist do) laid over the same beats
     const tl = gsap.timeline({ onComplete: () => stage.stop() });
     tl.to(clone, { rotation: pose.angle * 0.3, duration: 0.45, ease: 'power2.out' }, 0);
     tl.to(stage.pose, { ...at(ARM.approach), duration: 0.62 * quick, ease: 'power2.out' }, 0);
     tl.to(stage.pose, { ...at(ARM.reach), duration: 0.42 * quick, ease: 'power3.out' });
     tl.to(stage.pose, { ...at(ARM.settle), duration: 0.2 * quick, ease: 'sine.inOut' });
+    tl.to(stage.pose, { reach: 1, duration: 1.24 * quick, ease: 'power1.inOut' }, 0);
     tl.addLabel('grab', '+=0.06');
     tl.to(stage.pose, { ...at(ARM.grab), duration: 0.24, ease: 'power2.inOut' }, 'grab');
+    tl.to(stage.pose, { grip: 1, duration: 0.42, ease: 'power1.inOut' }, 'grab');
     tl.to(clone, { y: 4 * u, rotation: 0, duration: 0.16, ease: 'power2.in' }, 'grab+=0.1');
     tl.add(() => stage.attach(), 'grab+=0.26');
     tl.addLabel('pull', 'grab+=0.34');
     tl.add(() => engine.release(index), 'pull');
     tl.to(stage.pose, { ...at(ARM.pull), duration: 0.6 * quick, ease: 'power2.inOut' }, 'pull');
+    tl.to(stage.pose, { pull: 1, duration: 0.6 * quick, ease: 'power1.inOut' }, 'pull');
     tl.addLabel('detail', '>-0.04');
     tl.add(() => stage.release(), 'detail');
     tl.to(stage.pose, { ...at(ARM.exit, vh + hand * 1.4), duration: 0.55, ease: 'power2.in' }, 'detail+=0.04');
