@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# licensed source footage for the ink drops (re-downloadable, see docs/INK_ASSETS.md)
+assets-src/ink/*.mp4
+assets-src/ink/*.jpg
+# visual references of unknown licence - never shipped
+assets-src/reference/

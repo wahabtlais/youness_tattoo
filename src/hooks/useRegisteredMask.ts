@@ -3,12 +3,12 @@ import { useEffect, type RefObject } from 'react';
 /**
  * Keeps an element's CSS mask registered to another element's on-screen box.
  *
- * Hero V2 masks a copy of the YOUNES type with the portrait's own alpha, so
+ * masks a copy of the YOUNES type with the portrait's own alpha, so
  * the letters read as printed through the photograph. The type and the
  * portrait move on different parallax / scroll planes, so the mask can't
  * simply be static: each frame we measure both boxes and place the mask in
  * the masked element's local (pre-transform) space. Assumes the masked
- * element only ever translates + scales uniformly, which is all Hero V2 does.
+ * element only ever translates + scales uniformly, which is all does.
  *
  * Only runs while `sectionRef` is on screen, and only writes when the
  * numbers actually change.

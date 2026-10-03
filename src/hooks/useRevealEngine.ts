@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
-import { ZONES, findZone, type RevealZone } from '../data/zones';
 
 /**
  * A layer that drifts against the pointer. x/y are the max offset in px at
@@ -13,59 +12,37 @@ export interface ParallaxLayer {
 
 interface UseRevealEngineArgs {
   /** the masked reveal plate - receives --mx / --my / --r */
-  inkRef: RefObject<HTMLElement | null>;
-  /** V1 statue + gallery-wall layers (optional so other heroes can skip them) */
-  figureParallaxRef?: RefObject<HTMLElement | null>;
-  framesParallaxRef?: RefObject<HTMLElement | null>;
-  /** any extra layers, e.g. Hero V2's portrait and type planes */
-  parallaxLayers?: ParallaxLayer[];
-  /** hit-test zones in fractions of the ink plate; defaults to the statue zones */
-  zones?: RevealZone[];
-  /** spotlight radius override (px min/max, fraction of viewport width) */
-  radius?: { min: number; max: number; vw: number };
+  plateRef: RefObject<HTMLElement | null>;
+  /** layers that drift against the pointer, e.g. the portrait and type planes */
+  parallaxLayers: ParallaxLayer[];
+  /** spotlight radius (px min/max, fraction of viewport width) */
+  radius: { min: number; max: number; vw: number };
   cursorRef: RefObject<HTMLElement | null>;
   reducedMotion: boolean;
 }
 
-interface UseRevealEngineResult {
-  activeZone: RevealZone | null;
-  isFinePointer: boolean;
-}
-
-// Spotlight radius: small enough that discovering ink feels deliberate, not a
-// floodlight. vw-based so it scales, clamped so it never vanishes on tiny
-// screens or balloons on ultrawide ones.
-const RADIUS_MIN = 42;
-const RADIUS_MAX = 80;
-const RADIUS_VW = 0.045;
-
 const EASE = 0.12;
-// "background frames: slightly more movement; angel: almost none" (brief step 11)
-const FIGURE_PARALLAX = { x: 4, y: 3 };
-const FRAMES_PARALLAX = { x: 16, y: 11 };
 
+/**
+ * One rAF loop for the hero's pointer work: an eased pointer position feeds
+ * the reveal spotlight (--mx / --my on the plate), the cursor ring and the
+ * parallax planes. Touch has no hover, so the spotlight drifts on its own
+ * until the first touch.
+ */
 export function useRevealEngine({
-  inkRef,
-  figureParallaxRef,
-  framesParallaxRef,
+  plateRef,
   parallaxLayers,
-  zones = ZONES,
   radius,
   cursorRef,
   reducedMotion,
-}: UseRevealEngineArgs): UseRevealEngineResult {
-  const [activeZone, setActiveZone] = useState<RevealZone | null>(null);
+}: UseRevealEngineArgs): { isFinePointer: boolean } {
   const [isFinePointer, setIsFinePointer] = useState(false);
 
-  const zoneRef = useRef<RevealZone | null>(null);
-  const radiusRef = useRef(60);
-  // read through refs inside the rAF loop so callers can pass fresh arrays
+  // read through a ref inside the rAF loop so callers can pass a fresh array
   // each render without restarting the engine
   const layersRef = useRef(parallaxLayers);
-  const zonesRef = useRef(zones);
   useEffect(() => {
     layersRef.current = parallaxLayers;
-    zonesRef.current = zones;
   });
 
   useEffect(() => {
@@ -76,10 +53,9 @@ export function useRevealEngine({
     M.sx = M.x;
     M.sy = M.y;
 
-    const R = radius ?? { min: RADIUS_MIN, max: RADIUS_MAX, vw: RADIUS_VW };
     function sizeMask() {
-      radiusRef.current = Math.round(Math.min(R.max, Math.max(R.min, innerWidth * R.vw)));
-      inkRef.current?.style.setProperty('--r', radiusRef.current + 'px');
+      const r = Math.round(Math.min(radius.max, Math.max(radius.min, innerWidth * radius.vw)));
+      plateRef.current?.style.setProperty('--r', r + 'px');
     }
     sizeMask();
     addEventListener('resize', sizeMask);
@@ -117,62 +93,49 @@ export function useRevealEngine({
       M.sx += (M.x - M.sx) * EASE;
       M.sy += (M.y - M.sy) * EASE;
 
-      const inkEl = inkRef.current;
-      if (inkEl) {
-        const box = inkEl.getBoundingClientRect();
-        inkEl.style.setProperty('--mx', (M.sx - box.left).toFixed(1) + 'px');
-        inkEl.style.setProperty('--my', (M.sy - box.top).toFixed(1) + 'px');
-
-        const u = (M.sx - box.left) / box.width;
-        const v = (M.sy - box.top) / box.height;
-        const hit = findZone(u, v, zonesRef.current);
-        if (hit?.id !== zoneRef.current?.id) {
-          zoneRef.current = hit;
-          setActiveZone(hit);
-        }
+      const plate = plateRef.current;
+      if (plate) {
+        const box = plate.getBoundingClientRect();
+        plate.style.setProperty('--mx', (M.sx - box.left).toFixed(1) + 'px');
+        plate.style.setProperty('--my', (M.sy - box.top).toFixed(1) + 'px');
       }
 
       if (!reducedMotion) {
         const px = M.sx / innerWidth - 0.5;
         const py = M.sy / innerHeight - 0.5;
-        if (figureParallaxRef?.current) {
-          figureParallaxRef.current.style.transform =
-            `translate3d(${(-px * FIGURE_PARALLAX.x).toFixed(2)}px,${(-py * FIGURE_PARALLAX.y).toFixed(2)}px,0)`;
-        }
-        if (framesParallaxRef?.current) {
-          framesParallaxRef.current.style.transform =
-            `translate3d(${(-px * FRAMES_PARALLAX.x).toFixed(2)}px,${(-py * FRAMES_PARALLAX.y).toFixed(2)}px,0)`;
-        }
-        const layers = layersRef.current;
-        if (layers) {
-          for (const layer of layers) {
-            if (layer.ref.current) {
-              layer.ref.current.style.transform =
-                `translate3d(${(-px * layer.x).toFixed(2)}px,${(-py * layer.y).toFixed(2)}px,0)`;
-            }
+        for (const layer of layersRef.current) {
+          if (layer.ref.current) {
+            layer.ref.current.style.transform =
+              `translate3d(${(-px * layer.x).toFixed(2)}px,${(-py * layer.y).toFixed(2)}px,0)`;
           }
         }
       }
     }
-    raf = requestAnimationFrame(frame);
-
-    function onVisibility() {
-      if (document.hidden) cancelAnimationFrame(raf);
-      else raf = requestAnimationFrame(frame);
+    // only run while the plate is on screen and the tab is visible - the
+    // gallery below shouldn't pay for the hero
+    let onScreen = true;
+    function sync() {
+      cancelAnimationFrame(raf);
+      if (onScreen && !document.hidden) raf = requestAnimationFrame(frame);
     }
-    document.addEventListener('visibilitychange', onVisibility);
+    const io = new IntersectionObserver(([entry]) => {
+      onScreen = entry.isIntersecting;
+      sync();
+    });
+    if (plateRef.current) io.observe(plateRef.current);
+    sync();
+    document.addEventListener('visibilitychange', sync);
 
     return () => {
       cancelAnimationFrame(raf);
+      io.disconnect();
       removeEventListener('resize', sizeMask);
       removeEventListener('pointermove', onPointerMove);
       if (coarse) removeEventListener('pointerdown', onPointerDown);
-      document.removeEventListener('visibilitychange', onVisibility);
+      document.removeEventListener('visibilitychange', sync);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reducedMotion]);
 
-  return { activeZone, isFinePointer };
+  return { isFinePointer };
 }
-
-export { ZONES };

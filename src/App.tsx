@@ -1,28 +1,30 @@
+import { useCallback, useState } from 'react';
 import { Nav } from './components/Nav';
 import { RegistrationMarks } from './components/RegistrationMarks';
-import { HeroSwitch } from './components/dev/HeroSwitch';
+import { ConsultationPanel } from './components/Consultation/ConsultationPanel';
 import { Hero } from './sections/Hero';
-import { HeroV2 } from './sections/HeroV2';
 import { Work } from './sections/Work';
 import { Studio } from './sections/Studio';
 import { Book } from './sections/Book';
-import { showHeroSwitch, useHeroVersion } from './hooks/useHeroVersion';
 import './App.css';
 
 export default function App() {
-  const [hero, setHero] = useHeroVersion();
+  // one consultation shell, reachable from the hero, the work and booking
+  const [consultOpen, setConsultOpen] = useState(false);
+  const openConsult = useCallback(() => setConsultOpen(true), []);
+  const closeConsult = useCallback(() => setConsultOpen(false), []);
 
   return (
     <div className="app">
-      <Nav variant={hero} />
+      <Nav />
       <RegistrationMarks />
       <main>
-        {hero === 'v2' ? <HeroV2 /> : <Hero />}
-        <Work />
+        <Hero onAsk={openConsult} />
+        <Work onAsk={openConsult} />
         <Studio />
-        <Book />
+        <Book onOpen={openConsult} />
       </main>
-      {showHeroSwitch && <HeroSwitch value={hero} onChange={setHero} />}
+      <ConsultationPanel open={consultOpen} onClose={closeConsult} />
     </div>
   );
 }

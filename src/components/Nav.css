@@ -10,12 +10,26 @@
   padding: var(--pad-y) var(--pad-x);
   pointer-events: none;
 }
+/* as the hero leaves, the masthead becomes a paper strip so the work
+   scrolling beneath never collides with the brand (--hero-p from the hero;
+   without it - reduced motion - the strip is simply always there) */
+.siteNav::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--paper-warm);
+  opacity: calc(clamp(0, (var(--hero-p, 1) - 0.8) / 0.2, 1) * 0.94);
+}
 
+/* editorial masthead. The hairline under the brand draws in as the giant
+   YOUNES collapses into this slot (--hero-q, set by the hero). */
 .siteNav__brand {
+  position: relative;
   font-family: var(--serif);
-  font-weight: 700;
-  font-size: clamp(1rem, 0.9vw + 0.7rem, 1.5rem);
-  letter-spacing: 0.14em;
+  font-weight: 400;
+  font-size: clamp(0.95rem, 0.6vw + 0.75rem, 1.25rem);
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   line-height: 1;
   color: var(--ink);
@@ -23,7 +37,18 @@
   pointer-events: auto;
 }
 .siteNav__brand span {
-  color: var(--crimson);
+  color: var(--burgundy);
+}
+.siteNav__brand::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0.16em;
+  bottom: -0.55em;
+  height: 1px;
+  background: var(--ink);
+  transform-origin: 0 50%;
+  transform: scaleX(var(--hero-q, 0));
 }
 
 .siteNav nav {
@@ -47,38 +72,15 @@
   opacity: 1;
 }
 
-/* Hero V2: lighter editorial masthead. The hairline under the brand draws in
-   as the giant YOUNES collapses into this slot (--hero-v2-q, set by HeroV2). */
-.siteNav--v2 .siteNav__brand {
-  position: relative;
-  font-weight: 400;
-  font-size: clamp(0.95rem, 0.6vw + 0.75rem, 1.25rem);
-  letter-spacing: 0.16em;
-}
-.siteNav--v2 .siteNav__brand span {
-  color: var(--burgundy);
-}
-.siteNav--v2 .siteNav__brand::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0.16em;
-  bottom: -0.55em;
-  height: 1px;
-  background: var(--ink);
-  transform-origin: 0 50%;
-  transform: scaleX(var(--hero-v2-q, 0));
-}
-
 @media (max-width: 520px) {
-  .siteNav--v2 .siteNav__brand {
+  .siteNav .siteNav__brand {
     font-size: 0.82rem;
     letter-spacing: 0.12em;
   }
-  .siteNav--v2 nav {
+  .siteNav nav {
     gap: 0.85rem;
   }
-  .siteNav--v2 nav a {
+  .siteNav nav a {
     font-size: 0.56rem;
     letter-spacing: 0.16em;
   }

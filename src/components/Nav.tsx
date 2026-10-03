@@ -11,9 +11,9 @@ const LINKS = [
  * no sticky background chrome. Native anchor scrolling + the smooth-scroll
  * rule in global.css do the work; JS isn't required.
  */
-export function Nav({ variant = 'v1' }: { variant?: 'v1' | 'v2' }) {
+export function Nav() {
   return (
-    <div className={variant === 'v2' ? 'siteNav siteNav--v2' : 'siteNav'}>
+    <div className="siteNav">
       <a className="siteNav__brand" href="#hero">
         Younes<span>&thinsp;/&thinsp;</span>Tattoo
       </a>

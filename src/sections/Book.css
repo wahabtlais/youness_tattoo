@@ -67,3 +67,11 @@
   text-transform: uppercase;
   color: var(--stone);
 }
+
+/* the studio's mark closes the page like a stamp at the foot of a print */
+.book__logo {
+  display: block;
+  width: clamp(190px, 22vw, 290px);
+  height: auto;
+  margin: 0 auto clamp(2.2rem, 5vh, 3.2rem);
+}

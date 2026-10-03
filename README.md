@@ -1,45 +1,44 @@
-# React + TypeScript + Vite
+# Younes Tattoo
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
-
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
-```
-
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
-
-## Hero V2 (editorial experiment)
-
-`src/sections/HeroV2.tsx` sits beside the original `Hero.tsx`. In dev (or any build opened with `?hero=v1|v2`) a small switch at the bottom of the page toggles between them; the choice is remembered per browser.
-
-The portrait plates in `src/assets/hero-v2/` are generated from `public/artist.png` by `scripts/process-artist.py` (cutout + neutral monochrome, run offline in a Python env with `rembg[cpu]`):
+Site for YOUNES / TATTOO, Detroit, Michigan. React + TypeScript + Vite.
 
 ```bash
-python scripts/process-artist.py public/artist.png src/assets/hero-v2
+npm run dev      # local dev server
+npm run build    # typecheck + production build
+npm run lint     # oxlint
 ```
 
-- `artist-print.webp`: the rest plate: soft, lower local contrast, still deep blacks
-- `artist-develop.webp`: the reveal plate, shown inside the cursor loupe (sharper, clarity, micro-detail). It renders above the type planes, so the loupe cuts through the printed letters too. Replace it with the real tattoo layer (same size and registration) when it exists; no code changes needed.
+## Structure
+
+- `src/sections/Hero.tsx` - the name, the artist's portrait printed into it (pointer reveal, parallax, breathing) and the Ask Younes dial. Publishes `--hero-q` / `--hero-p` on `:root` so the nav and the Work section can time their hand-off from the hero's scroll.
+- Hero ink - exactly three elements, cut from licensed footage (`docs/INK_ASSETS.md`): `components/hero/InkField.tsx`, a very large, almost transparent ink field (a real ink pool, let spread into the paper) landing in the browser's top-left corner and spreading in behind the artist's head - the same life as the drops, on a ~38s cycle; `components/hero/InkDrops.tsx`, one medium (soft) and one small (defined, with spray) mark on their own randomly phased cycles. Self-contained: remove the two components, their CSS, `src/assets/ink/`, `scripts/build-ink.py` and the doc, and their lines and refs in Hero.
+- `src/sections/Work.tsx` - the tattoo archive (`components/work/`): gallery, items, captions and a focused viewer.
+- `src/data/work.ts` - the work itself. Neutral labels only; no client/placement/date metadata exists yet, so none is shown.
+- `src/components/Consultation/` - the Ask Younes shell. No voice/AI backend yet; every Ask Younes entry point opens this panel.
+
+## Image pipelines (offline, Python)
+
+The ink in `src/assets/ink/` is made from two Pexels clips of real ink on paper (licence and sources: `docs/INK_ASSETS.md`). Download them into `assets-src/ink/` (git-ignored), then (needs numpy, scipy, Pillow, ffmpeg or `pip install imageio-ffmpeg`):
+
+```bash
+python scripts/build-ink.py
+```
+
+Portrait plates in `src/assets/hero/`, generated from the original studio photograph `assets-src/artist.png` (not served; needs `rembg[cpu]`, and the birefnet-portrait model is a one-off ~1 GB download):
+
+```bash
+python scripts/process-artist.py assets-src/artist.png src/assets/hero
+```
+
+- `artist-print.webp`: the rest plate
+- `artist-develop.webp`: the reveal plate inside the cursor loupe. Replace it with a real tattoo layer (same size and registration) when one exists; no code changes needed.
+
+Tattoo photographs: originals live untouched in `public/work/`. Responsive WebP copies (served by the gallery) go to `public/work/web/` (needs Pillow):
+
+```bash
+python scripts/build-work-images.py
+```
+
+After adding or replacing a photo, re-run it and update `src/data/work.ts`.
+
+`public/youness_tattoo_logo-640.webp` and `public/favicon.png` (the crown) are derived from `public/youness_tattoo_logo.png`.

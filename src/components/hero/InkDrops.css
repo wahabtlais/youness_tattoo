@@ -1,0 +1,149 @@
+/*
+ * Ink drops (see InkDrops.tsx).
+ *
+ * Sizing is by the ink, not the frame: --ink is how big the main blot
+ * should look; the frame (which also holds the spray) is --ink / --body,
+ * where --body is the blot's share of its frame, measured by the build
+ * script. Positions are the blot's centre, in the hero's own geometry
+ * (--pcx / --ph / --ptop / --fs / --type-top), so the drops frame the man
+ * and the name at any size.
+ */
+
+.inkDrops {
+  position: absolute;
+  inset: 0;
+  z-index: 0; /* on the paper: under the marks, the name and the portrait */
+  pointer-events: none;
+  will-change: transform;
+}
+/* drifts and fades with the paper furniture as the hero scrolls away */
+.inkDrops__scroll {
+  position: absolute;
+  inset: 0;
+  transform: translate3d(0, calc(var(--p) * var(--sh) * 0.1), 0);
+  opacity: calc(1 - clamp(0, calc((var(--p) - 0.3) / 0.4), 1));
+}
+
+.inkDrop {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: calc(var(--ink) / var(--body));
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  rotate: var(--rot, 0deg);
+}
+
+/* cursor: --near / --ax / --ay / --ar from the hero's pointer pass. A big
+   drop barely gives: a few px, a fraction of a degree. */
+.inkDrop__react {
+  --near: 0;
+  --ax: 0;
+  --ay: 0;
+  --ar: 0;
+  --push: 3px;
+  width: 100%;
+  height: 100%;
+  opacity: calc(var(--o, 0.12) * (1 + var(--near) * 0.25));
+  translate: calc(var(--ax) * var(--push)) calc(var(--ay) * var(--push));
+  rotate: calc(var(--ar) * 0.8deg);
+  scale: calc(1 + var(--near) * 0.012);
+  transition:
+    translate 2s cubic-bezier(0.22, 0.8, 0.2, 1),
+    rotate 2s cubic-bezier(0.22, 0.8, 0.2, 1),
+    scale 2s cubic-bezier(0.22, 0.8, 0.2, 1),
+    opacity 1.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* hidden until the animations take over (or the static state below), so a
+   load never flashes every drop at once */
+.inkDrop__life {
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+}
+.inkDrop__frames {
+  width: 100%;
+  height: 100%;
+  background-repeat: no-repeat;
+  /* the settled frame */
+  background-position: 100% 0;
+  /* a dense core; the spray thrown furthest out sits softer on the paper */
+  -webkit-mask-image: radial-gradient(
+    closest-side,
+    #000 52%,
+    rgb(0 0 0 / 0.7) 100%
+  );
+  mask-image: radial-gradient(closest-side, #000 52%, rgb(0 0 0 / 0.7) 100%);
+}
+
+/* ---------- desktop / landscape tablet ----------
+   The very large field (InkField) fills the upper left, so these sit low:
+   the medium out to the right below the S, the small low on the left. */
+
+/* MEDIUM - a soft, spreading mark, lower right */
+.inkDrop--ink-medium {
+  --x: calc(var(--pcx) + var(--ph) * 0.7);
+  --y: calc(var(--ptop) + var(--ph) * 0.72);
+  --ink: calc(var(--ph) * 0.2);
+  --o: 0.1;
+  --rot: -30deg;
+}
+/* SMALL - a defined impact with its spray, low on the left */
+.inkDrop--ink-small {
+  --x: calc(var(--pcx) - var(--ph) * 0.58);
+  --y: calc(var(--ptop) + var(--ph) * 0.68);
+  --ink: calc(var(--ph) * 0.065);
+  --o: 0.1;
+  --rot: 0deg;
+}
+
+/* ---------- portrait tablets ---------- */
+
+@media (min-width: 700px) and (max-width: 1099px) and (orientation: portrait) {
+  .inkDrop--ink-medium {
+    --x: calc(100% - var(--pad-x) * 1.4);
+    --y: calc(var(--ptop) + var(--ph) * 0.66);
+    --ink: calc(var(--ph) * 0.15);
+  }
+  .inkDrop--ink-small {
+    --x: calc(var(--pad-x) + var(--ph) * 0.06);
+    --y: calc(var(--ptop) + var(--ph) * 0.72);
+    --ink: calc(var(--ph) * 0.055);
+  }
+}
+
+/* ---------- mobile: the medium half off the right edge, the small left ---------- */
+
+@media (max-width: 699px) {
+  .inkDrop__react {
+    --push: 2px;
+  }
+  .inkDrop--ink-medium {
+    --x: 100%;
+    --y: calc(var(--type-top) + var(--fs) * 2.4);
+    --ink: calc(var(--fs) * 0.8);
+    --o: 0.11;
+  }
+  .inkDrop--ink-small {
+    --x: calc(var(--pad-x) + 6vw);
+    --y: calc(var(--type-top) + var(--fs) * 1.5);
+    --ink: calc(var(--fs) * 0.28);
+    --o: 0.09;
+  }
+}
+
+/* ---------- reduced motion: two settled marks, a touch quieter ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .inkDrop--rest .inkDrop__life {
+    opacity: 1;
+  }
+  .inkDrop__react {
+    opacity: calc(var(--o, 0.12) * 0.85);
+    translate: none;
+    rotate: none;
+    scale: none;
+    transition: none;
+  }
+}

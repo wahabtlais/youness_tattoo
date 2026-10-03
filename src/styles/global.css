@@ -57,3 +57,14 @@ button.unstyled {
   white-space: nowrap;
   border: 0;
 }
+
+/* small burgundy section label, shared by Studio / Book / Consultation */
+.kicker {
+  display: block;
+  font-family: var(--mono);
+  font-size: var(--micro);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--burgundy);
+  margin-bottom: 0.9rem;
+}
