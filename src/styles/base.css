@@ -1,5 +1,7 @@
 @layer base {
   html {
+    /* the paper also fills the scrollbar gutter kept while a dialog is open */
+    background: var(--color-paper);
     scroll-behavior: smooth;
     /* the site was designed on the browser's own line-height; preflight's
        1.5 would loosen every line that doesn't set one */
@@ -26,6 +28,8 @@
   /* a modal dialog holds the page still behind it */
   html:has(dialog[open]) {
     overflow: hidden;
+    /* keep the scrollbar's space, so the page doesn't shift sideways */
+    scrollbar-gutter: stable;
   }
 
   button:not(:disabled),

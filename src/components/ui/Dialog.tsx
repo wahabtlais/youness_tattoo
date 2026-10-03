@@ -1,8 +1,13 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode, type SyntheticEvent } from 'react';
 
 interface DialogProps {
   open: boolean;
   onClose: () => void;
+  /**
+   * Escape. Call preventDefault() to run your own exit first (e.g. an
+   * animation), then set `open` to false. Without it, Escape just closes.
+   */
+  onCancel?: (e: SyntheticEvent<HTMLDialogElement>) => void;
   /** id of the visible title */
   labelledBy: string;
   className?: string;
@@ -16,7 +21,7 @@ interface DialogProps {
  * itself (outside the content) closes it. Page scroll is locked while any
  * dialog is open (styles/base.css).
  */
-export function Dialog({ open, onClose, labelledBy, className, children }: DialogProps) {
+export function Dialog({ open, onClose, onCancel, labelledBy, className, children }: DialogProps) {
   const ref = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -32,6 +37,7 @@ export function Dialog({ open, onClose, labelledBy, className, children }: Dialo
       className={className}
       aria-labelledby={labelledBy}
       onClose={onClose}
+      onCancel={onCancel}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
