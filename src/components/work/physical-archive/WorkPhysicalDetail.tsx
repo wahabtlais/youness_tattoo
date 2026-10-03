@@ -86,7 +86,7 @@ export function WorkPhysicalDetail({
           <div
             ref={slotRef}
             className="pa-print invisible justify-self-center opacity-0"
-            style={{ position: 'relative', width: size.w, height: size.h, '--border': `${size.pad}px` } as CSSProperties}
+            style={{ position: 'relative', width: size.w, height: size.h, '--border': `${size.pad}px`, '--ss': size.w / picked.w } as CSSProperties}
           >
             <ResponsiveImage
               image={piece.image}
@@ -127,6 +127,9 @@ export function WorkPhysicalDetail({
             aria-hidden="true"
           >
             <img src={picked.src} alt="" className="block size-full object-cover" draggable={false} />
+            {/* the deeper shadow of a print held off the paper: its own layer,
+                so it fades by opacity (compositor) instead of repainting */}
+            <span data-lift className="pa-lift" />
           </span>
           <Button
             data-detail-text

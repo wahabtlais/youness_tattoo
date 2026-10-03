@@ -71,13 +71,13 @@ The strip is made seamless once (its tail cross-faded over its head) so it can t
 | 2.35–2.70 | **Release:** the hand lets go and the arm retreats below the screen. |
 | 2.50–3.10 | **Detail:** the same print flies on into the detail layout, laid out in its exact proportions. |
 
-**Close** (Close, Escape or a click on the paper all use the same `returnPhotoToArchive()`): the print is placed back on its clip as one physical movement.
-- **One coordinated flight:** a single progress value drives a gently curved path, the scale back to print size, the rotation (with a small mid-flight correction) and the shadow easing back to the hanging one.
-- **Path:** it ends at the clip's live position, because the rope resumes drifting as the return begins, and comes into the clip from slightly below, as if lifted onto it.
-- **Ease:** `cubic-bezier(0.5, 0.05, 0.35, 1)`, with a soft departure, a little faster through the middle and a long, gentle arrival.
-- **Duration:** distance-aware, between 0.9s and 1.2s.
-- **Handoff:** the print's swing is pinned at rest while it flies, and released with no kick when it lands. At that moment the flying copy and the hanging print match to within half a pixel, so the switch can't be seen.
-- **Focus:** a print that gets keyboard focus back from the closing detail fades its focus ring in a beat after landing, and doesn't lift again.
+**Close** (Close, Escape or a click on the paper all use the same `returnPhotoToArchive()`): the print is placed back on its clip as one movement.
+- **One owner:** the clip's position, angle and size are measured once at the start. The archive stays still and the print's swing is pinned until it lands, so `returnPhotoToArchive()` is the only thing moving the print. Each frame it writes one transform (via GSAP quick setters) and reads nothing.
+- **Motion:** one progress value with one ease (`cubic-bezier(0.5, 0.05, 0.35, 1)`, 0.9–1.2s depending on distance) drives a gently curved path, the scale and the rotation. The shadow scales with the print; the detail image's shadow is pre-scaled to match, so the swap at the start can't be seen.
+- **Layers:** the flying copy's compositor layer is created and rasterised while the detail is open, so the first frame of the return creates nothing. The paper and the other prints fade back with CSS transitions, which run on the compositor.
+- **Rope:** the engine skips its redraw when nothing on the rope is moving.
+- **Handoff:** the copy and the hanging print match to well under a pixel. The dialog teardown (a React update) runs 180ms later, out of the landing frame.
+- **Hover and focus:** a print just re-hung doesn't lift for hover or focus until the pointer or focus moves on, so the hover state that touch screens keep on a tapped print can't make it jump. Its focus ring fades in a beat after landing.
 
 **Find similar** opens the existing consultation with `{ from: 'find-similar', workId }`. There is no similarity logic yet.
 

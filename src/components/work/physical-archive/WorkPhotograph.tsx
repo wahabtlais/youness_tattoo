@@ -28,16 +28,20 @@ export function WorkPhotograph({ piece, index, total, onPick, onHover, onFocus }
         className="pa-photo"
         aria-label={`${piece.title} ${piece.id}, ${index + 1} of ${total}. Take it down to look closer.`}
         onClick={() => onPick(index)}
-        onPointerEnter={(e) => e.pointerType === 'mouse' && onHover(index)}
-        onPointerLeave={() => onHover(null)}
+        onPointerEnter={(e) => {
+          delete e.currentTarget.dataset.returned;
+          if (e.pointerType === 'mouse') onHover(index);
+        }}
+        onPointerLeave={(e) => {
+          delete e.currentTarget.dataset.returned;
+          onHover(null);
+        }}
         onFocus={(e) => {
           const from = e.relatedTarget as Element | null;
           // focus handed back by the closing detail: the print has just been
-          // re-hung, so it shows its ring but doesn't lift again
-          if (from?.closest('dialog')) {
-            e.currentTarget.dataset.returned = '';
-            return;
-          }
+          // re-hung (and marked so by the return), it shows its ring but
+          // doesn't lift again
+          if (from?.closest('dialog')) return;
           // keyboard browsing only holds the archive
           if (e.currentTarget.matches(':focus-visible')) onFocus(index);
         }}

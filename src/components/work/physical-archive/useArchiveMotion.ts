@@ -83,6 +83,7 @@ export function useArchiveMotion({ pieces, stageRef, canvasRef, ropeSrc, reduced
     let held = false;
     let focusWithin = false;
     let pinned: number | null = null;
+    let drawnStill = false; // the last frame drawn was already at rest
     const angle = new Float32Array(n);
     const spin = new Float32Array(n);
     // the rope's one disturbance: where, how much, how fast it is changing
@@ -206,6 +207,12 @@ export function useArchiveMotion({ pieces, stageRef, canvasRef, ropeSrc, reduced
         dipV *= Math.pow(0.84, f);
         dip += dipV * f;
       }
+      // nothing on the rope moving (e.g. held still while a print returns):
+      // skip the redraw - the canvas and transforms are already right
+      let still = Math.abs(speed) < 0.05 && target === null && !dragging && Math.abs(dipV) < 0.002 && Math.abs(dip - dipTarget) < 0.01;
+      for (let i = 0; still && i < n; i++) if (Math.abs(spin[i]) > 0.0005) still = false;
+      if (still && drawnStill) return;
+      drawnStill = still;
       draw();
     }
 
@@ -371,6 +378,9 @@ export function useArchiveMotion({ pieces, stageRef, canvasRef, ropeSrc, reduced
         // at rest: exactly the angle the swing would settle to, not moving
         angle[i] = L.prints[i].angle + clamp(speed * 0.011, -5, 5);
         spin[i] = 0;
+        // apply it now, so a measurement taken next sees the pinned pose
+        drawnStill = false;
+        draw();
       },
       rehang(i) {
         // the slightest give as the clip takes the weight again

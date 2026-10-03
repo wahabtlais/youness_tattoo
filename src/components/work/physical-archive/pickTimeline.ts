@@ -33,16 +33,13 @@ interface Base {
 }
 let base: Base | null = null;
 
-/** the print's shadow once a hand holds it: lifted off the paper */
-const GRIPPED_SHADOW =
-  '0 0 0 0.5px rgba(20,19,26,0.12), 0 3px 3px rgba(20,19,26,0.14), 0 16px 26px -8px rgba(20,19,26,0.34), 0 34px 48px -20px rgba(20,19,26,0.28)';
-/** ...and hanging on the rope (the same as .pa-print in physicalArchive.css) */
-const HANGING_SHADOW =
-  '0 0 0 0.5px rgba(20,19,26,0.1), 0 1px 1px rgba(20,19,26,0.12), 0 7px 14px -6px rgba(20,19,26,0.26), 0 18px 30px -16px rgba(20,19,26,0.22)';
+/** the flying print's extra "held" shadow layer (see .pa-lift) */
+const lift = (clone: HTMLElement) => clone.querySelector<HTMLElement>('[data-lift]');
 
 function placeClone(clone: HTMLElement, pose: PrintPose) {
   base = { cx: pose.cx, cy: pose.cy, w: pose.w, h: pose.h };
-  gsap.set(clone, { clearProps: 'boxShadow' });
+  const l = lift(clone);
+  if (l) gsap.set(l, { opacity: 0 });
   gsap.set(clone, {
     left: pose.cx - pose.w / 2,
     top: pose.cy - pose.h / 2,
@@ -74,9 +71,13 @@ function addDetail(tl: gsap.core.Timeline, p: PickParts, at: string, onDetail: (
     at,
   );
   tl.to(p.text, { autoAlpha: 1, y: 0, duration: 0.5, stagger: 0.06, ease: 'power2.out' }, `${at}+=${flight * 0.6}`);
+  // the held shadow goes as the print settles into the detail
+  tl.to(lift(p.clone), { opacity: 0, duration: flight, ease: 'power2.inOut' }, at);
   tl.add(() => {
     gsap.set(p.slot, { autoAlpha: 1 });
-    gsap.set(p.clone, { autoAlpha: 0 });
+    // the flying copy stays laid out on its own (already rasterised) layer,
+    // invisible, so the return can start without creating one
+    gsap.set(p.clone, { autoAlpha: 0.001, willChange: 'transform' });
     onDetail();
   }, `${at}+=${flight + 0.05}`);
 }
@@ -221,12 +222,13 @@ export function playPick(p: PickParts, onDetail: () => void): PickRun {
         x: `+=${d.x * ARM.give * u}`,
         y: `+=${d.y * ARM.give * u}`,
         rotation: ARM.giveTurn,
-        boxShadow: GRIPPED_SHADOW,
         duration: 0.2,
         ease: 'power2.inOut',
       },
       1.27,
     );
+    // ...and its shadow deepens: lifted off the paper
+    tl.to(lift(clone), { opacity: 1, duration: 0.25, ease: 'power2.out' }, 1.27);
     tl.add(() => stage.attach(), 1.47);
     // ~1.72-2.35 pull: hand and print together, starting the moment the print
     // is held (a gentle ease, so it doesn't read as a freeze)
@@ -293,23 +295,33 @@ const RETURN_MAX = 1.2;
  * The detail closes (Close, Escape or a click on the paper - all of them):
  * the same print is placed back on its clip as ONE physical movement.
  *
- * - One progress value, one ease, drives everything at once: a gently
- *   curved path, the scale back to print size, the rotation (with a small
- *   correction mid-flight) and the shadow easing back to the hanging one.
- * - The path ends at the clip's LIVE position, read every frame - the rope
- *   starts drifting again as the return begins - and comes into the clip
- *   from slightly below, as if lifted onto it, slowing all the way in.
- * - While it flies, the print's swing is pinned (the flight alone owns
- *   it); at the end the clone is exactly the hanging print - position,
- *   angle, scale, shadow - and the swing is released from rest.
+ * Built for steady frame pacing - per frame it writes exactly one transform
+ * and reads nothing:
+ * - The destination (the clip's position, angle and size) is measured ONCE,
+ *   at the start; the archive stays still until the print has landed, so
+ *   that measurement stays true, and the print's own swing is pinned. This
+ *   function is the only thing moving the print.
+ * - One progress value with one ease drives a gently curved path, the
+ *   scale and the rotation (with a small mid-flight correction); the
+ *   shadow scales with the print. The flying copy's layer was rasterised
+ *   while the detail was open, so the first frame creates nothing. The
+ *   paper and the other prints fade back with CSS transitions, which run
+ *   on the compositor.
+ * - On landing the flying copy is exactly the hanging print; it swaps,
+ *   the swing is released from rest, and the archive drifts on from rest.
  */
 export function returnPhotoToArchive(p: PickParts, onDone: () => void): PickRun {
   const { engine, index, print, others, paper, clone, slot, text } = p;
   gsap.set(print, { y: 0 });
+  // the print as it hangs: no hover/focus lift (touch screens keep :hover
+  // on the tapped print) - set before measuring, cleared when the pointer
+  // or focus next moves on
+  const photo = print.closest<HTMLElement>('.pa-photo');
+  if (photo) photo.dataset.returned = '';
   engine.pin(index);
-  engine.hold(false);
-  const first = engine.pose(index);
-  if (!first || !base) {
+  // measured once: where the print hangs, at what angle and size
+  const to = engine.pose(index);
+  if (!to || !base) {
     resetPick(p);
     onDone();
     return { kill() {} };
@@ -317,59 +329,81 @@ export function returnPhotoToArchive(p: PickParts, onDone: () => void): PickRun 
   const b = base;
   // the clone takes over from the detail image, exactly where it is
   const box = slotBox(slot);
-  const from = { cx: box.cx, cy: box.cy, scale: box.w / b.w, rotation: 0 };
-  gsap.set(clone, { x: from.cx - b.cx, y: from.cy - b.cy, scale: from.scale, rotation: 0, autoAlpha: 1 });
+  const from = { cx: box.cx, cy: box.cy, scale: box.w / b.w };
+  const end = { scale: to.w / b.w, rotation: to.angle };
+  // swap the detail image for the flying copy: same place, same size, same
+  // (pre-scaled) shadow, and its layer already exists - nothing to paint
+  gsap.set(clone, { x: from.cx - b.cx, y: from.cy - b.cy, scale: from.scale, rotation: 0, autoAlpha: 1, willChange: 'transform' });
   gsap.set(slot, { autoAlpha: 0 });
 
-  const dist = Math.hypot(first.cx - from.cx, first.cy - from.cy);
+  const dist = Math.hypot(to.cx - from.cx, to.cy - from.cy);
   const duration = Math.min(RETURN_MAX, Math.max(RETURN_MIN, dist / RETURN_SPEED));
   // a subtle tilt against the direction of travel, gone by the end
-  const correction = -Math.sign(first.cx - from.cx) * 1.2;
-  const lift = dist * 0.16; // how far below the clip the path comes in from
+  const correction = -Math.sign(to.cx - from.cx) * 1.2;
+  // a fixed curve: leaves toward the clip, comes into it from slightly below
+  const p1 = { x: from.cx + (to.cx - from.cx) * 0.35, y: from.cy + (to.cy - from.cy) * 0.25 };
+  const p2 = { x: to.cx, y: to.cy + dist * 0.16 };
+  const setX = gsap.quickSetter(clone, 'x', 'px');
+  const setY = gsap.quickSetter(clone, 'y', 'px');
+  // (quickSetter needs the real properties - 'scale' is only a shorthand)
+  const setScaleX = gsap.quickSetter(clone, 'scaleX');
+  const setScaleY = gsap.quickSetter(clone, 'scaleY');
+  const setRotation = gsap.quickSetter(clone, 'rotation', 'deg');
 
-  const progress = { t: 0 };
+  const progress = { e: 0 };
   const fly = () => {
-    const to = engine.pose(index);
-    if (!to) return;
-    const e = RETURN_EASE(progress.t);
-    // cubic Bezier from the detail to the live clip: leaves toward it,
-    // arrives from just below it
-    const p1 = { x: from.cx + (to.cx - from.cx) * 0.35, y: from.cy + (to.cy - from.cy) * 0.25 };
-    const p2 = { x: to.cx, y: to.cy + lift };
+    const e = progress.e;
     const m = 1 - e;
-    const x = m * m * m * from.cx + 3 * m * m * e * p1.x + 3 * m * e * e * p2.x + e * e * e * to.cx;
-    const y = m * m * m * from.cy + 3 * m * m * e * p1.y + 3 * m * e * e * p2.y + e * e * e * to.cy;
-    gsap.set(clone, {
-      x: x - b.cx,
-      y: y - b.cy,
-      scale: from.scale + (to.w / b.w - from.scale) * e,
-      rotation: from.rotation + (to.angle - from.rotation) * e + correction * Math.sin(Math.PI * e),
-    });
+    const k0 = m * m * m;
+    const k1 = 3 * m * m * e;
+    const k2 = 3 * m * e * e;
+    const k3 = e * e * e;
+    setX(k0 * from.cx + k1 * p1.x + k2 * p2.x + k3 * to.cx - b.cx);
+    setY(k0 * from.cy + k1 * p1.y + k2 * p2.y + k3 * to.cy - b.cy);
+    const scale = from.scale + (end.scale - from.scale) * e;
+    setScaleX(scale);
+    setScaleY(scale);
+    setRotation(end.rotation * e + correction * Math.sin(Math.PI * e));
   };
+
+  // the paper and the other prints: compositor-run transitions
+  for (const el of [paper, ...others]) el.style.transition = `opacity ${duration * 0.8}s ease, filter ${duration * 0.8}s ease`;
+  gsap.set(paper, { opacity: 0 }); // hidden only once it has faded (below)
+  gsap.set(others, { opacity: 1, filter: 'saturate(1)' });
 
   const tl = gsap.timeline({
     onComplete: () => {
-      progress.t = 1;
+      progress.e = 1;
       fly();
-      // hand-over: the clone is now exactly the hanging print, at rest - the
-      // swing is released with no kick, so nothing marks the change
+      // hand-over: the clone is now exactly the hanging print
       print.style.visibility = '';
-      gsap.set(clone, { autoAlpha: 0, clearProps: 'boxShadow' });
+      gsap.set(clone, { autoAlpha: 0, willChange: 'auto' });
+      gsap.set(paper, { autoAlpha: 0 });
+      for (const el of [paper, ...others]) el.style.transition = '';
       engine.pin(null);
-      onDone();
+      engine.hold(false);
+      // the dialog teardown (a React update, unmounting the detail, focus
+      // returning) is real work: keep it out of the landing frame, and do it
+      // once the print is resting on the rope
+      landed = setTimeout(onDone, 180);
     },
   });
   tl.to(text, { autoAlpha: 0, y: 8, duration: 0.22, stagger: 0.03, ease: 'power1.in' }, 0);
-  tl.to(progress, { t: 1, duration, ease: 'none', onUpdate: fly }, 0);
-  tl.to(clone, { boxShadow: HANGING_SHADOW, duration, ease: RETURN_EASE }, 0);
-  tl.to(paper, { autoAlpha: 0, duration: duration * 0.75, ease: 'power1.inOut' }, 0.05);
-  tl.to(others, { opacity: 1, filter: 'saturate(1)', duration: duration * 0.8, ease: 'power1.out' }, duration * 0.2);
-  return { kill: () => tl.kill() };
+  // the shadow shrinks with the print as it returns (transform-scaled)
+  tl.to(progress, { e: 1, duration, ease: RETURN_EASE, onUpdate: fly }, 0);
+  let landed: ReturnType<typeof setTimeout> | undefined;
+  return {
+    kill: () => {
+      tl.kill();
+      clearTimeout(landed);
+    },
+  };
 }
 
 /** No animation (reduced motion, Find Similar, or an interrupted pick): put everything back. */
 export function resetPick(p: PickParts) {
   gsap.killTweensOf([p.print, ...p.others, p.paper, p.clone, p.slot, ...p.text]);
+  for (const el of [p.paper, ...p.others]) el.style.transition = '';
   p.arm?.stop();
   p.engine.pin(null);
   gsap.set(p.print, { y: 0 });

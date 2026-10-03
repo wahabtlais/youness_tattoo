@@ -31,11 +31,15 @@
   background:
     linear-gradient(160deg, rgb(255 255 255 / 0.5), transparent 40%),
     #f8f6f1;
+  /* --ss scales the shadow with the print: the detail image is laid out
+     large, and its shadow must match the flying copy's (which is the
+     print's own shadow, transform-scaled) so the two can swap unseen */
+  --ss: 1;
   box-shadow:
-    0 0 0 0.5px rgb(20 19 26 / 0.1),
-    0 1px 1px rgb(20 19 26 / 0.12),
-    0 7px 14px -6px rgb(20 19 26 / 0.26),
-    0 18px 30px -16px rgb(20 19 26 / 0.22);
+    0 0 0 calc(0.5px * var(--ss)) rgb(20 19 26 / 0.1),
+    0 calc(1px * var(--ss)) calc(1px * var(--ss)) rgb(20 19 26 / 0.12),
+    0 calc(7px * var(--ss)) calc(14px * var(--ss)) calc(-6px * var(--ss)) rgb(20 19 26 / 0.26),
+    0 calc(18px * var(--ss)) calc(30px * var(--ss)) calc(-16px * var(--ss)) rgb(20 19 26 / 0.22);
   /* the focus ring is always there, as transparent burgundy (not plain
      transparent, which fades through grey), so it fades in rather than
      snapping on - a beat after a print lands back on its clip */
@@ -75,12 +79,32 @@
 .pa-photo:focus-visible {
   outline: none;
 }
-/* just re-hung by a closing detail: the ring, but no second movement */
+/* just re-hung by a closing detail: no hover/focus lift (and no transition
+   into or out of one) until the pointer or focus moves on - the return is
+   measured against, and lands on, the print exactly as it hangs */
+.pa-photo[data-returned],
+.pa-photo[data-returned]:hover,
 .pa-photo[data-returned]:focus-visible {
   translate: none;
+  transition: none;
 }
 .pa-photo:focus-visible .pa-print {
   outline-color: var(--color-focus);
+}
+
+/* the extra shadow of a print held in the hand (on the flying copy only):
+   faded by opacity so the shadow change never repaints the photograph */
+.pa-lift {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0;
+  box-shadow:
+    0 3px 3px rgb(20 19 26 / 0.06),
+    0 16px 26px -8px rgb(20 19 26 / 0.18),
+    0 34px 48px -20px rgb(20 19 26 / 0.16);
+  will-change: opacity;
 }
 
 /* ---------- the clip on the rope, and its wire ---------- */
