@@ -1,6 +1,7 @@
 import { gsap } from 'gsap';
 import type { ArchiveEngine, PrintPose } from './useArchiveMotion';
-import { EDGE_BELOW_PINCH, HAND_VIEWBOX, PINCH, THUMB_PIVOT } from './handGeometry';
+import type { ArmStage } from './arm/armStage';
+import { ARM, type ArmTransform } from './arm/armConfig';
 
 /** the pieces of the pick, found by the archive component */
 export interface PickParts {
@@ -12,11 +13,15 @@ export interface PickParts {
   /** inside the detail dialog */
   paper: HTMLElement;
   clone: HTMLElement;
-  handBack: HTMLElement;
-  handFront: HTMLElement;
-  thumb: SVGGElement;
   slot: HTMLElement;
   text: HTMLElement[];
+  /** the 3D arm, once loaded (null: the print is taken without it) */
+  arm: ArmStage | null;
+}
+
+/** a running pick or return; kill() stops whichever part is playing */
+export interface PickRun {
+  kill(): void;
 }
 
 /** where the clone's untransformed box sits; all motion is x/y/scale/rotation about its centre */
@@ -27,8 +32,6 @@ interface Base {
   h: number;
 }
 let base: Base | null = null;
-
-const THUMB_OPEN = -26;
 
 function placeClone(clone: HTMLElement, pose: PrintPose) {
   base = { cx: pose.cx, cy: pose.cy, w: pose.w, h: pose.h };
@@ -52,114 +55,135 @@ function slotBox(slot: HTMLElement) {
   return { cx: r.left + r.width / 2, cy: r.top + r.height / 2, w: r.width };
 }
 
-/** a running pick or return; kill() stops whichever part is playing */
-export interface PickRun {
-  kill(): void;
+/** the flight into the detail and the text arriving - shared by both paths */
+function addDetail(tl: gsap.core.Timeline, p: PickParts, at: string, onDetail: () => void) {
+  const b = base!;
+  const box = slotBox(p.slot);
+  tl.to(p.paper, { autoAlpha: 1, duration: 0.6, ease: 'power1.inOut' }, at);
+  tl.to(
+    p.clone,
+    { x: box.cx - b.cx, y: box.cy - b.cy, scale: box.w / b.w, rotation: 0, duration: 0.85, ease: 'power3.inOut' },
+    at,
+  );
+  tl.to(p.text, { autoAlpha: 1, y: 0, duration: 0.5, stagger: 0.06, ease: 'power2.out' }, `${at}+=0.5`);
+  tl.add(() => {
+    gsap.set(p.slot, { autoAlpha: 1 });
+    gsap.set(p.clone, { autoAlpha: 0 });
+    onDetail();
+  }, `${at}+=0.9`);
 }
 
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 /**
- * The pick, as one choreography:
- *   1 select  - the archive stops, the others recede, the print lifts
- *   2 enter   - the hand travels up from below the archive
- *   3 reach   - it slows and aligns under the print, thumb open
- *   4 grab    - the thumb closes on the print; the print gives a little
- *   5 pull    - hand and print come off the rope toward the viewer; the
- *               rope springs back, the clip stays on it
- *   6 detail  - the hand lets go and drops away, the paper comes up, and
- *               the same print travels into the detail layout
- * Phase 1 plays on the rope; everything after is measured from where the
- * print ended up, so it runs as a second timeline.
+ * The pick, as one performance:
+ *   anticipation - the archive stops, the others recede, the print lifts; a beat
+ *   emerge       - the arm rises from below the screen, quick, then slowing
+ *   reach        - the last few centimetres, slow, a hair past the mark
+ *   settle       - a small correction back onto it; fingers behind the print
+ *   grab         - forward through the print's plane: the fingers close over
+ *                  its edge, the print gives toward the hand and is attached
+ *   pull         - off the rope (which recoils), down and toward the viewer
+ *   release      - the hand lets go and retreats below the screen while the
+ *                  same print flies on into the detail
+ * The anticipation plays on the rope; everything after is measured from
+ * where the print ended up, so it runs as a second timeline.
  */
 export function playPick(p: PickParts, onDetail: () => void): PickRun {
-  const { engine, index, print, others, paper, clone, handBack, handFront, thumb, slot, text } = p;
-  const vh = innerHeight;
+  const { engine, index, print, others, clone, text, arm } = p;
   let current: gsap.core.Timeline | null = null;
+  let killed = false;
   engine.hold(true);
   engine.reveal(index);
   gsap.set(text, { autoAlpha: 0, y: 14 });
-  gsap.set([paper, slot], { autoAlpha: 0 });
+  gsap.set([p.paper, p.slot], { autoAlpha: 0 });
 
-  // 1 - select (on the rope itself)
-  const select = gsap.timeline({ onComplete: () => (current = takeDown()) });
+  // anticipation (on the rope itself), then a short held beat
+  const select = gsap.timeline({ onComplete: () => void takeDown() });
   select.to(others, { opacity: 0.45, filter: 'saturate(0.6)', duration: 0.45, ease: 'power2.out' }, 0);
   select.to(print, { y: -10, duration: 0.38, ease: 'power2.out' }, 0);
+  select.to({}, { duration: 0.24 });
   current = select;
 
-  function takeDown(): gsap.core.Timeline | null {
+  async function takeDown() {
+    // the arm has normally loaded long before (when the archive came into view)
+    const ready = arm
+      ? await Promise.race([arm.ready().then(() => true), wait(1200).then(() => false)]).catch(() => false)
+      : false;
+    if (killed) return;
     const pose = engine.pose(index);
-    if (!pose) return null;
+    if (!pose) return;
     placeClone(clone, pose);
     print.style.visibility = 'hidden';
-    const b = base!;
-    const box = slotBox(slot);
+    current = ready && arm ? withArm(arm, pose) : withoutArm();
+  }
 
-    // the hand, scaled to the print, its pinch under the print's bottom edge
-    const handW = Math.min(250, Math.max(118, pose.w * 0.92));
-    const s = handW / HAND_VIEWBOX.w;
-    const pinch = { x: pose.cx - pose.w * 0.08, y: pose.cy + pose.h / 2 - EDGE_BELOW_PINCH * s };
-    const hand = [handBack, handFront];
-    const handTop = pinch.y - PINCH.y * s;
-    gsap.set(hand, {
-      left: pinch.x - PINCH.x * s,
-      top: handTop,
-      width: handW,
-      height: HAND_VIEWBOX.h * s,
-      transformOrigin: `${PINCH.x * s}px ${PINCH.y * s}px`,
-      x: 70 * s,
-      y: vh - handTop + 40,
-      rotation: 11,
-      autoAlpha: 1,
-    });
-    gsap.set(thumb, { rotation: THUMB_OPEN, svgOrigin: THUMB_PIVOT });
+  function withArm(stage: ArmStage, pose: PrintPose) {
+    const vh = innerHeight;
+    const quick = innerWidth < 700 ? 0.85 : 1;
+    // config distances are for a ~200px print; scale them to this one
+    const u = pose.w / 200;
+    const hand = pose.w * (innerWidth < 700 ? ARM.handPerPrintWidthMobile : ARM.handPerPrintWidth);
+    stage.setPrint(clone, base!, hand);
+    const grab = { x: pose.cx, y: pose.cy + pose.h / 2 - hand * ARM.gripAboveEdge };
+    // one shoulder, below and right of the screen: the arm's lean comes from
+    // where the print is relative to it, so a far print is reached across
+    const portrait = vh > innerWidth;
+    const [sx, sy] = portrait ? ARM.shoulderPortrait : ARM.shoulder;
+    const shoulder = { x: innerWidth * sx, y: vh * sy };
+    const lean = Math.max(-34, Math.min(34, (Math.atan2(shoulder.x - grab.x, shoulder.y - grab.y) * 180) / Math.PI));
+    const slope = Math.tan((lean * Math.PI) / 180);
+    const tilt = portrait ? ARM.tiltPortrait : 0;
+    const at = (t: ArmTransform, y?: number) => {
+      const ty = y ?? grab.y + t.position[1] * u;
+      return {
+        // below the screen the arm stays on its line from the shoulder
+        x: grab.x + t.position[0] * u + (y === undefined ? 0 : (ty - grab.y) * slope),
+        y: ty,
+        z: t.position[2] * u,
+        rx: t.rotation[0] + tilt,
+        ry: t.rotation[1],
+        rz: lean + t.rotation[2],
+      };
+    };
+    gsap.set(stage.pose, at(ARM.rest, vh + hand * 0.5));
+    stage.start();
 
-    // pulled toward the viewer: down a little and larger, scaled about the
-    // pinch so print and hand stay together
-    const pull = Math.min(150, vh * 0.16);
-    const k = 1.16;
-    const nudge = 4;
-    const pulledX = pinch.x + k * (b.cx - pinch.x) - b.cx;
-    const pulledY = pinch.y + nudge + pull + k * (b.cy - pinch.y) - b.cy;
-
-    const tl = gsap.timeline();
-    // the print settles toward level as it is singled out
+    const tl = gsap.timeline({ onComplete: () => stage.stop() });
     tl.to(clone, { rotation: pose.angle * 0.3, duration: 0.45, ease: 'power2.out' }, 0);
-    // 2 - enter: up from below, still turned a little
-    tl.to(hand, { y: 26 * s, x: 14 * s, rotation: 3, duration: 0.6, ease: 'power3.out' }, 0);
-    // 3 - reach: slow, precise alignment
-    tl.to(hand, { y: 0, x: 0, rotation: 0, duration: 0.28, ease: 'power2.inOut' }, '>-0.04');
-    // 4 - grab
-    tl.addLabel('grab');
-    tl.to(thumb, { rotation: 0, duration: 0.18, ease: 'power3.in' }, 'grab');
-    tl.to(clone, { y: nudge, rotation: 0, duration: 0.18, ease: 'power2.in' }, 'grab+=0.05');
-    tl.to(hand, { y: nudge, duration: 0.18, ease: 'power2.in' }, 'grab+=0.05');
-    // 5 - pull
-    tl.addLabel('pull', '+=0.06');
+    tl.to(stage.pose, { ...at(ARM.approach), duration: 0.62 * quick, ease: 'power2.out' }, 0);
+    tl.to(stage.pose, { ...at(ARM.reach), duration: 0.42 * quick, ease: 'power3.out' });
+    tl.to(stage.pose, { ...at(ARM.settle), duration: 0.2 * quick, ease: 'sine.inOut' });
+    tl.addLabel('grab', '+=0.06');
+    tl.to(stage.pose, { ...at(ARM.grab), duration: 0.24, ease: 'power2.inOut' }, 'grab');
+    tl.to(clone, { y: 4 * u, rotation: 0, duration: 0.16, ease: 'power2.in' }, 'grab+=0.1');
+    tl.add(() => stage.attach(), 'grab+=0.26');
+    tl.addLabel('pull', 'grab+=0.34');
     tl.add(() => engine.release(index), 'pull');
-    tl.to(hand, { y: nudge + pull, scale: k, duration: 0.6, ease: 'power2.inOut' }, 'pull');
-    tl.to(clone, { x: pulledX, y: pulledY, scale: k, duration: 0.6, ease: 'power2.inOut' }, 'pull');
-    // 6 - detail
-    tl.addLabel('detail', '-=0.05');
-    tl.to(paper, { autoAlpha: 1, duration: 0.6, ease: 'power1.inOut' }, 'detail');
-    tl.to(thumb, { rotation: THUMB_OPEN * 0.6, duration: 0.18 }, 'detail');
-    tl.to(hand, { y: `+=${vh * 0.8}`, rotation: 6, duration: 0.75, ease: 'power2.in' }, 'detail+=0.08');
-    tl.to(
-      clone,
-      { x: box.cx - b.cx, y: box.cy - b.cy, scale: box.w / b.w, rotation: 0, duration: 0.85, ease: 'power3.inOut' },
-      'detail',
-    );
-    tl.to(text, { autoAlpha: 1, y: 0, duration: 0.5, stagger: 0.06, ease: 'power2.out' }, 'detail+=0.5');
-    tl.add(() => {
-      gsap.set(slot, { autoAlpha: 1 });
-      gsap.set([clone, ...hand], { autoAlpha: 0 });
-      onDetail();
-    }, 'detail+=0.9');
+    tl.to(stage.pose, { ...at(ARM.pull), duration: 0.6 * quick, ease: 'power2.inOut' }, 'pull');
+    tl.addLabel('detail', '>-0.04');
+    tl.add(() => stage.release(), 'detail');
+    tl.to(stage.pose, { ...at(ARM.exit, vh + hand * 1.4), duration: 0.55, ease: 'power2.in' }, 'detail+=0.04');
+    addDetail(tl, p, 'detail', onDetail);
+    return tl;
+  }
+
+  /** the arm could not load: the print lifts off and flies on by itself */
+  function withoutArm() {
+    const tl = gsap.timeline();
+    tl.to(clone, { rotation: 0, y: -24, scale: 1.06, duration: 0.45, ease: 'power2.out' }, 0);
+    tl.add(() => engine.release(index), 0.1);
+    tl.addLabel('detail', 0.4);
+    addDetail(tl, p, 'detail', onDetail);
     return tl;
   }
 
   return {
     kill() {
+      killed = true;
       select.kill();
       current?.kill();
+      arm?.stop();
     },
   };
 }
@@ -201,17 +225,18 @@ export function playReturn(p: PickParts, onDone: () => void): PickRun {
 
 /** No animation (reduced motion, Find Similar, or an interrupted pick): put everything back. */
 export function resetPick(p: PickParts) {
-  gsap.killTweensOf([p.print, ...p.others, p.paper, p.clone, p.handBack, p.handFront, p.thumb, p.slot, ...p.text]);
+  gsap.killTweensOf([p.print, ...p.others, p.paper, p.clone, p.slot, ...p.text]);
+  p.arm?.stop();
   gsap.set(p.print, { y: 0 });
   p.print.style.visibility = '';
   gsap.set(p.others, { opacity: 1, filter: 'none' });
-  gsap.set([p.clone, p.handBack, p.handFront], { autoAlpha: 0 });
+  gsap.set(p.clone, { autoAlpha: 0 });
 }
 
-/** Reduced motion: straight to the detail, no flight. */
+/** Reduced motion: straight to the detail, no flight, no arm. */
 export function showDetailStatic(p: PickParts) {
   p.engine.hold(true);
   gsap.set([p.paper, p.slot], { autoAlpha: 1 });
   gsap.set(p.text, { autoAlpha: 1, y: 0 });
-  gsap.set([p.clone, p.handBack, p.handFront], { autoAlpha: 0 });
+  gsap.set(p.clone, { autoAlpha: 0 });
 }

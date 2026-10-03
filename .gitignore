@@ -35,6 +35,9 @@ assets-src/ink/*.jpg
 assets-src/reference/
 # the original studio photograph (source of src/assets/hero/*) stays local
 assets-src/artist.png
+# source 3D models (CC BY 4.0, see docs/THIRD_PARTY_ASSETS.md); the site ships
+# the optimised copy in src/assets/work/arm/
+assets-src/arm/
 
 # python
 __pycache__/

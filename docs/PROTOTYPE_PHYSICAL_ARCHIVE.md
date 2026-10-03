@@ -15,16 +15,17 @@ src/components/work/physical-archive/
 ├── ropeRenderer.ts           draws rope.png bent onto the rope's curve
 ├── layout.ts                 sizes, angles, hang lengths, spacing
 ├── pickTimeline.ts           the pick and the return - GSAP timelines
-├── PickingHand.tsx           TEMPORARY hand (SVG)
-├── handGeometry.ts           the hand's pinch point, edge offset, thumb pivot
-├── WorkPhysicalDetail.tsx    the detail view (native dialog)
-└── physicalArchive.css       print paper and shadow, clip, hand shadow
+├── arm/
+│   ├── armStage.ts           the 3D tattooed arm: one WebGL canvas (three.js)
+│   └── armConfig.ts          the arm's performance as tunable transforms
+├── WorkPhysicalDetail.tsx    the detail view (native dialog) + the arm's canvas
+└── physicalArchive.css       print paper and shadow, clip
 ```
 
 The motion has three owners, so nothing fights over a transform:
 - **rAF engine** (`useArchiveMotion`): position on the rope and swing.
 - **CSS:** the hover/focus lift.
-- **GSAP** (`pickTimeline`): the pick.
+- **GSAP** (`pickTimeline`): the pick, including the arm's pose, which `armStage` renders.
 
 React never re-renders for motion.
 
@@ -58,13 +59,14 @@ The strip is made seamless once (its tail cross-faded over its head) so it can t
 
 **Touch:** the print rises 6px, its shadow deepens, it settles toward level, the rope dips under it, and its neighbours stir.
 
-**Pick (about 2.9s):**
-1. Select: the archive stops, the others recede, the print lifts.
-2. The hand enters from below the screen, still turned slightly.
-3. It slows and aligns its pinch under the print.
-4. Grab: the thumb closes on the print, which gives a few px.
-5. Pull: hand and print come off the rope toward the viewer, scaled about the pinch so they stay together. The rope recoils and the empty clip stays on the line.
-6. Detail: the hand lets go and drops away, the paper comes up, and the same print flies into the detail layout. The detail is laid out in that print's exact proportions, so the hand-over is seamless.
+**Pick (about 3.4s):**
+1. **Anticipation:** the archive stops, the others recede, the print lifts, then a short held beat.
+2. **Emerge:** the tattooed arm rises from below the screen, quick and then slowing.
+3. **Reach:** the last few centimetres are slow and go a hair past the mark.
+4. **Settle:** a small correction back onto it. The fingers are behind the print.
+5. **Grab:** the hand moves forward through the print's plane, so the fingers close over its face. The print gives a few px toward the hand and is attached to it from then on.
+6. **Pull:** hand and print come off the rope, down and toward the viewer. The rope recoils and the empty clip stays on the line.
+7. **Release and retreat:** the hand lets go and drops below the screen, the paper comes up, and the same print flies into the detail layout. The detail is laid out in that print's exact proportions, so the hand-over is seamless.
 
 **Close** (Close, Escape or a click on the paper): the print flies back to its clip and swings as it is re-hung.
 
@@ -72,13 +74,37 @@ The strip is made seamless once (its tail cross-faded over its head) so it can t
 
 **Keyboard:** Tab reaches every print (the archive scrolls to the focused one), Enter takes it down, and Escape returns it with focus back on that print.
 
-**Reduced motion:** no drift, swing or rope play, and no hand. Selecting goes straight to the detail and back.
+**Reduced motion:** no drift, swing or rope play, and no arm. three.js and the model are never downloaded. Selecting goes straight to the detail and back.
+
+## The arm
+
+**Model:** "Right_Arm tattoo Mhest" by Miguelhest, CC BY 4.0 (credit in [THIRD_PARTY_ASSETS.md](THIRD_PARTY_ASSETS.md)).
+- A static mesh: no skeleton, no bones, no animation clips. It is a relaxed right arm whose sleeve (black-and-grey realism with red roses) is textured on the outer side only.
+- It was chosen over `arm_for_tattoo.glb`, which is a stiff T-pose with flat spread fingers and 13.7 MB of textures.
+- It ships as `src/assets/work/arm/tattooed-arm.glb` (1.1 MB). The 2048² colour texture was recompressed from PNG to JPEG and the buffers repacked; there are no geometry changes. The originals stay local in `assets-src/arm/` (git-ignored).
+
+**Rendering:** one transparent WebGL canvas lives in the detail dialog, above the flying print (`armStage.ts`).
+- **Loading:** three.js, the loader and the model load lazily when the archive comes into view, in their own chunk. The model loads once and is reused for every pick.
+- **Running:** it renders only while a pick plays, then stops.
+- **Cleanup:** geometry, materials, textures, the shadow map and the renderer are disposed when the archive unmounts.
+- **Fallback:** if WebGL or the model fails, the print lifts off and flies to the detail on its own.
+
+**Camera:** a stable perspective camera. One world unit is one CSS px at the print's plane, so each pick reads the selected print's DOM rectangle and the hand is placed on it directly. Moving toward the viewer gets real perspective.
+
+**Occlusion:** an invisible plane the size of the print sits exactly where the print is. It writes depth and catches the hand's shadow but draws nothing else. While the hand is behind it, its fingers are genuinely hidden behind the photograph. Moving forward through it, the fingers come over the print's edge. After the grab, the print rides on a point of the hand (with a whisper of lag in its angle), so hand and print move as one.
+
+**Light:** a warm-neutral key from above-left (matching the prints' own shadows), a warm hemisphere fill, a dim warm side fill, soft shadows on the print and on the paper behind, and neutral tone mapping. There's no environment map, no rim light and no cool tones.
+
+**Staging:**
+- **Shoulder:** the arm's lean comes from one shoulder below the screen. On a tall screen (phone, portrait tablet) that shoulder is at the lower right, so the upper arm, and the model's cut end, always leaves the screen.
+- **Scale:** the hand is 1.6× the print's width (1.3× on phones). A real hand is about 1.9× a 4×5" print.
+- **Tuning:** every pose (rest, approach, reach, settle, grab, pull, exit) is a tunable `ArmTransform` in `armConfig.ts`.
 
 ## Temporary assets and placeholders
 
 | | Status |
 |---|---|
-| **Hand** (`PickingHand.tsx`) | **Temporary.** An ink-drawn, tattoo-flash-style SVG right hand, split into two layers: fingers behind the print, thumb in front. The project has no hand asset, no image generator was available, and a client's tattooed limb cut out of a portfolio photo would not be appropriate. To replace it: a photographed tattooed hand reaching up, cut out as two registered layers (everything but the thumb / the thumb), with the three points in `handGeometry.ts` re-measured. |
+| **Arm** (`tattooed-arm.glb`) | A licensed stock model (CC BY 4.0). **Its sleeve is someone else's tattoo design, not Younes's work.** Before this ships, either credit it visibly and make clear it isn't his, or replace it with a model wearing his own work. The public site also needs a visible attribution line. |
 | **Rope** (`src/assets/work/rope.png`) | Provided for this prototype. **Its source and licence are not recorded yet.** Record them (as in INK_ASSETS.md) before it ships. |
 | **Detail copy** | Title is the archive's neutral label. Style, placement and the story are marked "to be added": nothing is invented. |
 | **Intro copy** | Draft ("Original pieces / no repeats" is from the brief, so confirm it is accurate). "View all works" jumps to the archive, which holds all eight works. |
@@ -87,4 +113,6 @@ The strip is made seamless once (its tail cross-faded over its head) so it can t
 
 - The archive loops (it is a lap of eight prints), so a print leaves on the left and re-enters on the right.
 - The detail view is sized when it opens; resizing the window while it is open doesn't re-flow the flight.
-- GSAP (3.15, free standard licence) was added for the pick choreography only.
+- GSAP (3.15, free standard licence) runs the pick choreography; three.js (r186) renders the arm.
+- The arm is static: the grab is sold by staging (pass behind, close over, attach), not by moving fingers.
+- three.js is about 155 kB gzipped, loaded lazily. Vite's 500 kB chunk-size notice for it is expected.

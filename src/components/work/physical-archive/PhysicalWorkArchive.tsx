@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import ropeSrc from '../../../assets/work/rope.png';
 import { useReducedMotion } from '../../../hooks/useReducedMotion';
 import type { TattooWork } from '../../../domain/work';
@@ -6,7 +6,7 @@ import { useArchiveMotion } from './useArchiveMotion';
 import { WorkArchiveIntro } from './WorkArchiveIntro';
 import { WorkPhotograph } from './WorkPhotograph';
 import { WorkPhysicalDetail, type PickedPrint } from './WorkPhysicalDetail';
-import { PickingHand } from './PickingHand';
+import type { ArmStage } from './arm/armStage';
 import { playPick, playReturn, resetPick, showDetailStatic, type PickParts, type PickRun } from './pickTimeline';
 import './physicalArchive.css';
 
@@ -34,9 +34,38 @@ export function PhysicalWorkArchive({ pieces, onFindSimilar }: PhysicalWorkArchi
   const slotRef = useRef<HTMLDivElement>(null);
   const cloneRef = useRef<HTMLSpanElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
-  const handBackRef = useRef<HTMLDivElement>(null);
-  const handFrontRef = useRef<HTMLDivElement>(null);
-  const thumbRef = useRef<SVGGElement>(null);
+  const armCanvasRef = useRef<HTMLCanvasElement>(null);
+  const arm = useRef<ArmStage | null>(null);
+
+  // the 3D arm: three.js and the model load once the archive is in view (never
+  // with reduced motion), and the same stage serves every pick
+  useEffect(() => {
+    const stage = stageRef.current;
+    const canvas = armCanvasRef.current;
+    if (reducedMotion || !stage || !canvas) return;
+    let disposed = false;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        io.disconnect();
+        import('./arm/armStage')
+          .then(({ ArmStage }) => {
+            if (disposed) return;
+            arm.current = new ArmStage(canvas);
+            return arm.current.ready();
+          })
+          .catch(() => (arm.current = null)); // the pick still works without the arm
+      },
+      { rootMargin: '400px 0px' },
+    );
+    io.observe(stage);
+    return () => {
+      disposed = true;
+      io.disconnect();
+      arm.current?.dispose();
+      arm.current = null;
+    };
+  }, [reducedMotion]);
 
   const getEngine = useArchiveMotion({ pieces, stageRef, canvasRef, ropeSrc, reducedMotion });
   const [picked, setPicked] = useState<PickedPrint | null>(null);
@@ -47,7 +76,7 @@ export function PhysicalWorkArchive({ pieces, onFindSimilar }: PhysicalWorkArchi
     const stage = stageRef.current;
     const dialog = paperRef.current?.parentElement;
     const e = getEngine();
-    if (!stage || !dialog || !e || !slotRef.current || !cloneRef.current || !handBackRef.current || !handFrontRef.current || !thumbRef.current) return null;
+    if (!stage || !dialog || !e || !slotRef.current || !cloneRef.current) return null;
     const prints = Array.from(stage.querySelectorAll<HTMLElement>('[data-print]'));
     return {
       engine: e,
@@ -56,10 +85,8 @@ export function PhysicalWorkArchive({ pieces, onFindSimilar }: PhysicalWorkArchi
       others: prints.filter((_, i) => i !== index),
       paper: paperRef.current!,
       clone: cloneRef.current,
-      handBack: handBackRef.current,
-      handFront: handFrontRef.current,
-      thumb: thumbRef.current,
       slot: slotRef.current,
+      arm: arm.current,
       text: Array.from(dialog.querySelectorAll<HTMLElement>('[data-detail-text]')),
     };
   }, [getEngine]);
@@ -171,9 +198,8 @@ export function PhysicalWorkArchive({ pieces, onFindSimilar }: PhysicalWorkArchi
         slotRef={slotRef}
         cloneRef={cloneRef}
         textRef={textRef}
-      >
-        <PickingHand backRef={handBackRef} frontRef={handFrontRef} thumbRef={thumbRef} />
-      </WorkPhysicalDetail>
+        armCanvasRef={armCanvasRef}
+      />
     </section>
   );
 }

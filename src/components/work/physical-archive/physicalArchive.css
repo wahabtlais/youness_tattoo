@@ -1,7 +1,7 @@
 /*
  * Physical archive prototype - only the material effects Tailwind is not the
  * right tool for: the photographic print (paper border, layered contact
- * shadow), the binder clip, the hand's shadow. Layout lives in the TSX.
+ * shadow) and the binder clip. Layout lives in the TSX.
  *
  * These are physical objects, so - unlike the rest of the site - they cast
  * shadows. Kept small and soft: a print on a line, not a card on a screen.
@@ -128,10 +128,6 @@
 }
 .pa-stage[data-dragging] .pa-photo {
   cursor: grabbing;
-}
-
-.pa-hand-shadow {
-  filter: drop-shadow(0 14px 18px rgb(20 19 26 / 0.22));
 }
 
 @media (prefers-reduced-motion: reduce) {

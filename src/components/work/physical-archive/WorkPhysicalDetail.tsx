@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode, RefObject } from 'react';
+import type { CSSProperties, RefObject } from 'react';
 import type { TattooWork } from '../../../domain/work';
 import { Button } from '../../ui/Button';
 import { Dialog } from '../../ui/Dialog';
@@ -25,8 +25,8 @@ interface WorkPhysicalDetailProps {
   slotRef: RefObject<HTMLDivElement | null>;
   cloneRef: RefObject<HTMLSpanElement | null>;
   textRef: RefObject<HTMLDivElement | null>;
-  /** the hand layers, above the paper */
-  children: ReactNode;
+  /** the arm's WebGL canvas: above the flying print, always mounted so it is reused */
+  armCanvasRef: RefObject<HTMLCanvasElement | null>;
 }
 
 /** detail image size: as large as the layout allows, in the print's own proportions */
@@ -59,7 +59,7 @@ export function WorkPhysicalDetail({
   slotRef,
   cloneRef,
   textRef,
-  children,
+  armCanvasRef,
 }: WorkPhysicalDetailProps) {
   const size = picked && slotSize(picked);
   const meta = piece && [piece.style, piece.placement].filter(Boolean).join(' / ');
@@ -76,6 +76,7 @@ export function WorkPhysicalDetail({
       className="fixed inset-0 m-0 size-full max-h-none max-w-none overflow-x-hidden overflow-y-auto bg-transparent p-0 backdrop:bg-transparent"
     >
       <div ref={paperRef} className="pointer-events-none fixed inset-0 bg-paper opacity-0" aria-hidden="true" />
+      <canvas ref={armCanvasRef} className="pointer-events-none fixed inset-0 z-3 size-full" aria-hidden="true" />
 
       {piece && picked && size && (
         <div className="relative grid min-h-full content-center justify-center gap-8 px-page-x pt-16 pb-12 tablet:grid-flow-col tablet:items-end tablet:gap-[clamp(2rem,5vw,5rem)]">
@@ -124,7 +125,6 @@ export function WorkPhysicalDetail({
           >
             <img src={picked.src} alt="" className="block size-full object-cover" draggable={false} />
           </span>
-          {children}
           <Button
             data-detail-text
             variant="text"
