@@ -1,32 +1,24 @@
-import { useEffect, useRef } from 'react';
-import { RATIO_LABEL, workAlt, workLargest, type WorkPiece } from '../../data/work';
+import { useEffect } from 'react';
+import { SHAPE_RATIO, workShape, type TattooWork } from '../../domain/work';
+import { Dialog } from '../ui/Dialog';
 
 interface WorkViewerProps {
-  pieces: WorkPiece[];
+  pieces: TattooWork[];
   /** index into pieces, or null when closed */
   index: number | null;
   onChange: (index: number) => void;
   onClose: () => void;
-  /** "Ask Younes about a piece like this" */
-  onAsk: () => void;
+  /** "Ask Younes about a piece like this" - the seed of Find Similar */
+  onAsk: (piece: TattooWork) => void;
 }
 
 /**
- * Focused view of one piece. A native modal <dialog>: focus containment,
- * Escape and focus return come from the platform. Arrow keys step through
- * the archive. This is the seam for the fuller viewer (more images of the
- * same work, real details) once that material exists.
+ * Focused view of one piece, in a modal Dialog. Arrow keys step through the
+ * archive. This is the seam for the tattoo detail page (more images of the
+ * same work, real details, related work) once that material exists.
  */
 export function WorkViewer({ pieces, index, onChange, onClose, onAsk }: WorkViewerProps) {
-  const ref = useRef<HTMLDialogElement>(null);
   const piece = index === null ? null : pieces[index];
-
-  useEffect(() => {
-    const dialog = ref.current;
-    if (!dialog) return;
-    if (piece && !dialog.open) dialog.showModal();
-    if (!piece && dialog.open) dialog.close();
-  }, [piece]);
 
   useEffect(() => {
     if (index === null) return;
@@ -40,25 +32,16 @@ export function WorkViewer({ pieces, index, onChange, onClose, onAsk }: WorkView
   }, [index, pieces.length, onChange]);
 
   return (
-    <dialog
-      className="workViewer"
-      ref={ref}
-      aria-labelledby="workViewerTitle"
-      onClose={onClose}
-      onClick={(e) => {
-        // a click on the backdrop (the dialog box itself, not its content)
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
+    <Dialog open={piece !== null} onClose={onClose} labelledBy="workViewerTitle" className="workViewer">
       {piece && index !== null && (
         <div className="workViewer__inner">
           <figure className="workViewer__figure">
             <img
               key={piece.id}
-              src={workLargest(piece)}
-              width={piece.width}
-              height={piece.height}
-              alt={workAlt(piece)}
+              src={piece.image.src}
+              width={piece.image.width}
+              height={piece.image.height}
+              alt={piece.alt}
               decoding="async"
             />
           </figure>
@@ -69,11 +52,11 @@ export function WorkViewer({ pieces, index, onChange, onClose, onAsk }: WorkView
               <span> / {String(pieces.length).padStart(2, '0')}</span>
             </p>
             <h3 className="workViewer__title" id="workViewerTitle">
-              {piece.label}
+              {piece.title}
             </h3>
-            <p className="workViewer__ratio">{RATIO_LABEL[piece.aspect]}</p>
+            <p className="workViewer__ratio">{SHAPE_RATIO[workShape(piece)]}</p>
 
-            <button type="button" className="workViewer__ask unstyled" onClick={onAsk}>
+            <button type="button" className="workViewer__ask unstyled" onClick={() => onAsk(piece)}>
               <span className="workViewer__askLine" aria-hidden="true" />
               Ask Younes about a piece like this
             </button>
@@ -97,6 +80,6 @@ export function WorkViewer({ pieces, index, onChange, onClose, onAsk }: WorkView
           </button>
         </div>
       )}
-    </dialog>
+    </Dialog>
   );
 }

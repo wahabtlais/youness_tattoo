@@ -1,7 +1,6 @@
 import geometric from '../assets/placeholders/geometric.svg';
-import { useInView } from '../hooks/useInView';
+import { Reveal } from '../components/ui/Reveal';
 import { STUDIO_COPY } from '../data/studio';
-import './Studio.css';
 
 /**
  * Editorial introduction to the artist. No biography exists yet, so
@@ -9,26 +8,28 @@ import './Studio.css';
  * placeholder, not a stand-in photo - it doesn't pretend to be Younes.
  */
 export function Studio() {
-  const [ref, inView] = useInView<HTMLDivElement>();
-
   return (
-    <section className="studio" id="studio" aria-labelledby="studioHeading">
-      <div className="studio__inner" ref={ref} data-in={inView}>
-        <div className="studio__text">
-          <span className="kicker">{STUDIO_COPY.kicker}</span>
-          <h2 id="studioHeading">
+    <section id="studio" aria-labelledby="studioHeading" className="relative bg-white px-page-x py-section">
+      <Reveal className="mx-auto grid max-w-page items-center gap-[clamp(2.5rem,6vw,4rem)] desktop:grid-cols-[1.1fr_0.9fr]">
+        <div>
+          <p className="mb-3.5 type-eyebrow text-burgundy">{STUDIO_COPY.kicker}</p>
+          <h2 id="studioHeading" className="mt-2.5 mb-6 type-heading text-headline">
             {STUDIO_COPY.name}
-            <br />
-            <span>{STUDIO_COPY.role}</span>
+            <span className="mt-2.5 block type-label text-ink-muted">{STUDIO_COPY.role}</span>
           </h2>
-          <p className="studio__statement">&ldquo;{STUDIO_COPY.statement}&rdquo;</p>
+          <p className="max-w-[30ch] font-serif text-quote text-ink-soft italic">&ldquo;{STUDIO_COPY.statement}&rdquo;</p>
         </div>
 
-        <div className="studio__visual" aria-hidden="true">
-          <img src={geometric} alt="" />
-          <span className="studio__visualNote">Placeholder — studio visual to come</span>
+        <div
+          aria-hidden="true"
+          className="relative flex aspect-3/4 items-center justify-center border border-rule bg-paper p-[12%]"
+        >
+          <img src={geometric} alt="" className="size-[70%] opacity-70" />
+          <span className="absolute inset-x-0 bottom-3 text-center font-mono text-micro tracking-widest text-ink-muted">
+            Placeholder — studio visual to come
+          </span>
         </div>
-      </div>
+      </Reveal>
     </section>
   );
 }

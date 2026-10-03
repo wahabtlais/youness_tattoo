@@ -1,0 +1,52 @@
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    /* the site was designed on the browser's own line-height; preflight's
+       1.5 would loosen every line that doesn't set one */
+    line-height: normal;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+
+  body {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    -webkit-font-smoothing: antialiased;
+    font-family: var(--font-mono);
+  }
+
+  ::selection {
+    background: var(--color-ink);
+    color: var(--color-paper);
+  }
+
+  /* a modal dialog holds the page still behind it */
+  html:has(dialog[open]) {
+    overflow: hidden;
+  }
+
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+
+  :focus-visible {
+    outline: 1.5px solid var(--color-focus);
+    outline-offset: 3px;
+  }
+}
+
+/* Bare button for the hand-styled controls (hero dial, work wall). Kept
+   unlayered on purpose: it out-ranks those controls' own single-class
+   padding/border, exactly as it always has. New components use
+   components/ui/Button instead. */
+button.unstyled {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  text-align: inherit;
+}

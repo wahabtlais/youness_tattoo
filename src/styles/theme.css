@@ -1,0 +1,162 @@
+/*
+ * Design tokens - the single source of every colour, typeface, size, space
+ * and motion value on the site (see docs/DESIGN_SYSTEM.md).
+ *
+ * Declared as a Tailwind theme, so each token is both a utility
+ * (bg-paper, text-ink-muted, px-page-x, ease-editorial, tablet:...) and a
+ * CSS variable that the hand-written CSS (the hero, the ink, the work wall)
+ * reads with var(). `static`: always emitted, because much of that CSS is
+ * not scanned as utilities.
+ *
+ * The default Tailwind palette, fonts, type scale, breakpoints, radii and
+ * shadows are switched off: a value that is not here is not part of the
+ * language. Add a token before reaching for an arbitrary value.
+ */
+@theme static {
+  /* ---------- colour ---------- */
+  --color-*: initial;
+  /* the printed sheet every section sits on */
+  --color-paper: #f3f1ec;
+  /* a lifted sheet: dialogs, panels */
+  --color-paper-light: #faf8f5;
+  --color-white: #ffffff;
+  --color-ink: #14131a;
+  /* running copy on paper */
+  --color-ink-soft: #4a4740;
+  /* metadata, captions, secondary labels */
+  --color-ink-muted: #8a867f;
+  /* the one accent: the O and E of YOUNES, "you.", every active state */
+  --color-burgundy: #7a1d25;
+  /* burgundy at display size, deepened toward ink */
+  --color-burgundy-deep: color-mix(in oklab, var(--color-burgundy) 82%, var(--color-ink));
+  /* keyboard focus ring */
+  --color-focus: #8e1b23;
+  /* hairlines and frames: ink at 12% */
+  --color-rule: rgb(20 19 26 / 0.12);
+  --color-transparent: transparent;
+  --color-current: currentColor;
+
+  /* ---------- type ---------- */
+  --font-*: initial;
+  --font-serif: 'Bodoni Moda', Didot, 'Times New Roman', serif;
+  --font-mono: 'DM Mono', ui-monospace, Menlo, monospace;
+  --default-font-family: var(--font-mono);
+
+  --text-*: initial;
+  /* tracked mono caps: metadata, plate numbers */
+  --text-micro: clamp(0.55rem, 0.25vw + 0.45rem, 0.68rem);
+  /* tracked mono caps: navigation, buttons */
+  --text-label: clamp(0.6rem, 0.3vw + 0.5rem, 0.78rem);
+  /* mono running copy (micro / label / body keep the browser's line-height) */
+  --text-body: clamp(0.75rem, 0.35vw + 0.6rem, 0.95rem);
+  /* serif supporting line ("The work is already in you.") */
+  --text-lede: clamp(1rem, 0.45vw + 0.8rem, 1.3rem);
+  --text-lede--line-height: 1.3;
+  /* serif pull quote */
+  --text-quote: clamp(1.1rem, 2vw, 1.5rem);
+  --text-quote--line-height: 1.5;
+  /* serif dialog / panel title */
+  --text-title: clamp(1.4rem, 3vw, 1.9rem);
+  --text-title--line-height: 1.15;
+  /* serif section headline */
+  --text-headline: clamp(2rem, 5vw, 3.4rem);
+  --text-headline--line-height: 1.05;
+  /* line-height for running copy */
+  --leading-copy: 1.7;
+
+  /* ---------- space ---------- */
+  /* page gutters - the frame every section and the hero share */
+  --spacing-page-x: clamp(1.25rem, 4.5vw, 5rem);
+  --spacing-page-y: clamp(1rem, 3vh, 3.25rem);
+  /* the printer's margin: registration marks and margin rules sit here */
+  --spacing-margin-x: calc(var(--spacing-page-x) * 0.52);
+  --spacing-margin-y: calc(var(--spacing-page-y) * 0.62);
+  /* vertical rhythm between editorial sections */
+  --spacing-section: clamp(4rem, 12vh, 8rem);
+  /* registration mark size */
+  --spacing-corner: clamp(0.7rem, 0.5vw + 0.4rem, 1.05rem);
+
+  --container-*: initial;
+  --container-page: min(1400px, 92vw);
+  /* reading measure for running copy */
+  --container-measure: 42ch;
+  --container-dialog: 480px;
+
+  /* ---------- breakpoints ----------
+     mobile < 700 <= tablet < 1100 <= desktop. Hand-written CSS uses the same
+     numbers: (max-width: 699px), (min-width: 700px), (min-width: 1100px). */
+  --breakpoint-*: initial;
+  --breakpoint-tablet: 700px;
+  --breakpoint-desktop: 1100px;
+
+  /* ---------- shape ----------
+     Print has no rounded corners and no drop shadows: frames are hairlines,
+     depth is layering and parallax. Circles use rounded-full. */
+  --radius-*: initial;
+  --shadow-*: initial;
+  --inset-shadow-*: initial;
+  --drop-shadow-*: initial;
+
+  /* ---------- motion ---------- */
+  /* the house curve: quick to start, a long settle - paper, not springs */
+  --ease-editorial: cubic-bezier(0.16, 1, 0.3, 1);
+  /* how wet ink gives way and settles back */
+  --ease-material: cubic-bezier(0.22, 0.8, 0.2, 1);
+
+  --animate-fade-in: fade-in var(--duration-normal) var(--ease-editorial);
+  --animate-sheet-in: sheet-in var(--duration-slow) var(--ease-editorial);
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  /* a sheet laid down on the paper */
+  @keyframes sheet-in {
+    from {
+      opacity: 0;
+      transform: scale(0.94) translateY(10px);
+    }
+  }
+}
+
+:root {
+  /* durations (used as duration-(--duration-slow) or var()) */
+  --duration-fast: 0.25s;
+  --duration-normal: 0.45s;
+  --duration-slow: 0.8s;
+
+  /* printed-paper grain, multiplied over the paper at ~7.5% */
+  --texture-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.08 0 0 0 0 0.07 0 0 0 0 0.06 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ---------- typography roles ----------
+   Utilities, not components: compose with colour and spacing utilities. */
+
+/* small burgundy-or-muted section label above a headline */
+@utility type-eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+/* mono caps on buttons and controls */
+@utility type-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+/* quiet mono caps metadata (place, ratio, status) */
+@utility type-meta {
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+/* serif headings at every size; pair with a size (text-title, text-headline),
+   which also carries the line-height */
+@utility type-heading {
+  font-family: var(--font-serif);
+  font-weight: 400;
+}

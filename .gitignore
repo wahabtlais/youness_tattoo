@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# environment - only the documented template is tracked
+.env
+.env.*
+!.env.example
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -28,3 +33,8 @@ assets-src/ink/*.mp4
 assets-src/ink/*.jpg
 # visual references of unknown licence - never shipped
 assets-src/reference/
+# the original studio photograph (source of src/assets/hero/*) stays local
+assets-src/artist.png
+
+# python
+__pycache__/

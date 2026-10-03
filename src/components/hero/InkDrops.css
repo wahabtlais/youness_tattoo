@@ -102,12 +102,12 @@
 
 @media (min-width: 700px) and (max-width: 1099px) and (orientation: portrait) {
   .inkDrop--ink-medium {
-    --x: calc(100% - var(--pad-x) * 1.4);
+    --x: calc(100% - var(--spacing-page-x) * 1.4);
     --y: calc(var(--ptop) + var(--ph) * 0.66);
     --ink: calc(var(--ph) * 0.15);
   }
   .inkDrop--ink-small {
-    --x: calc(var(--pad-x) + var(--ph) * 0.06);
+    --x: calc(var(--spacing-page-x) + var(--ph) * 0.06);
     --y: calc(var(--ptop) + var(--ph) * 0.72);
     --ink: calc(var(--ph) * 0.055);
   }
@@ -126,7 +126,7 @@
     --o: 0.11;
   }
   .inkDrop--ink-small {
-    --x: calc(var(--pad-x) + 6vw);
+    --x: calc(var(--spacing-page-x) + 6vw);
     --y: calc(var(--type-top) + var(--fs) * 1.5);
     --ink: calc(var(--fs) * 0.28);
     --o: 0.09;

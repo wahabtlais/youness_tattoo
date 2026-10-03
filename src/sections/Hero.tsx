@@ -5,7 +5,7 @@ import { TechnicalMarks } from '../components/hero/TechnicalMarks';
 import { VoiceTrigger } from '../components/hero/VoiceTrigger';
 import { InkDrops } from '../components/hero/InkDrops';
 import { InkField } from '../components/hero/InkField';
-import { Cursor } from '../components/Cursor';
+import { Cursor } from '../components/hero/Cursor';
 import { useRevealEngine, type ParallaxLayer } from '../hooks/useRevealEngine';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { useScrollProgress } from '../hooks/useScrollProgress';
@@ -190,7 +190,7 @@ export function Hero({ onAsk }: HeroProps) {
 
       <div className="heroUi">
         <h1 className="heroTitle" id="heroTitle">
-          <span className="visually-hidden">Younes - </span>
+          <span className="sr-only">Younes - </span>
           <span className="heroMeta">
             <span>Tattoo artist</span>
             <span className="heroMeta__sep" aria-hidden="true">

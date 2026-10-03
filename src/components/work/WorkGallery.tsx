@@ -1,10 +1,10 @@
 import { useEffect, useRef, type ReactNode } from 'react';
-import type { WorkPiece } from '../../data/work';
+import type { TattooWork } from '../../domain/work';
 import { WorkItem } from './WorkItem';
 
 interface WorkGalleryProps {
-  pieces: WorkPiece[];
-  onOpen: (piece: WorkPiece) => void;
+  pieces: TattooWork[];
+  onOpen: (piece: TattooWork) => void;
   /** closing cell of the composition (e.g. the Ask Younes line) */
   children?: ReactNode;
 }

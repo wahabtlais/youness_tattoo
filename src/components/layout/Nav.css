@@ -7,7 +7,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--pad-y) var(--pad-x);
+  padding: var(--spacing-page-y) var(--spacing-page-x);
   pointer-events: none;
 }
 /* as the hero leaves, the masthead becomes a paper strip so the work
@@ -18,7 +18,7 @@
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: var(--paper-warm);
+  background: var(--color-paper);
   opacity: calc(clamp(0, (var(--hero-p, 1) - 0.8) / 0.2, 1) * 0.94);
 }
 
@@ -26,18 +26,18 @@
    YOUNES collapses into this slot (--hero-q, set by the hero). */
 .siteNav__brand {
   position: relative;
-  font-family: var(--serif);
+  font-family: var(--font-serif);
   font-weight: 400;
   font-size: clamp(0.95rem, 0.6vw + 0.75rem, 1.25rem);
   letter-spacing: 0.16em;
   text-transform: uppercase;
   line-height: 1;
-  color: var(--ink);
+  color: var(--color-ink);
   text-decoration: none;
   pointer-events: auto;
 }
 .siteNav__brand span {
-  color: var(--burgundy);
+  color: var(--color-burgundy);
 }
 .siteNav__brand::after {
   content: '';
@@ -46,7 +46,7 @@
   right: 0.16em;
   bottom: -0.55em;
   height: 1px;
-  background: var(--ink);
+  background: var(--color-ink);
   transform-origin: 0 50%;
   transform: scaleX(var(--hero-q, 0));
 }
@@ -58,14 +58,14 @@
 }
 
 .siteNav nav a {
-  font-family: var(--mono);
-  font-size: var(--nav);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: var(--ink);
+  color: var(--color-ink);
   text-decoration: none;
   opacity: 0.75;
-  transition: opacity var(--dur-fast) var(--ease);
+  transition: opacity var(--duration-fast) var(--ease-editorial);
 }
 .siteNav nav a:hover,
 .siteNav nav a:focus-visible {

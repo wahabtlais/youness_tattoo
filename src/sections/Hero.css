@@ -34,18 +34,18 @@
   /* YOUNES in Bodoni Moda runs ~3.83em wide: margin to margin, but capped
      against the portrait's height so on wide screens the word never
      outweighs the man */
-  --fs: min(calc((100vw - var(--pad-x) * 2) / 3.86), calc(var(--ph) * 0.38));
+  --fs: min(calc((100vw - var(--spacing-page-x) * 2) / 3.86), calc(var(--ph) * 0.38));
   /* cap-top sits just under the beard: the face stays completely clear */
   --type-top: calc(var(--ptop) + var(--ph) * 0.37);
   /* the burgundy token, deepened toward ink at display size so two giant
      accent letters anchor the portrait without outshouting his face */
-  --accent-type: color-mix(in oklab, var(--burgundy) 82%, var(--ink));
+  --accent-type: var(--color-burgundy-deep);
 
   position: relative;
   height: var(--sh);
   overflow: hidden;
-  background: var(--paper-warm);
-  color: var(--ink);
+  background: var(--color-paper);
+  color: var(--color-ink);
   isolation: isolate;
 }
 
@@ -58,7 +58,7 @@
   pointer-events: none;
   opacity: 0.075;
   mix-blend-mode: multiply;
-  background-image: var(--grain);
+  background-image: var(--texture-grain);
 }
 
 .heroMarks {
@@ -77,7 +77,7 @@
   top: calc(var(--ptop) + var(--ph) * 0.02);
   overflow: visible;
   fill: none;
-  stroke: var(--ink);
+  stroke: var(--color-ink);
   stroke-width: 0.12;
   opacity: 0.16;
   transform: translate3d(0, calc(var(--p) * var(--sh) * 0.12), 0);
@@ -97,7 +97,7 @@
 .heroMarks__cross::after {
   content: '';
   position: absolute;
-  background: var(--ink);
+  background: var(--color-ink);
 }
 .heroMarks__cross::before {
   left: 50%;
@@ -113,11 +113,11 @@
 }
 .heroMarks__rule {
   position: absolute;
-  left: calc(var(--pad-x) * 0.52);
+  left: calc(var(--spacing-page-x) * 0.52);
   top: calc(var(--sh) * 0.24);
   height: calc(var(--sh) * 0.46);
   width: 1px;
-  background: var(--ink);
+  background: var(--color-ink);
   opacity: 0.22;
 }
 .heroMarks__rule b {
@@ -126,9 +126,9 @@
   left: 50%;
   translate: -50% 0;
   rotate: -90deg;
-  font-family: var(--mono);
+  font-family: var(--font-mono);
   font-weight: 400;
-  font-size: var(--micro);
+  font-size: var(--text-micro);
   letter-spacing: 0.1em;
 }
 
@@ -138,7 +138,7 @@
   position: absolute;
   left: 0;
   right: 0;
-  padding: 0 var(--pad-x);
+  padding: 0 var(--spacing-page-x);
   top: var(--type-top);
   text-align: center;
   pointer-events: none;
@@ -160,10 +160,10 @@
 /* phase 1 + 3: counter the page scroll so the word stays in view, then
    shrink it up into the logo slot at top-left */
 .heroType__scroll {
-  transform-origin: var(--pad-x) 0;
+  transform-origin: var(--spacing-page-x) 0;
   transform: translate3d(
       0,
-      calc(var(--p) * var(--sh) - var(--q) * (var(--type-top) - var(--pad-y) * 1.05)),
+      calc(var(--p) * var(--sh) - var(--q) * (var(--type-top) - var(--spacing-page-y) * 1.05)),
       0
     )
     scale(calc(1 - var(--q) * 0.88));
@@ -171,14 +171,14 @@
 }
 
 .heroWord {
-  font-family: var(--serif);
+  font-family: var(--font-serif);
   font-variation-settings: 'opsz' 96;
   font-weight: 500;
   font-size: var(--fs);
   line-height: 0.74;
   letter-spacing: -0.035em;
   white-space: nowrap;
-  color: var(--ink);
+  color: var(--color-ink);
   user-select: none;
   /* counter-breath: lifts as the portrait settles */
   animation: heroBreatheType var(--breath) ease-in-out infinite;
@@ -190,7 +190,7 @@
     calc(var(--dy) * var(--p1) * 2.2vh),
     0
   );
-  animation: heroLetterIn 1.6s var(--ease) backwards;
+  animation: heroLetterIn 1.6s var(--ease-editorial) backwards;
   animation-delay: calc(0.25s + var(--i) * 0.07s);
 }
 .heroWord .is-accent {
@@ -211,7 +211,7 @@
 /* paper veil for the black letters: enough of the body shows through that
    the letters clearly wrap him rather than sit on him */
 .heroType--knock .heroWord {
-  color: var(--paper-warm);
+  color: var(--color-paper);
   opacity: 0.7;
 }
 .heroType--ink .heroWord {
@@ -269,7 +269,7 @@
   height: 100%;
 }
 .heroPortrait--rest .heroPortrait__plate {
-  animation: heroPortraitIn 1.8s var(--ease) 0.1s backwards;
+  animation: heroPortraitIn 1.8s var(--ease-editorial) 0.1s backwards;
 }
 .heroPortrait__plate img {
   position: absolute;
@@ -305,7 +305,7 @@
   -webkit-mask-repeat: no-repeat;
   mask-repeat: no-repeat;
   opacity: 0;
-  transition: opacity 0.9s var(--ease);
+  transition: opacity 0.9s var(--ease-editorial);
 }
 .hero[data-reveal='on'] .heroPortrait--reveal .heroPortrait__plate {
   opacity: 1;
@@ -369,7 +369,7 @@
   height: 24%;
   z-index: 7;
   pointer-events: none;
-  background: linear-gradient(to bottom, transparent, var(--paper-warm) 78%);
+  background: linear-gradient(to bottom, transparent, var(--color-paper) 78%);
 }
 
 /* ---------- UI copy ---------- */
@@ -379,15 +379,15 @@
   inset: 0;
   z-index: 9;
   pointer-events: none;
-  padding: var(--pad-y) var(--pad-x);
+  padding: var(--spacing-page-y) var(--spacing-page-x);
   opacity: calc(1 - clamp(0, calc(var(--p) / 0.1), 1));
 }
 
 /* quiet technical metadata, hung under the masthead - not a headline */
 .heroTitle {
   position: absolute;
-  left: var(--pad-x);
-  top: calc(var(--pad-y) + clamp(2.6rem, 4.4vh, 3.6rem));
+  left: var(--spacing-page-x);
+  top: calc(var(--spacing-page-y) + clamp(2.6rem, 4.4vh, 3.6rem));
   margin: 0;
   font: inherit;
 }
@@ -395,14 +395,14 @@
   display: flex;
   flex-direction: column;
   gap: 0.55em;
-  font-family: var(--mono);
-  font-size: var(--micro);
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
   font-weight: 400;
   line-height: 1;
   letter-spacing: 0.26em;
   text-transform: uppercase;
-  color: var(--stone);
-  animation: heroFadeIn 1.4s var(--ease) 0.7s backwards;
+  color: var(--color-ink-muted);
+  animation: heroFadeIn 1.4s var(--ease-editorial) 0.7s backwards;
 }
 .heroMeta__sep {
   display: none;
@@ -411,20 +411,20 @@
 /* supporting line, down in the lower-left information block */
 .heroLine {
   position: absolute;
-  left: var(--pad-x);
-  bottom: calc(var(--pad-y) * 1.3);
+  left: var(--spacing-page-x);
+  bottom: calc(var(--spacing-page-y) * 1.3);
   margin: 0;
   max-width: 22ch;
-  font-family: var(--serif);
+  font-family: var(--font-serif);
   font-size: clamp(1rem, 0.45vw + 0.8rem, 1.3rem);
   line-height: 1.3;
-  color: var(--ink);
-  animation: heroFadeIn 1.4s var(--ease) 0.9s backwards;
+  color: var(--color-ink);
+  animation: heroFadeIn 1.4s var(--ease-editorial) 0.9s backwards;
 }
 /* "you." shares the burgundy of the O and E in the name */
 .heroLine em {
   font-style: italic;
-  color: var(--burgundy);
+  color: var(--color-burgundy);
 }
 
 /* Ask Younes: on the centre line under the artist, a dial printed on the
@@ -432,33 +432,33 @@
 .heroVoice {
   position: absolute;
   left: 50%;
-  bottom: calc(var(--pad-y) * 1.05);
+  bottom: calc(var(--spacing-page-y) * 1.05);
   translate: -50% 0;
   pointer-events: auto;
-  animation: heroFadeIn 1.4s var(--ease) 1.2s backwards;
+  animation: heroFadeIn 1.4s var(--ease-editorial) 1.2s backwards;
 }
 
 /* the quiet way down into the work - navigation, not an instruction */
 .heroNext {
   position: absolute;
-  right: var(--pad-x);
-  bottom: calc(var(--pad-y) * 1.3);
+  right: var(--spacing-page-x);
+  bottom: calc(var(--spacing-page-y) * 1.3);
   display: flex;
   align-items: center;
   gap: 0.9em;
-  font-family: var(--mono);
-  font-size: var(--micro);
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: var(--ink);
+  color: var(--color-ink);
   text-decoration: none;
   opacity: 0.66;
   pointer-events: auto;
-  transition: opacity var(--dur-med) var(--ease);
-  animation: heroFadeIn 1.4s var(--ease) 1.1s backwards;
+  transition: opacity var(--duration-normal) var(--ease-editorial);
+  animation: heroFadeIn 1.4s var(--ease-editorial) 1.1s backwards;
 }
 .heroNext__num {
-  color: var(--burgundy);
+  color: var(--color-burgundy);
 }
 .heroNext::after {
   content: '';
@@ -467,7 +467,7 @@
   background: currentColor;
   opacity: 0.5;
   transform-origin: 50% 0;
-  transition: scale var(--dur-slow) var(--ease);
+  transition: scale var(--duration-slow) var(--ease-editorial);
 }
 .heroNext:hover,
 .heroNext:focus-visible {
@@ -491,7 +491,7 @@
   flex-direction: column;
   align-items: center;
   gap: 0.8rem;
-  color: var(--ink);
+  color: var(--color-ink);
 }
 .voice__dial {
   position: relative;
@@ -500,15 +500,15 @@
   width: 70px;
   height: 70px;
   border-radius: 50%;
-  background: var(--paper-warm);
-  transition: scale var(--dur-med) var(--ease);
+  background: var(--color-paper);
+  transition: scale var(--duration-normal) var(--ease-editorial);
 }
 /* one soft burgundy echo leaving the dial while it's "listening" */
 .voice__echo {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  border: 1px solid var(--burgundy);
+  border: 1px solid var(--color-burgundy);
   opacity: 0;
 }
 .voice__ring {
@@ -519,19 +519,19 @@
   rotate: -90deg;
 }
 .voice__track {
-  stroke: var(--ink);
+  stroke: var(--color-ink);
   stroke-width: 1;
   opacity: 0.3;
 }
 .voice__trace {
-  stroke: var(--burgundy);
+  stroke: var(--color-burgundy);
   stroke-width: 1.2;
   stroke-dasharray: 100;
   stroke-dashoffset: 100;
-  transition: stroke-dashoffset 1.1s var(--ease);
+  transition: stroke-dashoffset 1.1s var(--ease-editorial);
 }
 .voice__tick {
-  stroke: var(--burgundy);
+  stroke: var(--color-burgundy);
   stroke-width: 1.2;
   rotate: 90deg;
   transform-origin: 33px 33px;
@@ -543,10 +543,10 @@
   stroke: currentColor;
   stroke-width: 1.3;
   stroke-linecap: round;
-  transition: translate var(--dur-med) var(--ease);
+  transition: translate var(--duration-normal) var(--ease-editorial);
 }
 .voice__capsule {
-  transition: fill var(--dur-med) var(--ease);
+  transition: fill var(--duration-normal) var(--ease-editorial);
 }
 
 .voice__label {
@@ -561,15 +561,15 @@
   gap: 0.9em;
 }
 .voice__name {
-  font-family: var(--mono);
-  font-size: var(--nav);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
   letter-spacing: 0.26em;
   /* optically centre the tracked caps between the two waves */
   margin-right: -0.26em;
   text-transform: uppercase;
   transition:
-    letter-spacing var(--dur-slow) var(--ease),
-    margin var(--dur-slow) var(--ease);
+    letter-spacing var(--duration-slow) var(--ease-editorial),
+    margin var(--duration-slow) var(--ease-editorial);
 }
 
 /* silence at rest (a dotted hairline), a few bars of voice on hover */
@@ -586,30 +586,30 @@
   opacity: 0.45;
   scale: 1 0.1;
   transition:
-    scale var(--dur-med) var(--ease),
-    opacity var(--dur-med) var(--ease),
-    background-color var(--dur-med) var(--ease);
+    scale var(--duration-normal) var(--ease-editorial),
+    opacity var(--duration-normal) var(--ease-editorial),
+    background-color var(--duration-normal) var(--ease-editorial);
 }
 
 .voice__meta {
   position: relative;
   display: grid;
-  font-family: var(--serif);
+  font-family: var(--font-serif);
   font-style: italic;
-  font-size: calc(var(--micro) * 1.15);
-  color: var(--stone);
+  font-size: calc(var(--text-micro) * 1.15);
+  color: var(--color-ink-muted);
 }
 .voice__meta span {
   grid-area: 1 / 1;
   text-align: center;
   transition:
-    opacity var(--dur-med) var(--ease),
-    translate var(--dur-med) var(--ease);
+    opacity var(--duration-normal) var(--ease-editorial),
+    translate var(--duration-normal) var(--ease-editorial);
 }
 .voice__meta span + span {
   opacity: 0;
   translate: 0 4px;
-  color: var(--burgundy);
+  color: var(--color-burgundy);
 }
 
 .voice:hover .voice__dial,
@@ -622,7 +622,7 @@
 }
 .voice:hover .voice__echo,
 .voice:focus-visible .voice__echo {
-  animation: voiceEcho 2.6s var(--ease) 0.4s infinite;
+  animation: voiceEcho 2.6s var(--ease-editorial) 0.4s infinite;
 }
 .voice:hover .voice__mic,
 .voice:focus-visible .voice__mic {
@@ -630,12 +630,12 @@
 }
 .voice:hover .voice__capsule,
 .voice:focus-visible .voice__capsule {
-  fill: var(--ink);
+  fill: var(--color-ink);
 }
 .voice:hover .voice__wave i,
 .voice:focus-visible .voice__wave i {
   opacity: 1;
-  background-color: var(--burgundy);
+  background-color: var(--color-burgundy);
   scale: 1 var(--h);
   animation: voiceBar 1.2s ease-in-out infinite alternate;
   animation-delay: calc(var(--i) * -0.23s);
@@ -694,7 +694,7 @@
     --sh: max(100svh, 560px);
     --ph: min(calc(var(--sh) * 0.8), 172vw);
     --pcx: 50%;
-    --fs: calc((100vw - var(--pad-x) * 2) / 3.86);
+    --fs: calc((100vw - var(--spacing-page-x) * 2) / 3.86);
     --breath: 9s;
     /* the name runs across the top as a masthead; the head rises in front
        of the lower half of the letters */
@@ -720,17 +720,17 @@
   }
 
   .heroTitle {
-    top: calc(var(--pad-y) + 2.2rem);
+    top: calc(var(--spacing-page-y) + 2.2rem);
   }
 
   /* the line moves up to sit above the dial; the dial owns the bottom */
   .heroLine {
-    bottom: calc(var(--pad-y) + 8.6rem);
+    bottom: calc(var(--spacing-page-y) + 8.6rem);
     max-width: 14ch;
     font-size: 1.15rem;
   }
   .heroVoice {
-    bottom: calc(var(--pad-y) + 0.6rem);
+    bottom: calc(var(--spacing-page-y) + 0.6rem);
   }
   .heroNext {
     display: none;
@@ -744,7 +744,7 @@
   }
   .heroFade {
     height: 36%;
-    background: linear-gradient(to bottom, transparent, var(--paper-warm) 62%);
+    background: linear-gradient(to bottom, transparent, var(--color-paper) 62%);
   }
 }
 

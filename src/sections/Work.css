@@ -15,12 +15,12 @@
   --hp: var(--hero-p, 1);
   --gut: clamp(12px, 2vw, 32px);
   /* THE WORK runs ~5.5em: margin to margin, a step below YOUNES */
-  --wfs: min(calc((100vw - var(--pad-x) * 2) / 5.75), 13.5rem);
+  --wfs: min(calc((100vw - var(--spacing-page-x) * 2) / 5.75), 13.5rem);
 
   position: relative;
-  background: var(--paper-warm);
-  padding: clamp(4.5rem, 12vh, 8rem) var(--pad-x) clamp(5rem, 14vh, 9rem);
-  color: var(--ink);
+  background: var(--color-paper);
+  padding: clamp(4.5rem, 12vh, 8rem) var(--spacing-page-x) clamp(5rem, 14vh, 9rem);
+  color: var(--color-ink);
   isolation: isolate;
 }
 /* the hero's paper grain continues underneath the prints - never over them */
@@ -32,17 +32,17 @@
   pointer-events: none;
   opacity: 0.075;
   mix-blend-mode: multiply;
-  background-image: var(--grain);
+  background-image: var(--texture-grain);
 }
 
 /* print furniture carried over from the hero: margin rule + plate number */
 .work__rule {
   position: absolute;
-  left: calc(var(--pad-x) * 0.52);
+  left: calc(var(--spacing-page-x) * 0.52);
   top: clamp(8rem, 26vh, 14rem);
   height: clamp(10rem, 30vh, 18rem);
   width: 1px;
-  background: var(--ink);
+  background: var(--color-ink);
   opacity: 0.22;
 }
 .work__rule b {
@@ -51,9 +51,9 @@
   left: 50%;
   translate: -50% 0;
   rotate: -90deg;
-  font-family: var(--mono);
+  font-family: var(--font-mono);
   font-weight: 400;
-  font-size: var(--micro);
+  font-size: var(--text-micro);
   letter-spacing: 0.1em;
 }
 
@@ -61,7 +61,7 @@
 
 .work__head {
   position: relative;
-  max-width: var(--container);
+  max-width: var(--container-page);
   margin: 0 auto;
   text-align: center;
   /* the whole masthead rises out of the hero as the hero's name collapses
@@ -73,14 +73,14 @@
   justify-content: center;
   gap: 2.2em;
   margin: 0 0 clamp(1.2rem, 3vh, 2rem);
-  font-family: var(--mono);
-  font-size: var(--micro);
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
   letter-spacing: 0.26em;
   text-transform: uppercase;
-  color: var(--stone);
+  color: var(--color-ink-muted);
 }
 .work__kicker span:first-child {
-  color: var(--burgundy);
+  color: var(--color-burgundy);
 }
 
 .work__title {
@@ -89,7 +89,7 @@
 }
 .work__word {
   display: block;
-  font-family: var(--serif);
+  font-family: var(--font-serif);
   font-variation-settings: 'opsz' 96;
   font-weight: 500;
   font-size: var(--wfs);
@@ -101,27 +101,27 @@
   opacity: calc(0.25 + var(--hp) * 0.75);
 }
 .work__word .is-accent {
-  color: color-mix(in oklab, var(--burgundy) 82%, var(--ink));
+  color: var(--color-burgundy-deep);
 }
 
 .work__lede {
   position: relative;
   z-index: 2;
   margin: clamp(1.4rem, 3.4vh, 2.2rem) 0 0;
-  font-family: var(--serif);
+  font-family: var(--font-serif);
   font-size: clamp(1rem, 0.45vw + 0.8rem, 1.3rem);
   line-height: 1.3;
 }
 .work__lede em {
   font-style: italic;
-  color: var(--stone);
+  color: var(--color-ink-muted);
 }
 
 /* ---------- the wall ---------- */
 
 .workGallery {
   position: relative;
-  max-width: var(--container);
+  max-width: var(--container-page);
   margin: clamp(2.5rem, 6vh, 4rem) auto 0;
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -146,7 +146,7 @@
   display: block;
   aspect-ratio: var(--ar);
   overflow: hidden;
-  background: color-mix(in oklab, var(--paper-warm) 88%, var(--ink));
+  background: color-mix(in oklab, var(--color-paper) 88%, var(--color-ink));
 }
 .workItem__frame img {
   display: block;
@@ -155,14 +155,14 @@
   object-fit: cover;
   user-select: none;
   transition:
-    scale 1.2s var(--ease),
-    filter var(--dur-slow) var(--ease);
+    scale 1.2s var(--ease-editorial),
+    filter var(--duration-slow) var(--ease-editorial);
 }
 
 /* crop marks just outside each print's corners */
 .workItem__marks {
   --m: 9px;
-  --c: rgba(20, 19, 26, 0.34);
+  --c: color-mix(in srgb, var(--color-ink) 34%, transparent);
   position: absolute;
   inset: calc(var(--m) * -1);
   pointer-events: none;
@@ -175,7 +175,7 @@
     linear-gradient(var(--c), var(--c)) left bottom / 1px var(--m) no-repeat,
     linear-gradient(var(--c), var(--c)) right bottom / var(--m) 1px no-repeat,
     linear-gradient(var(--c), var(--c)) right bottom / 1px var(--m) no-repeat;
-  transition: inset var(--dur-slow) var(--ease);
+  transition: inset var(--duration-slow) var(--ease-editorial);
 }
 
 /* ---------- caption ---------- */
@@ -187,15 +187,15 @@
   display: flex;
   align-items: center;
   gap: 0.8em;
-  font-family: var(--mono);
-  font-size: var(--micro);
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
   letter-spacing: 0.2em;
   text-transform: uppercase;
   line-height: 1;
 }
 .workMeta__num {
-  color: var(--ink);
-  transition: color var(--dur-med) var(--ease);
+  color: var(--color-ink);
+  transition: color var(--duration-normal) var(--ease-editorial);
 }
 .workMeta__rule {
   width: 1.8em;
@@ -204,29 +204,29 @@
   opacity: 0.4;
   transform-origin: 0 50%;
   transition:
-    scale var(--dur-slow) var(--ease),
-    background-color var(--dur-med) var(--ease),
-    opacity var(--dur-med) var(--ease);
+    scale var(--duration-slow) var(--ease-editorial),
+    background-color var(--duration-normal) var(--ease-editorial),
+    opacity var(--duration-normal) var(--ease-editorial);
 }
 .workMeta__label {
-  color: var(--stone);
-  transition: translate var(--dur-slow) var(--ease);
+  color: var(--color-ink-muted);
+  transition: translate var(--duration-slow) var(--ease-editorial);
 }
 .workMeta__ratio {
   position: relative;
   display: grid;
   margin-left: auto;
-  color: var(--stone);
+  color: var(--color-ink-muted);
   text-align: right;
 }
 .workMeta__ratio > span {
   grid-area: 1 / 1;
   transition:
-    opacity var(--dur-med) var(--ease),
-    translate var(--dur-med) var(--ease);
+    opacity var(--duration-normal) var(--ease-editorial),
+    translate var(--duration-normal) var(--ease-editorial);
 }
 .workMeta__view {
-  color: var(--burgundy);
+  color: var(--color-burgundy);
   opacity: 0;
   translate: 0 4px;
 }
@@ -244,15 +244,15 @@
     scale: 1.025;
   }
   .workItem:hover .workItem__marks {
-    --c: var(--burgundy);
+    --c: var(--color-burgundy);
     inset: -13px;
   }
   .workItem:hover .workMeta__num {
-    color: var(--burgundy);
+    color: var(--color-burgundy);
   }
   .workItem:hover .workMeta__rule {
     scale: 1.6 1;
-    background-color: var(--burgundy);
+    background-color: var(--color-burgundy);
     opacity: 1;
   }
   .workItem:hover .workMeta__label {
@@ -268,7 +268,7 @@
   }
 }
 .workItem:focus-within .workItem__marks {
-  --c: var(--burgundy);
+  --c: var(--color-burgundy);
 }
 .workItem__open:focus-visible {
   outline-offset: 16px;
@@ -282,18 +282,18 @@
   left: 0;
   pointer-events: none;
   margin: 14px 0 0 16px;
-  font-family: var(--mono);
-  font-size: var(--micro);
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: var(--paper-warm);
-  background: var(--ink);
+  color: var(--color-paper);
+  background: var(--color-ink);
   padding: 0.55em 0.8em 0.5em 0.9em;
   opacity: 0;
   scale: 0.9;
   transition:
-    opacity var(--dur-fast) var(--ease),
-    scale var(--dur-fast) var(--ease);
+    opacity var(--duration-fast) var(--ease-editorial),
+    scale var(--duration-fast) var(--ease-editorial);
 }
 .workCue[data-on='true'] {
   opacity: 1;
@@ -305,7 +305,7 @@
 @media not (prefers-reduced-motion: reduce) {
   .workItem__frame {
     clip-path: inset(0 0 100% 0);
-    transition: clip-path 1.3s var(--ease);
+    transition: clip-path 1.3s var(--ease-editorial);
   }
   .workItem__frame img {
     scale: 1.08;
@@ -314,8 +314,8 @@
   .workItem__marks {
     opacity: 0;
     transition:
-      opacity var(--dur-slow) var(--ease) 0.45s,
-      inset var(--dur-slow) var(--ease);
+      opacity var(--duration-slow) var(--ease-editorial) 0.45s,
+      inset var(--duration-slow) var(--ease-editorial);
   }
   .workItem[data-in='true'] .workItem__frame {
     clip-path: inset(0);
@@ -347,20 +347,20 @@
 }
 .work__codaLine {
   margin: 0;
-  font-family: var(--serif);
+  font-family: var(--font-serif);
   font-size: clamp(1.6rem, 2.4vw + 0.6rem, 2.6rem);
   line-height: 1.05;
 }
 .work__codaLine em {
   font-style: italic;
-  color: var(--burgundy);
+  color: var(--color-burgundy);
 }
 .work__ask {
   display: inline-flex;
   align-items: center;
   gap: 1em;
-  font-family: var(--mono);
-  font-size: var(--nav);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
   letter-spacing: 0.26em;
   text-transform: uppercase;
   padding: 0.6em 0;
@@ -368,9 +368,9 @@
 .work__askLine {
   width: 2.4em;
   height: 1px;
-  background: var(--burgundy);
+  background: var(--color-burgundy);
   transform-origin: 100% 50%;
-  transition: scale var(--dur-slow) var(--ease);
+  transition: scale var(--duration-slow) var(--ease-editorial);
 }
 .work__ask:hover .work__askLine,
 .work__ask:focus-visible .work__askLine {
@@ -400,12 +400,12 @@
   .workItem--3,
   .workItem--7 {
     grid-column: 1 / -1;
-    margin-inline: calc(var(--pad-x) * -1);
+    margin-inline: calc(var(--spacing-page-x) * -1);
   }
   .workItem--1 figcaption,
   .workItem--3 figcaption,
   .workItem--7 figcaption {
-    padding-inline: var(--pad-x);
+    padding-inline: var(--spacing-page-x);
   }
   .workItem--1 .workItem__marks,
   .workItem--3 .workItem__marks,
@@ -565,9 +565,6 @@
 
 /* ---------- viewer ---------- */
 
-html:has(.workViewer[open]) {
-  overflow: hidden;
-}
 .workViewer {
   position: fixed;
   inset: 0;
@@ -576,19 +573,19 @@ html:has(.workViewer[open]) {
   max-width: none;
   max-height: none;
   margin: 0;
-  padding: clamp(1rem, 4vh, 3rem) var(--pad-x);
+  padding: clamp(1rem, 4vh, 3rem) var(--spacing-page-x);
   border: 0;
-  background: var(--paper-warm);
-  color: var(--ink);
+  background: var(--color-paper);
+  color: var(--color-ink);
   overscroll-behavior: contain;
 }
 .workViewer::backdrop {
-  background: rgba(20, 19, 26, 0.25);
+  background: color-mix(in srgb, var(--color-ink) 25%, transparent);
 }
 .workViewer[open] {
   display: grid;
   place-items: center;
-  animation: viewerIn var(--dur-med) var(--ease);
+  animation: viewerIn var(--duration-normal) var(--ease-editorial);
 }
 .workViewer__inner {
   display: grid;
@@ -608,7 +605,7 @@ html:has(.workViewer[open]) {
   max-width: min(62vw, 900px);
   max-height: calc(100svh - clamp(2rem, 8vh, 6rem));
   object-fit: contain;
-  animation: viewerIn var(--dur-slow) var(--ease);
+  animation: viewerIn var(--duration-slow) var(--ease-editorial);
 }
 .workViewer__side {
   display: flex;
@@ -618,35 +615,35 @@ html:has(.workViewer[open]) {
 }
 .workViewer__num {
   margin: 0;
-  font-family: var(--mono);
-  font-size: var(--nav);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
   letter-spacing: 0.2em;
-  color: var(--burgundy);
+  color: var(--color-burgundy);
 }
 .workViewer__num span {
-  color: var(--stone);
+  color: var(--color-ink-muted);
 }
 .workViewer__title {
   margin: 0;
-  font-family: var(--serif);
+  font-family: var(--font-serif);
   font-weight: 400;
   font-size: clamp(1.6rem, 2vw + 0.8rem, 2.4rem);
   line-height: 1.05;
 }
 .workViewer__ratio {
   margin: 0;
-  font-family: var(--mono);
-  font-size: var(--micro);
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
   letter-spacing: 0.2em;
-  color: var(--stone);
+  color: var(--color-ink-muted);
 }
 .workViewer__ask {
   display: inline-flex;
   align-items: center;
   gap: 0.9em;
   margin-top: 1.4rem;
-  font-family: var(--mono);
-  font-size: var(--micro);
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
   letter-spacing: 0.2em;
   line-height: 1.6;
   text-transform: uppercase;
@@ -655,14 +652,14 @@ html:has(.workViewer[open]) {
   flex: none;
   width: 2em;
   height: 1px;
-  background: var(--burgundy);
+  background: var(--color-burgundy);
 }
 .workViewer__nav {
   display: flex;
   gap: 1.6rem;
   margin-top: 1.4rem;
-  font-family: var(--mono);
-  font-size: var(--micro);
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
   letter-spacing: 0.24em;
   text-transform: uppercase;
 }
@@ -673,7 +670,7 @@ html:has(.workViewer[open]) {
 .workViewer__nav button,
 .workViewer__close {
   opacity: 0.7;
-  transition: opacity var(--dur-fast) var(--ease);
+  transition: opacity var(--duration-fast) var(--ease-editorial);
 }
 .workViewer__nav button:hover,
 .workViewer__close:hover {
@@ -681,10 +678,10 @@ html:has(.workViewer[open]) {
 }
 .workViewer__close {
   position: fixed;
-  top: var(--pad-y);
-  right: var(--pad-x);
-  font-family: var(--mono);
-  font-size: var(--micro);
+  top: var(--spacing-page-y);
+  right: var(--spacing-page-x);
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
   letter-spacing: 0.24em;
   text-transform: uppercase;
   padding: 0.6em 0;
@@ -698,7 +695,7 @@ html:has(.workViewer[open]) {
 
 @media (max-width: 699px) {
   .workViewer {
-    padding: 3.4rem var(--pad-x) 1.2rem;
+    padding: 3.4rem var(--spacing-page-x) 1.2rem;
   }
   .workViewer[open] {
     place-items: start center;

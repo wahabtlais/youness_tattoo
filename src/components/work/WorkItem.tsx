@@ -1,14 +1,15 @@
 import type { CSSProperties } from 'react';
 import { useInView } from '../../hooks/useInView';
-import { workAlt, workSrcSet, type WorkPiece } from '../../data/work';
+import { workShape, type TattooWork } from '../../domain/work';
+import { ResponsiveImage } from '../ui/ResponsiveImage';
 import { WorkMeta } from './WorkMeta';
 
 interface WorkItemProps {
-  piece: WorkPiece;
+  piece: TattooWork;
   /** placement slot in the gallery composition (1-based) */
   slot: number;
   sizes: string;
-  onOpen: (piece: WorkPiece) => void;
+  onOpen: (piece: TattooWork) => void;
 }
 
 /**
@@ -21,30 +22,20 @@ export function WorkItem({ piece, slot, sizes, onOpen }: WorkItemProps) {
 
   return (
     <figure
-      className={`workItem workItem--${slot} workItem--${piece.aspect}`}
+      className={`workItem workItem--${slot} workItem--${workShape(piece)}`}
       ref={ref}
       data-in={inView}
-      style={{ '--ar': `${piece.width} / ${piece.height}` } as CSSProperties}
+      style={{ '--ar': `${piece.image.width} / ${piece.image.height}` } as CSSProperties}
     >
       <button
         type="button"
         className="workItem__open unstyled"
         onClick={() => onOpen(piece)}
-        aria-label={`View ${piece.label.toLowerCase()} ${piece.id}`}
+        aria-label={`View ${piece.title.toLowerCase()} ${piece.id}`}
       >
         <span className="workItem__marks" aria-hidden="true" />
         <span className="workItem__frame">
-          <img
-            src={`/work/web/${piece.file}-${piece.widths[0]}.webp`}
-            srcSet={workSrcSet(piece)}
-            sizes={sizes}
-            width={piece.width}
-            height={piece.height}
-            alt={workAlt(piece)}
-            loading="lazy"
-            decoding="async"
-            draggable={false}
-          />
+          <ResponsiveImage image={piece.image} alt={piece.alt} sizes={sizes} draggable={false} />
         </span>
       </button>
       <figcaption>
