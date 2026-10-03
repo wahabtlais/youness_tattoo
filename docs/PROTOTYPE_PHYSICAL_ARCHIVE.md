@@ -59,14 +59,18 @@ The strip is made seamless once (its tail cross-faded over its head) so it can t
 
 **Touch:** the print rises 6px, its shadow deepens, it settles toward level, the rope dips under it, and its neighbours stir.
 
-**Pick (about 3.4s):**
-1. **Anticipation:** the archive stops, the others recede, the print lifts, then a short held beat.
-2. **Emerge:** the tattooed arm rises from below the screen, quick and then slowing.
-3. **Reach:** the last few centimetres are slow and go a hair past the mark.
-4. **Settle:** a small correction back onto it. The fingers are behind the print.
-5. **Grab:** the hand moves forward through the print's plane, so the fingers close over its face. The print gives a few px toward the hand and is attached to it from then on.
-6. **Pull:** hand and print come off the rope, down and toward the viewer. The rope recoils and the empty clip stays on the line.
-7. **Release and retreat:** the hand lets go and drops below the screen, the paper comes up, and the same print flies into the detail layout. The detail is laid out in that print's exact proportions, so the hand-over is seamless.
+**Pick (about 3.1s).** The hand goes to an edge of the print, and the print comes to the hand. The hand never passes through the photograph. Times are from the click:
+
+| Time | Beat |
+|---|---|
+| 0.00–0.25 | **Anticipation:** the archive stops, the others recede, the print lifts. |
+| 0.25–1.05 | **Enter:** the arm comes in on a diagonal from the bottom right. |
+| 1.05–1.40 | **Approach:** slow, onto the print's lower edge. It stops short and never overshoots. |
+| 1.40–1.55 | **Settle:** the hand stops on the contact point, low and right on the print (78% across, 80% down, configurable). |
+| 1.55–1.75 | **Give:** the print comes 14px to the hand, turns about 1.5°, and its shadow deepens. From here it is attached to the hand. |
+| 1.75–2.35 | **Pull:** hand and print move together down the arm's line, toward the viewer and a little toward the middle of the screen. The rope recoils and the empty clip stays on the line. |
+| 2.35–2.70 | **Release:** the hand lets go and the arm retreats below the screen. |
+| 2.50–3.10 | **Detail:** the same print flies on into the detail layout, laid out in its exact proportions. |
 
 **Close** (Close, Escape or a click on the paper): the print flies back to its clip and swings as it is re-hung.
 
@@ -101,14 +105,18 @@ The strip is made seamless once (its tail cross-faded over its head) so it can t
 
 **Camera:** a stable perspective camera. One world unit is one CSS px at the print's plane, so each pick reads the selected print's DOM rectangle and the hand is placed on it directly. Moving toward the viewer gets real perspective.
 
-**Occlusion:** an invisible plane the size of the print sits exactly where the print is. It writes depth and catches the hand's shadow but draws nothing else. While the hand is behind it, its fingers are genuinely hidden behind the photograph. Moving forward through it, the fingers come over the print's edge. After the grab, the print rides on a point of the hand (with a whisper of lag in its angle), so hand and print move as one.
+**Layering:** fingers in front, the print in the middle, the forearm behind.
+- The hand stays in front of the print's plane the whole time, and the forearm tips away into the scene.
+- An invisible plane the size of the print sits exactly where the print is. It writes depth and catches the hand's shadow. Wherever the forearm passes behind the print it is genuinely hidden, while the fingers stay over the print's edge.
+- Nothing ever crosses the print's plane, so the arm can never appear to come through the photograph.
+- Once the print has come to the hand, it rides on the finger pads (with a whisper of lag in its angle), so hand and print move as one.
 
 **Light:** a warm-neutral key from above-left (matching the prints' own shadows), a warm hemisphere fill, a dim warm side fill, soft shadows on the print and on the paper behind, and neutral tone mapping. There's no environment map, no rim light and no cool tones.
 
-**Staging:**
-- **Shoulder:** the arm's lean comes from one shoulder below the screen. On a tall screen (phone, portrait tablet) that shoulder is at the lower right, so the upper arm, and the model's cut end, always leaves the screen.
-- **Scale:** the hand is 1.6× the print's width (1.3× on phones). A real hand is about 1.9× a 4×5" print.
-- **Tuning:** every pose (rest, approach, reach, settle, grab, pull, exit) is a tunable `ArmTransform` in `armConfig.ts`.
+**Staging:** everything is tunable in `arm/armConfig.ts`.
+- **Contact point:** the target is a contact point on the selected print, never its centre.
+- **Lean:** the arm leans toward the print from one shoulder below the screen on the right, kept between 15° and 30° wherever the print is. On tall screens the shoulder is further right, so the upper arm (and the model's cut end) always leaves past the right edge.
+- **Scale:** the hand is 1.3× the print's width (1.08× on phones).
 
 ## Temporary assets and placeholders
 

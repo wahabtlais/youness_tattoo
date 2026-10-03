@@ -57,11 +57,12 @@ function loadArm(): Promise<LoadedArm> {
  * exactly far enough back for that, so DOM rectangles map straight into
  * the scene and the arm keeps real perspective as it comes toward you.
  *
- * Occlusion is real depth: an invisible plane the size of the print sits
+ * Layering is real depth: an invisible plane the size of the print sits
  * where the print is (it draws nothing but the hand's shadow and writes
- * depth). While the hand is behind that plane its fingers are hidden behind
- * the photograph; when it moves forward through it, the fingers come over
- * the print's edge. After the grab the print rides on a point of the hand.
+ * depth). The hand stays in front of it and the forearm tips away behind
+ * it, so the fingers sit over the print's edge while any of the forearm
+ * that passes behind the print is hidden - nothing crosses the plane.
+ * After the grab the print rides on a point of the hand.
  *
  * Renders only while a pick is playing.
  */
