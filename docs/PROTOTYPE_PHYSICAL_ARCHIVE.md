@@ -71,7 +71,13 @@ The strip is made seamless once (its tail cross-faded over its head) so it can t
 | 2.35–2.70 | **Release:** the hand lets go and the arm retreats below the screen. |
 | 2.50–3.10 | **Detail:** the same print flies on into the detail layout, laid out in its exact proportions. |
 
-**Close** (Close, Escape or a click on the paper): the print flies back to its clip and swings as it is re-hung.
+**Close** (Close, Escape or a click on the paper all use the same `returnPhotoToArchive()`): the print is placed back on its clip as one physical movement.
+- **One coordinated flight:** a single progress value drives a gently curved path, the scale back to print size, the rotation (with a small mid-flight correction) and the shadow easing back to the hanging one.
+- **Path:** it ends at the clip's live position, because the rope resumes drifting as the return begins, and comes into the clip from slightly below, as if lifted onto it.
+- **Ease:** `cubic-bezier(0.5, 0.05, 0.35, 1)`, with a soft departure, a little faster through the middle and a long, gentle arrival.
+- **Duration:** distance-aware, between 0.9s and 1.2s.
+- **Handoff:** the print's swing is pinned at rest while it flies, and released with no kick when it lands. At that moment the flying copy and the hanging print match to within half a pixel, so the switch can't be seen.
+- **Focus:** a print that gets keyboard focus back from the closing detail fades its focus ring in a beat after landing, and doesn't lift again.
 
 **Find similar** opens the existing consultation with `{ from: 'find-similar', workId }`. There is no similarity logic yet.
 

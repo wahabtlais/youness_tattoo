@@ -36,13 +36,14 @@
     0 1px 1px rgb(20 19 26 / 0.12),
     0 7px 14px -6px rgb(20 19 26 / 0.26),
     0 18px 30px -16px rgb(20 19 26 / 0.22);
-  /* the focus ring is always there, transparent, so it fades in rather than
-     snapping on (e.g. when a closed detail hands focus back to this print) */
-  outline: 1.5px solid transparent;
+  /* the focus ring is always there, as transparent burgundy (not plain
+     transparent, which fades through grey), so it fades in rather than
+     snapping on - a beat after a print lands back on its clip */
+  outline: 1.5px solid color-mix(in srgb, var(--color-focus) 0%, transparent);
   outline-offset: 5px;
   transition:
     box-shadow 0.7s var(--ease-material),
-    outline-color 0.5s var(--ease-editorial);
+    outline-color 0.6s var(--ease-editorial) 0.15s;
 }
 /* paper grain over the border and, faintly, the emulsion */
 .pa-print::after {
@@ -73,6 +74,10 @@
 }
 .pa-photo:focus-visible {
   outline: none;
+}
+/* just re-hung by a closing detail: the ring, but no second movement */
+.pa-photo[data-returned]:focus-visible {
+  translate: none;
 }
 .pa-photo:focus-visible .pa-print {
   outline-color: var(--color-focus);

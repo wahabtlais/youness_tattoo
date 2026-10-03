@@ -31,11 +31,20 @@ export function WorkPhotograph({ piece, index, total, onPick, onHover, onFocus }
         onPointerEnter={(e) => e.pointerType === 'mouse' && onHover(index)}
         onPointerLeave={() => onHover(null)}
         onFocus={(e) => {
-          // keyboard browsing only: not the focus a closing dialog hands back
           const from = e.relatedTarget as Element | null;
-          if (!from?.closest('dialog') && e.currentTarget.matches(':focus-visible')) onFocus(index);
+          // focus handed back by the closing detail: the print has just been
+          // re-hung, so it shows its ring but doesn't lift again
+          if (from?.closest('dialog')) {
+            e.currentTarget.dataset.returned = '';
+            return;
+          }
+          // keyboard browsing only holds the archive
+          if (e.currentTarget.matches(':focus-visible')) onFocus(index);
         }}
-        onBlur={() => onHover(null)}
+        onBlur={(e) => {
+          delete e.currentTarget.dataset.returned;
+          onHover(null);
+        }}
       >
         <span data-print className="pa-print">
           <ResponsiveImage

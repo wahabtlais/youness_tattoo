@@ -261,17 +261,55 @@ export function playPick(p: PickParts, onDetail: () => void): PickRun {
   };
 }
 
+/** a CSS-style cubic-bezier(x1, y1, x2, y2) as an ease function */
+function cubicBezier(x1: number, y1: number, x2: number, y2: number) {
+  const bx = (t: number) => 3 * (1 - t) * (1 - t) * t * x1 + 3 * (1 - t) * t * t * x2 + t * t * t;
+  const by = (t: number) => 3 * (1 - t) * (1 - t) * t * y1 + 3 * (1 - t) * t * t * y2 + t * t * t;
+  return (x: number) => {
+    if (x <= 0) return 0;
+    if (x >= 1) return 1;
+    let lo = 0;
+    let hi = 1;
+    for (let i = 0; i < 24; i++) {
+      const mid = (lo + hi) / 2;
+      if (bx(mid) < x) lo = mid;
+      else hi = mid;
+    }
+    return by((lo + hi) / 2);
+  };
+}
+
 /**
- * Detail back onto the rope: the same print flies back to its clip. It
- * homes in on the clip's LIVE position every frame (the hanging print
- * keeps swinging gently while it flies), so it lands exactly where the
- * print is and the hand-over is invisible; its shadow eases back to the
- * hanging one on the way.
+ * The return's ease: an unhurried departure, a little faster through the
+ * middle, then a long, soft arrival - still easing in as it meets the clip.
  */
-export function playReturn(p: PickParts, onDone: () => void): PickRun {
+const RETURN_EASE = cubicBezier(0.5, 0.05, 0.35, 1);
+/** average px/s the return is timed at (near prints return sooner), clamped to a natural range */
+const RETURN_SPEED = 500;
+const RETURN_MIN = 0.9;
+const RETURN_MAX = 1.2;
+
+/**
+ * The detail closes (Close, Escape or a click on the paper - all of them):
+ * the same print is placed back on its clip as ONE physical movement.
+ *
+ * - One progress value, one ease, drives everything at once: a gently
+ *   curved path, the scale back to print size, the rotation (with a small
+ *   correction mid-flight) and the shadow easing back to the hanging one.
+ * - The path ends at the clip's LIVE position, read every frame - the rope
+ *   starts drifting again as the return begins - and comes into the clip
+ *   from slightly below, as if lifted onto it, slowing all the way in.
+ * - While it flies, the print's swing is pinned (the flight alone owns
+ *   it); at the end the clone is exactly the hanging print - position,
+ *   angle, scale, shadow - and the swing is released from rest.
+ */
+export function returnPhotoToArchive(p: PickParts, onDone: () => void): PickRun {
   const { engine, index, print, others, paper, clone, slot, text } = p;
   gsap.set(print, { y: 0 });
-  if (!engine.pose(index) || !base) {
+  engine.pin(index);
+  engine.hold(false);
+  const first = engine.pose(index);
+  if (!first || !base) {
     resetPick(p);
     onDone();
     return { kill() {} };
@@ -279,37 +317,53 @@ export function playReturn(p: PickParts, onDone: () => void): PickRun {
   const b = base;
   // the clone takes over from the detail image, exactly where it is
   const box = slotBox(slot);
-  const from = { x: box.cx - b.cx, y: box.cy - b.cy, scale: box.w / b.w, rotation: 0 };
-  gsap.set(clone, { ...from, autoAlpha: 1 });
+  const from = { cx: box.cx, cy: box.cy, scale: box.w / b.w, rotation: 0 };
+  gsap.set(clone, { x: from.cx - b.cx, y: from.cy - b.cy, scale: from.scale, rotation: 0, autoAlpha: 1 });
   gsap.set(slot, { autoAlpha: 0 });
 
-  const home = { t: 0 };
-  const lerp = (a: number, c: number, t: number) => a + (c - a) * t;
+  const dist = Math.hypot(first.cx - from.cx, first.cy - from.cy);
+  const duration = Math.min(RETURN_MAX, Math.max(RETURN_MIN, dist / RETURN_SPEED));
+  // a subtle tilt against the direction of travel, gone by the end
+  const correction = -Math.sign(first.cx - from.cx) * 1.2;
+  const lift = dist * 0.16; // how far below the clip the path comes in from
+
+  const progress = { t: 0 };
   const fly = () => {
     const to = engine.pose(index);
     if (!to) return;
+    const e = RETURN_EASE(progress.t);
+    // cubic Bezier from the detail to the live clip: leaves toward it,
+    // arrives from just below it
+    const p1 = { x: from.cx + (to.cx - from.cx) * 0.35, y: from.cy + (to.cy - from.cy) * 0.25 };
+    const p2 = { x: to.cx, y: to.cy + lift };
+    const m = 1 - e;
+    const x = m * m * m * from.cx + 3 * m * m * e * p1.x + 3 * m * e * e * p2.x + e * e * e * to.cx;
+    const y = m * m * m * from.cy + 3 * m * m * e * p1.y + 3 * m * e * e * p2.y + e * e * e * to.cy;
     gsap.set(clone, {
-      x: lerp(from.x, to.cx - b.cx, home.t),
-      y: lerp(from.y, to.cy - b.cy, home.t),
-      scale: lerp(from.scale, to.w / b.w, home.t),
-      rotation: lerp(from.rotation, to.angle, home.t),
+      x: x - b.cx,
+      y: y - b.cy,
+      scale: from.scale + (to.w / b.w - from.scale) * e,
+      rotation: from.rotation + (to.angle - from.rotation) * e + correction * Math.sin(Math.PI * e),
     });
   };
 
   const tl = gsap.timeline({
     onComplete: () => {
+      progress.t = 1;
       fly();
+      // hand-over: the clone is now exactly the hanging print, at rest - the
+      // swing is released with no kick, so nothing marks the change
       print.style.visibility = '';
       gsap.set(clone, { autoAlpha: 0, clearProps: 'boxShadow' });
-      engine.rehang(index);
+      engine.pin(null);
       onDone();
     },
   });
   tl.to(text, { autoAlpha: 0, y: 8, duration: 0.22, stagger: 0.03, ease: 'power1.in' }, 0);
-  tl.to(paper, { autoAlpha: 0, duration: 0.55, ease: 'power1.inOut' }, 0.15);
-  tl.to(home, { t: 1, duration: 0.75, ease: 'power3.inOut', onUpdate: fly }, 0.15);
-  tl.to(clone, { boxShadow: HANGING_SHADOW, duration: 0.75, ease: 'power2.inOut' }, 0.15);
-  tl.to(others, { opacity: 1, filter: 'saturate(1)', duration: 0.6, ease: 'power1.out' }, 0.4);
+  tl.to(progress, { t: 1, duration, ease: 'none', onUpdate: fly }, 0);
+  tl.to(clone, { boxShadow: HANGING_SHADOW, duration, ease: RETURN_EASE }, 0);
+  tl.to(paper, { autoAlpha: 0, duration: duration * 0.75, ease: 'power1.inOut' }, 0.05);
+  tl.to(others, { opacity: 1, filter: 'saturate(1)', duration: duration * 0.8, ease: 'power1.out' }, duration * 0.2);
   return { kill: () => tl.kill() };
 }
 
@@ -317,6 +371,7 @@ export function playReturn(p: PickParts, onDone: () => void): PickRun {
 export function resetPick(p: PickParts) {
   gsap.killTweensOf([p.print, ...p.others, p.paper, p.clone, p.slot, ...p.text]);
   p.arm?.stop();
+  p.engine.pin(null);
   gsap.set(p.print, { y: 0 });
   p.print.style.visibility = '';
   gsap.set(p.others, { opacity: 1, filter: 'none' });

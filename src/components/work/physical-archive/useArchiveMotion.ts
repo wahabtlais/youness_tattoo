@@ -25,6 +25,11 @@ export interface ArchiveEngine {
   release(i: number): void;
   /** a print is clipped back on: a small swing */
   rehang(i: number): void;
+  /**
+   * Pin a print's swing while something else (the return flight) owns it:
+   * it holds its resting angle, with no spin, until released.
+   */
+  pin(i: number | null): void;
   pose(i: number): PrintPose | null;
   /** true once after a drag, so the drag's pointerup doesn't count as a pick */
   consumeDrag(): boolean;
@@ -77,6 +82,7 @@ export function useArchiveMotion({ pieces, stageRef, canvasRef, ropeSrc, reduced
     let inside = false;
     let held = false;
     let focusWithin = false;
+    let pinned: number | null = null;
     const angle = new Float32Array(n);
     const spin = new Float32Array(n);
     // the rope's one disturbance: where, how much, how fast it is changing
@@ -111,12 +117,23 @@ export function useArchiveMotion({ pieces, stageRef, canvasRef, ropeSrc, reduced
     // a relayout mid-pick would move the print out from under the hand
     // (e.g. the scrollbar going away as the dialog opens): wait for release
     let pendingResize = false;
+    let laidOutAt = 0; // the width the prints were last laid out for
     function resize() {
       if (held) {
         pendingResize = true;
         return;
       }
       width = stage!.clientWidth;
+      // a scrollbar coming or going (e.g. as a dialog opens or closes) is
+      // not a new layout: keep every print where it is, just refit the rope
+      if (laidOutAt && Math.abs(width - laidOutAt) < 32) {
+        const dpr = Math.min(devicePixelRatio || 1, 2);
+        canvas!.width = Math.round(width * dpr);
+        ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
+        draw();
+        return;
+      }
+      laidOutAt = width;
       L = layoutArchive(pieces, width);
       stage!.style.height = `${L.stageHeight}px`;
       const dpr = Math.min(devicePixelRatio || 1, 2);
@@ -177,6 +194,7 @@ export function useArchiveMotion({ pieces, stageRef, canvasRef, ropeSrc, reduced
         // swing: the bottom of each print lags behind the rope's travel
         const lag = clamp(speed * 0.011, -5, 5);
         for (let i = 0; i < n; i++) {
+          if (i === pinned) continue;
           const rest = L.prints[i].angle * (i === hovered ? 0.2 : 1);
           spin[i] += ((rest + lag) - angle[i]) * 0.045 * f;
           spin[i] *= Math.pow(0.86, f);
@@ -347,9 +365,16 @@ export function useArchiveMotion({ pieces, stageRef, canvasRef, ropeSrc, reduced
         dipTarget = 0;
         for (const j of [i - 1, i + 1]) if (j >= 0 && j < n) spin[j] += j < i ? 1.4 : -1.4;
       },
+      pin(i) {
+        pinned = i;
+        if (i === null) return;
+        // at rest: exactly the angle the swing would settle to, not moving
+        angle[i] = L.prints[i].angle + clamp(speed * 0.011, -5, 5);
+        spin[i] = 0;
+      },
       rehang(i) {
-        // a gentle swing as the clip takes the weight again
-        if (!reducedMotion) spin[i] += 0.45;
+        // the slightest give as the clip takes the weight again
+        if (!reducedMotion) spin[i] += 0.25;
       },
       pose(i) {
         const print = hangs[i]?.querySelector<HTMLElement>('[data-print]');

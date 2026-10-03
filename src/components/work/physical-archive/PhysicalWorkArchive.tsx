@@ -7,7 +7,7 @@ import { WorkArchiveIntro } from './WorkArchiveIntro';
 import { WorkPhotograph } from './WorkPhotograph';
 import { WorkPhysicalDetail, type PickedPrint } from './WorkPhysicalDetail';
 import type { ArmStage } from './arm/armStage';
-import { playPick, playReturn, resetPick, showDetailStatic, type PickParts, type PickRun } from './pickTimeline';
+import { playPick, returnPhotoToArchive, resetPick, showDetailStatic, type PickParts, type PickRun } from './pickTimeline';
 import './physicalArchive.css';
 
 interface PhysicalWorkArchiveProps {
@@ -137,7 +137,7 @@ export function PhysicalWorkArchive({ pieces, onFindSimilar }: PhysicalWorkArchi
       return finish();
     }
     phase.current = 'returning';
-    run.current = playReturn(p, finish);
+    run.current = returnPhotoToArchive(p, finish);
   }, [picked, parts, reducedMotion, finish]);
 
   const findSimilar = useCallback(
