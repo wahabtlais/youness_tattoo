@@ -269,7 +269,14 @@ export function useArchiveMotion({ pieces, stageRef, canvasRef, ropeSrc, reduced
     }
     const onEnter = () => (inside = true);
     const onLeave = () => (inside = false);
-    const onFocusIn = () => (focusWithin = true);
+    // only a keyboard user browsing the prints holds the archive still; focus
+    // that a closing dialog hands back (or a mouse click gives) does not
+    const onFocusIn = (e: FocusEvent) => {
+      const from = e.relatedTarget as Element | null;
+      const to = e.target as Element;
+      if (from?.closest('dialog') || !to.matches(':focus-visible')) return;
+      focusWithin = true;
+    };
     const onFocusOut = (e: FocusEvent) => {
       if (!stage!.contains(e.relatedTarget as Node | null)) focusWithin = false;
     };
@@ -315,8 +322,17 @@ export function useArchiveMotion({ pieces, stageRef, canvasRef, ropeSrc, reduced
       },
       hold(on) {
         held = on;
-        if (on) flingV = 0;
-        else if (pendingResize) {
+        if (on) {
+          flingV = 0;
+          return;
+        }
+        // back on the rope: forget the pointer/focus state from before the
+        // pick (the dialog covered the archive, so no leave events came)
+        hovered = null;
+        dipTarget = 0;
+        inside = stage!.matches(':hover');
+        focusWithin = false;
+        if (pendingResize) {
           pendingResize = false;
           resize();
         }
@@ -332,7 +348,8 @@ export function useArchiveMotion({ pieces, stageRef, canvasRef, ropeSrc, reduced
         for (const j of [i - 1, i + 1]) if (j >= 0 && j < n) spin[j] += j < i ? 1.4 : -1.4;
       },
       rehang(i) {
-        if (!reducedMotion) spin[i] += 1.6;
+        // a gentle swing as the clip takes the weight again
+        if (!reducedMotion) spin[i] += 0.45;
       },
       pose(i) {
         const print = hangs[i]?.querySelector<HTMLElement>('[data-print]');

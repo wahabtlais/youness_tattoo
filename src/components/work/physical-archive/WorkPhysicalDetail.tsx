@@ -79,7 +79,10 @@ export function WorkPhysicalDetail({
       <canvas ref={armCanvasRef} className="pointer-events-none fixed inset-0 z-3 size-full" aria-hidden="true" />
 
       {piece && picked && size && (
-        <div className="relative grid min-h-full content-center justify-center gap-8 px-page-x pt-16 pb-12 tablet:grid-flow-col tablet:items-end tablet:gap-[clamp(2rem,5vw,5rem)]">
+        <div
+          // the layout covers the dialog: a click on its empty paper closes, like the dialog's own surface
+          onClick={(e) => e.target === e.currentTarget && onClose()}
+          className="relative grid min-h-full content-center justify-center gap-8 px-page-x pt-16 pb-12 tablet:grid-flow-col tablet:items-end tablet:gap-[clamp(2rem,5vw,5rem)]">
           <div
             ref={slotRef}
             className="pa-print invisible justify-self-center opacity-0"

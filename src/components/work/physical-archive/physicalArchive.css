@@ -36,7 +36,13 @@
     0 1px 1px rgb(20 19 26 / 0.12),
     0 7px 14px -6px rgb(20 19 26 / 0.26),
     0 18px 30px -16px rgb(20 19 26 / 0.22);
-  transition: box-shadow 0.7s var(--ease-material);
+  /* the focus ring is always there, transparent, so it fades in rather than
+     snapping on (e.g. when a closed detail hands focus back to this print) */
+  outline: 1.5px solid transparent;
+  outline-offset: 5px;
+  transition:
+    box-shadow 0.7s var(--ease-material),
+    outline-color 0.5s var(--ease-editorial);
 }
 /* paper grain over the border and, faintly, the emulsion */
 .pa-print::after {
@@ -69,8 +75,7 @@
   outline: none;
 }
 .pa-photo:focus-visible .pa-print {
-  outline: 1.5px solid var(--color-focus);
-  outline-offset: 5px;
+  outline-color: var(--color-focus);
 }
 
 /* ---------- the clip on the rope, and its wire ---------- */

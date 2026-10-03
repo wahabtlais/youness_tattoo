@@ -35,7 +35,10 @@ let base: Base | null = null;
 
 /** the print's shadow once a hand holds it: lifted off the paper */
 const GRIPPED_SHADOW =
-  '0 0 0 0.5px rgb(20 19 26 / 0.12), 0 3px 3px rgb(20 19 26 / 0.14), 0 16px 26px -8px rgb(20 19 26 / 0.34), 0 34px 48px -20px rgb(20 19 26 / 0.28)';
+  '0 0 0 0.5px rgba(20,19,26,0.12), 0 3px 3px rgba(20,19,26,0.14), 0 16px 26px -8px rgba(20,19,26,0.34), 0 34px 48px -20px rgba(20,19,26,0.28)';
+/** ...and hanging on the rope (the same as .pa-print in physicalArchive.css) */
+const HANGING_SHADOW =
+  '0 0 0 0.5px rgba(20,19,26,0.1), 0 1px 1px rgba(20,19,26,0.12), 0 7px 14px -6px rgba(20,19,26,0.26), 0 18px 30px -16px rgba(20,19,26,0.22)';
 
 function placeClone(clone: HTMLElement, pose: PrintPose) {
   base = { cx: pose.cx, cy: pose.cy, w: pose.w, h: pose.h };
@@ -258,12 +261,17 @@ export function playPick(p: PickParts, onDetail: () => void): PickRun {
   };
 }
 
-/** Detail back onto the rope: the same print flies back to its clip. */
+/**
+ * Detail back onto the rope: the same print flies back to its clip. It
+ * homes in on the clip's LIVE position every frame (the hanging print
+ * keeps swinging gently while it flies), so it lands exactly where the
+ * print is and the hand-over is invisible; its shadow eases back to the
+ * hanging one on the way.
+ */
 export function playReturn(p: PickParts, onDone: () => void): PickRun {
   const { engine, index, print, others, paper, clone, slot, text } = p;
   gsap.set(print, { y: 0 });
-  const pose = engine.pose(index);
-  if (!pose || !base) {
+  if (!engine.pose(index) || !base) {
     resetPick(p);
     onDone();
     return { kill() {} };
@@ -271,24 +279,36 @@ export function playReturn(p: PickParts, onDone: () => void): PickRun {
   const b = base;
   // the clone takes over from the detail image, exactly where it is
   const box = slotBox(slot);
-  gsap.set(clone, { x: box.cx - b.cx, y: box.cy - b.cy, scale: box.w / b.w, rotation: 0, autoAlpha: 1 });
+  const from = { x: box.cx - b.cx, y: box.cy - b.cy, scale: box.w / b.w, rotation: 0 };
+  gsap.set(clone, { ...from, autoAlpha: 1 });
   gsap.set(slot, { autoAlpha: 0 });
+
+  const home = { t: 0 };
+  const lerp = (a: number, c: number, t: number) => a + (c - a) * t;
+  const fly = () => {
+    const to = engine.pose(index);
+    if (!to) return;
+    gsap.set(clone, {
+      x: lerp(from.x, to.cx - b.cx, home.t),
+      y: lerp(from.y, to.cy - b.cy, home.t),
+      scale: lerp(from.scale, to.w / b.w, home.t),
+      rotation: lerp(from.rotation, to.angle, home.t),
+    });
+  };
 
   const tl = gsap.timeline({
     onComplete: () => {
+      fly();
       print.style.visibility = '';
-      gsap.set(clone, { autoAlpha: 0 });
+      gsap.set(clone, { autoAlpha: 0, clearProps: 'boxShadow' });
       engine.rehang(index);
       onDone();
     },
   });
   tl.to(text, { autoAlpha: 0, y: 8, duration: 0.22, stagger: 0.03, ease: 'power1.in' }, 0);
   tl.to(paper, { autoAlpha: 0, duration: 0.55, ease: 'power1.inOut' }, 0.15);
-  tl.to(
-    clone,
-    { x: pose.cx - b.cx, y: pose.cy - b.cy, scale: pose.w / b.w, rotation: pose.angle, duration: 0.7, ease: 'power3.inOut' },
-    0.15,
-  );
+  tl.to(home, { t: 1, duration: 0.75, ease: 'power3.inOut', onUpdate: fly }, 0.15);
+  tl.to(clone, { boxShadow: HANGING_SHADOW, duration: 0.75, ease: 'power2.inOut' }, 0.15);
   tl.to(others, { opacity: 1, filter: 'saturate(1)', duration: 0.6, ease: 'power1.out' }, 0.4);
   return { kill: () => tl.kill() };
 }

@@ -30,7 +30,11 @@ export function WorkPhotograph({ piece, index, total, onPick, onHover, onFocus }
         onClick={() => onPick(index)}
         onPointerEnter={(e) => e.pointerType === 'mouse' && onHover(index)}
         onPointerLeave={() => onHover(null)}
-        onFocus={() => onFocus(index)}
+        onFocus={(e) => {
+          // keyboard browsing only: not the focus a closing dialog hands back
+          const from = e.relatedTarget as Element | null;
+          if (!from?.closest('dialog') && e.currentTarget.matches(':focus-visible')) onFocus(index);
+        }}
         onBlur={() => onHover(null)}
       >
         <span data-print className="pa-print">
