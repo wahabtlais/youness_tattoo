@@ -64,8 +64,7 @@ The strip is made seamless once (its tail cross-faded over its head) so it can t
 | Time | Beat |
 |---|---|
 | 0.00–0.25 | **Anticipation:** the archive stops, the others recede, the print lifts. |
-| 0.25–1.05 | **Enter:** the arm comes in on a diagonal from the bottom right. |
-| 1.05–1.40 | **Approach:** slow, onto the print's lower edge. It stops short and never overshoots. |
+| 0.25–1.40 | **Reach:** one continuous move. The arm curves up out of the bottom right onto its diagonal and decelerates the whole way onto the print's lower edge. It never overshoots. |
 | 1.40–1.55 | **Settle:** the hand stops on the contact point, low and right on the print (78% across, 80% down, configurable). |
 | 1.55–1.75 | **Give:** the print comes 14px to the hand, turns about 1.5°, and its shadow deepens. From here it is attached to the hand. |
 | 1.75–2.35 | **Pull:** hand and print move together down the arm's line, toward the viewer and a little toward the middle of the screen. The rope recoils and the empty clip stays on the line. |
@@ -87,7 +86,14 @@ The strip is made seamless once (its tail cross-faded over its head) so it can t
 - **Rig:** three joints (`ArmRoot`, `Forearm`, `WristHand`) and three clips (`Reach` 1.0s, `Grip` 0.48s, `Pull` 0.95s), used as prepared.
 - **Optimisation:** the shipped copy only recompresses the 2048² colour texture (PNG to JPEG) and repacks the buffers, taking it from 3.1 MB to 1.3 MB. The rig, weights and clips are untouched. The original package stays local in `assets-src/arm/` (git-ignored).
 
-**How the clips are used:** GSAP controls where the arm is, on screen and aimed at the selected print. The clips provide the local forearm and wrist motion. Each clip's progress (`pose.reach`, `pose.grip`, `pose.pull`, 0..1) is tweened on the same beats as the screen-space motion and applied by the mixer every frame, so they never run on their own clock. The clips' boundaries line up (Reach ends where Grip starts, and Grip ends where Pull starts), so they hand over without blending.
+**The clips are not used.** The arm moves as one rigid object: the model stays in its bind pose and only its parent transform (position, depth, lean) is animated. Playing the clips made the upper arm and shoulder wobble, because of the rig issue below. The clips remain in the GLB for future experiments.
+
+**Motion:** three continuous moves. Each is one GSAP tween of a single progress value along a cubic Bézier, with one ease. Position, depth and lean all follow that same progress, so velocity and rotation never jump, and each move starts exactly where the last ended.
+- **Reach** (`power2.out`, 1.15s): leaves the bottom of the screen heading straight up, curves onto the arm's line, and arrives at the contact point along it, decelerating continuously to contact. The lean eases out by 5° over the same move.
+- **Pull** (`power1.inOut`, 0.63s): starts the moment the print is held, down the arm's line and toward the viewer, and a little toward the middle of the screen.
+- **Retreat** (`power2.in`, 0.45s): from where the pull ended, accelerating away below the screen.
+
+The renderer pre-compiles its shaders and shadow map when the model loads, so the first frame of a reach never stalls.
 
 **Known issue in the prepared rig:**
 - **Inverted rig:** the mesh is oriented hand-down (hand at y≈0, shoulder at y=1.615), but the joints were placed as if the hand were at the top.
@@ -132,5 +138,5 @@ The strip is made seamless once (its tail cross-faded over its head) so it can t
 - The archive loops (it is a lap of eight prints), so a print leaves on the left and re-enters on the right.
 - The detail view is sized when it opens; resizing the window while it is open doesn't re-flow the flight.
 - GSAP (3.15, free standard licence) runs the pick choreography; three.js (r186) renders the arm.
-- The fingers are not rigged (by design), and with the rig issue above the wrist doesn't articulate yet either. The grab is sold by staging: pass behind, close over, attach.
+- The arm is one rigid object (fingers and wrist never move). The grab is sold by staging: the hand stops at the edge and the print comes to it.
 - three.js is about 155 kB gzipped, loaded lazily. Vite's 500 kB chunk-size notice for it is expected.

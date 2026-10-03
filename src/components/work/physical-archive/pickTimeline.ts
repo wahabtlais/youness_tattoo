@@ -135,49 +135,83 @@ export function playPick(p: PickParts, onDetail: () => void): PickRun {
     const hand = pose.w * (vw < 700 ? ARM.handPerPrintWidthMobile : ARM.handPerPrintWidth);
     stage.setPrint(clone, base!, hand);
 
-    // the contact point, low and right on the print (it hangs nearly level
-    // by now; its small remaining angle is ignored)
+    // the contact point, low and right on the print
     const contact = {
       x: pose.cx + (ARM.contact.x - 0.5) * pose.w,
       y: pose.cy + (ARM.contact.y - 0.5) * pose.h,
     };
-    // the arm's line: from one shoulder below the screen, leaning toward
-    // the print within a believable range; d points from the hand back
-    // along the arm (down and to the right)
+    // the arm's line: from one shoulder below the screen, leaning toward the
+    // print within a believable range; d points from the hand back along
+    // the arm (down and to the right)
     const [sx, sy] = portrait ? ARM.shoulderPortrait : ARM.shoulder;
     const raw = (Math.atan2(vw * sx - contact.x, vh * sy - contact.y) * 180) / Math.PI;
     const lean = Math.max(ARM.lean.min, Math.min(ARM.lean.max, raw));
     const d = { x: Math.sin((lean * Math.PI) / 180), y: Math.cos((lean * Math.PI) / 180) };
-    /** a pose this far back along the arm from the contact point */
-    const along = (dist: number, z: number, rz = lean) => ({
-      x: contact.x + d.x * dist,
-      y: contact.y + d.y * dist,
-      z,
-      rx: ARM.tilt,
-      ry: 0,
-      rz,
-    });
-    const offscreen = (vh - contact.y) / d.y + hand * 1.2;
-    // the pull draws the print toward the middle of the screen as well
-    const inward = (vw / 2 - contact.x) * ARM.pullToCentre;
-    const pulled = { ...along(ARM.pull * u, ARM.depth * u + ARM.pullDepth * u, lean - 3) };
-    pulled.x += inward;
+    const depth = ARM.depth * u;
 
-    gsap.set(stage.pose, { ...along(offscreen, ARM.depth * u + 40, lean + 4), reach: 0, grip: 0, pull: 0 });
+    /*
+     * One rigid arm, three continuous moves. Each is ONE tween of a progress
+     * value along a cubic Bezier, with ONE ease; position, depth and lean
+     * all follow that same progress, so velocity and rotation never jump.
+     * Each move starts exactly where the last ended (the arm is never reset).
+     */
+    const P = (x: number, y: number) => ({ x, y });
+    const bezier = (a: Pt, b: Pt, c: Pt, e: Pt, t: number) => {
+      const m = 1 - t;
+      return {
+        x: m * m * m * a.x + 3 * m * m * t * b.x + 3 * m * t * t * c.x + t * t * t * e.x,
+        y: m * m * m * a.y + 3 * m * m * t * b.y + 3 * m * t * t * c.y + t * t * t * e.y,
+      };
+    };
+    const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+    type Pt = { x: number; y: number };
+    const move = (path: [Pt, Pt, Pt, Pt], z: [number, number], rz: [number, number]) => (t: number) => {
+      const at = bezier(...path, t);
+      stage.pose.x = at.x;
+      stage.pose.y = at.y;
+      stage.pose.z = lerp(z[0], z[1], t);
+      stage.pose.rz = lerp(rz[0], rz[1], t);
+    };
+
+    // REACH: emerges from below the screen heading up, curves onto the arm's
+    // line, and arrives at the contact point along it - decelerating the
+    // whole way to the contact (power2.out: fast, then continuously slower)
+    const L = (vh - contact.y) / d.y + hand * 1.1; // far enough back to start fully off screen
+    const start = P(contact.x + d.x * L + L * ARM.curve, contact.y + d.y * L);
+    const reach = move(
+      [start, P(start.x, start.y - L * 0.45), P(contact.x + d.x * L * 0.3, contact.y + d.y * L * 0.3), contact],
+      [depth + 40 * u, depth],
+      [lean + ARM.turn, lean],
+    );
+    // PULL: from exactly where the reach ended, along the arm and toward the
+    // viewer, drawn a little toward the middle of the screen
+    const inward = (vw / 2 - contact.x) * ARM.pullToCentre;
+    const pulled = P(contact.x + d.x * ARM.pull * u + inward, contact.y + d.y * ARM.pull * u);
+    const pull = move(
+      [contact, P(contact.x + d.x * ARM.pull * u * 0.35, contact.y + d.y * ARM.pull * u * 0.35), pulled, pulled],
+      [depth, depth + ARM.pullDepth * u],
+      [lean, lean - 2],
+    );
+    // RETREAT: lets go and drops away down its own line, below the screen
+    const gone = P(pulled.x + d.x * vh * 0.9, pulled.y + d.y * vh * 0.9);
+    const retreat = move(
+      [pulled, P(pulled.x + d.x * vh * 0.3, pulled.y + d.y * vh * 0.3), gone, gone],
+      [depth + ARM.pullDepth * u, depth + ARM.pullDepth * u + 60 * u],
+      [lean - 2, lean + 2],
+    );
+
+    gsap.set(stage.pose, { rx: ARM.tilt, ry: 0 });
+    reach(0);
     stage.start();
 
+    const drive = { reach: 0, pull: 0, retreat: 0 };
     const tl = gsap.timeline({ onComplete: () => stage.stop() });
     // the print settles toward level while the arm comes in
     tl.to(clone, { rotation: pose.angle * 0.3, duration: 0.6, ease: 'power2.out' }, 0);
-    // enter (0.25-1.05): quick, then slowing, still turned a little
-    tl.to(stage.pose, { ...along(ARM.enterShort * u, ARM.depth * u + 16, lean + 2), duration: 0.8, ease: 'power2.out' }, 0);
-    // approach (1.05-1.40): the last few centimetres, slow; stops short of the print's face
-    tl.to(stage.pose, { ...along(ARM.approachShort * u, ARM.depth * u), duration: 0.35, ease: 'power3.out' }, 0.8);
-    // settle (1.40-1.55): the hand stops on the contact point
-    tl.to(stage.pose, { ...along(0, ARM.depth * u), duration: 0.15, ease: 'sine.inOut' }, 1.15);
-    tl.to(stage.pose, { reach: 1, duration: 1.15, ease: 'power1.inOut' }, 0);
-    // give (1.55-1.75): the PRINT comes to the hand, turns, its shadow deepens
-    tl.to(stage.pose, { grip: 1, duration: 0.35, ease: 'power1.inOut' }, 1.15);
+    // 0.25-1.40 reach: one continuous, decelerating move onto the contact point
+    tl.to(drive, { reach: 1, duration: 1.15, ease: 'power2.out', onUpdate: () => reach(drive.reach) }, 0);
+    // 1.40-1.55 a short settle: the hand is still; then the PRINT comes to it,
+    // turns a little, its shadow deepens - that is the grab
     tl.to(
       clone,
       {
@@ -188,20 +222,19 @@ export function playPick(p: PickParts, onDetail: () => void): PickRun {
         duration: 0.2,
         ease: 'power2.inOut',
       },
-      1.3,
+      1.27,
     );
-    tl.add(() => stage.attach(), 1.5);
-    // pull (1.75-2.35): hand and print together, down the arm's line and toward the viewer
-    tl.add(() => engine.release(index), 1.5);
-    tl.to(stage.pose, { ...pulled, duration: 0.6, ease: 'power2.inOut' }, 1.5);
-    tl.to(stage.pose, { pull: 1, duration: 0.6, ease: 'power1.inOut' }, 1.5);
-    // release (2.35-2.70): let go, and the arm retreats down its line, below the screen
+    tl.add(() => stage.attach(), 1.47);
+    // ~1.72-2.35 pull: hand and print together, starting the moment the print
+    // is held (a gentle ease, so it doesn't read as a freeze)
+    tl.add(() => engine.release(index), 1.47);
+    tl.to(drive, { pull: 1, duration: 0.63, ease: 'power1.inOut', onUpdate: () => pull(drive.pull) }, 1.47);
+    // 2.35-2.70 release and retreat: from rest, accelerating away below the screen
     tl.add(() => stage.release(), 2.1);
-    const retreat = along(ARM.pull * u + vh * 0.9, ARM.depth * u + ARM.pullDepth * u, lean + 5);
-    tl.to(stage.pose, { ...retreat, x: retreat.x + inward, duration: 0.35, ease: 'power2.in' }, 2.1);
-    // detail (2.50-3.10)
-    tl.addLabel('detail', 2.25);
-    addDetail(tl, p, 'detail', onDetail, 0.6);
+    tl.to(drive, { retreat: 1, duration: 0.45, ease: 'power2.in', onUpdate: () => retreat(drive.retreat) }, 2.1);
+    // ~2.35-3.10 detail: the print, released at rest, flies on into the detail
+    tl.addLabel('detail', 2.12);
+    addDetail(tl, p, 'detail', onDetail, 0.72);
     return tl;
   }
 

@@ -15,9 +15,12 @@ export interface PrintBase {
 /**
  * Where the arm is. x/y: the grip point on screen in CSS px (y down) as if
  * at the print's depth; z: px toward the viewer; rx/ry/rz in degrees.
- * reach/grip/pull: progress (0..1) through the GLB's own clips, so the
- * local arm motion stays locked to the screen-space choreography.
- * The pick timeline tweens this object; the stage renders it.
+ * The pick timeline drives this object; the stage renders it.
+ *
+ * This is the ONLY thing that moves the arm: it is one rigid object. The
+ * GLB's synthetic rig and its Reach/Grip/Pull clips are deliberately not
+ * used - they moved the upper arm and made the shoulder wobble - so the
+ * model always stays in its bind pose.
  */
 export interface ArmPose {
   x: number;
@@ -26,27 +29,15 @@ export interface ArmPose {
   rx: number;
   ry: number;
   rz: number;
-  reach: number;
-  grip: number;
-  pull: number;
-}
-
-/** the prepared GLB's clips, in the order they play */
-export const CLIPS = ['Reach', 'Grip', 'Pull'] as const;
-type ClipName = (typeof CLIPS)[number];
-
-interface LoadedArm {
-  scene: THREE.Group;
-  clips: THREE.AnimationClip[];
 }
 
 const DEG = Math.PI / 180;
 const FOV = 26;
 
-let gltfPromise: Promise<LoadedArm> | null = null;
-/** the model loads once and is reused for every pick */
-function loadArm(): Promise<LoadedArm> {
-  gltfPromise ??= new GLTFLoader().loadAsync(armUrl).then((g) => ({ scene: g.scene, clips: g.animations }));
+let gltfPromise: Promise<THREE.Group> | null = null;
+/** the model loads once and is reused for every pick (its clips are ignored) */
+function loadArm(): Promise<THREE.Group> {
+  gltfPromise ??= new GLTFLoader().loadAsync(armUrl).then((g) => g.scene);
   return gltfPromise;
 }
 
@@ -67,9 +58,7 @@ function loadArm(): Promise<LoadedArm> {
  * Renders only while a pick is playing.
  */
 export class ArmStage {
-  readonly pose: ArmPose = { x: 0, y: 0, z: 0, rx: 0, ry: 0, rz: 0, reach: 0, grip: 0, pull: 0 };
-  private mixer: THREE.AnimationMixer | null = null;
-  private actions: Partial<Record<ClipName, THREE.AnimationAction>> = {};
+  readonly pose: ArmPose = { x: 0, y: 0, z: 0, rx: 0, ry: 0, rz: 0 };
   private renderer: THREE.WebGLRenderer;
   private scene = new THREE.Scene();
   private camera = new THREE.PerspectiveCamera(FOV, 1, 10, 10000);
@@ -137,20 +126,7 @@ export class ArmStage {
   /** load (once) and normalise the model: grip point at the origin, one hand length = 1 */
   async ready(): Promise<void> {
     if (this.model) return;
-    const { scene, clips } = await loadArm();
-    // the clips are driven by progress, not by the clock (see applyClips)
-    this.mixer = new THREE.AnimationMixer(scene);
-    for (const name of CLIPS) {
-      const clip = THREE.AnimationClip.findByName(clips, name);
-      if (!clip) continue;
-      const action = this.mixer.clipAction(clip);
-      action.setLoop(THREE.LoopOnce, 1);
-      action.clampWhenFinished = true;
-      action.play();
-      action.paused = true;
-      action.weight = 0;
-      this.actions[name] = action;
-    }
+    const scene = await loadArm();
     const yaw = new THREE.Group();
     const flip = new THREE.Group();
     flip.rotation.z = Math.PI; // the arm hangs down in the file: point it up
@@ -165,7 +141,7 @@ export class ArmStage {
       const mesh = o as THREE.Mesh;
       if (!mesh.isMesh) return;
       mesh.castShadow = true;
-      // skinned: its bounds move with the bones, so don't cull on the rest pose
+      // skinned mesh: its bounds are the bind pose; never cull it mid-pick
       mesh.frustumCulled = false;
       const pos = mesh.geometry.getAttribute('position');
       const v = new THREE.Vector3();
@@ -199,6 +175,16 @@ export class ArmStage {
     norm.add(yaw);
     this.root.add(norm);
     this.model = norm;
+
+    // warm up: compile the shaders and the shadow map now, while nothing is
+    // on screen, so the first frame of the reach doesn't stall
+    this.root.visible = true;
+    this.occluder.visible = true;
+    this.renderer.compile(this.scene, this.camera);
+    this.renderer.render(this.scene, this.camera);
+    this.root.visible = false;
+    this.occluder.visible = false;
+    this.renderer.clear();
   }
 
   resize() {
@@ -277,24 +263,6 @@ export class ArmStage {
     this.renderer.clear();
   }
 
-  /**
-   * The local motion from the GLB: each clip held at its progress, the
-   * latest one that has started taking over from the one before.
-   */
-  private applyClips() {
-    if (!this.mixer) return;
-    const p = this.pose;
-    const progress: Record<ClipName, number> = { Reach: p.reach, Grip: p.grip, Pull: p.pull };
-    const active = p.pull > 0 ? 'Pull' : p.grip > 0 ? 'Grip' : 'Reach';
-    for (const name of CLIPS) {
-      const action = this.actions[name];
-      if (!action) continue;
-      action.weight = name === active ? 1 : 0;
-      action.time = progress[name] * action.getClip().duration;
-    }
-    this.mixer.update(0);
-  }
-
   private applyPose() {
     const p = this.pose;
     this.root.position.set(p.x - this.W / 2, this.H / 2 - p.y, p.z);
@@ -303,7 +271,6 @@ export class ArmStage {
   }
 
   private frame() {
-    this.applyClips();
     this.applyPose();
     const clone = this.clone;
     const base = this.base;
@@ -341,9 +308,6 @@ export class ArmStage {
 
   dispose() {
     this.stop();
-    this.mixer?.stopAllAction();
-    this.mixer?.uncacheRoot(this.mixer.getRoot());
-    this.mixer = null;
     this.scene.traverse((o) => {
       const mesh = o as THREE.Mesh;
       if (!mesh.isMesh) return;

@@ -38,10 +38,14 @@ export const ARM = {
   /** yaw that shows the back of the hand and the sleeve */
   yaw: -28,
 
-  /** the entrance ends this far short of the contact point, along the arm */
-  enterShort: 70,
-  /** the final approach stops this far short (it never overshoots into the print) */
-  approachShort: 3,
+  /**
+   * The reach's curve: it starts this much (fraction of its length) further
+   * right and heads straight up out of the bottom of the screen, then bends
+   * onto the arm's line.
+   */
+  curve: 0.12,
+  /** the arm's extra lean at the start of the reach, settled out by contact (degrees) */
+  turn: 5,
   /** how far the print comes to the hand, along the arm, and how much it turns (degrees) */
   give: 14,
   giveTurn: -1.5,
