@@ -400,6 +400,69 @@ export function returnPhotoToArchive(p: PickParts, onDone: () => void): PickRun 
   };
 }
 
+/**
+ * Open the detail without the pick - a shared /work/:slug link, or another
+ * print chosen from inside the detail. The print leaves the rope unseen
+ * (the paper covers it), and the detail rises onto the paper once its image
+ * is decoded, so it never appears half-loaded. The flying copy is parked on
+ * the detail image (on its own, already rasterised layer) exactly as after
+ * a pick, so closing uses the same return to the clip.
+ */
+export function openDetailDirect(p: PickParts, pose: PrintPose, onDetail: () => void): PickRun {
+  const { engine, print, others, paper, clone, slot, text } = p;
+  engine.hold(true);
+  placeClone(clone, pose);
+  gsap.set(print, { y: 0 });
+  print.style.visibility = 'hidden';
+  gsap.set(others, { opacity: 0.45, filter: 'saturate(0.6)' });
+  gsap.set(text, { autoAlpha: 0, y: 14 });
+  // park the flying copy on the detail image (measured before it is offset)
+  const b = base!;
+  const box = slotBox(slot);
+  gsap.set(clone, { x: box.cx - b.cx, y: box.cy - b.cy, scale: box.w / b.w, rotation: 0, autoAlpha: 0.001, willChange: 'transform' });
+  gsap.set(slot, { autoAlpha: 0, y: 12 });
+
+  // the paper is laid at once, while the photograph decodes, so the print
+  // never shows through onto the rope
+  const lay = gsap.to(paper, { autoAlpha: 1, duration: 0.3, ease: 'power1.inOut' });
+  let killed = false;
+  let tl: gsap.core.Timeline | undefined;
+  const img = slot.querySelector('img');
+  const decoded = img ? Promise.race([img.decode().catch(() => undefined), wait(1500)]) : Promise.resolve();
+  void Promise.all([decoded, lay.then()]).then(() => {
+    if (killed) return;
+    tl = gsap.timeline({ onComplete: onDetail });
+    tl.to(slot, { autoAlpha: 1, y: 0, duration: 0.65, ease: 'power3.out' }, 0);
+    tl.to(text, { autoAlpha: 1, y: 0, duration: 0.5, stagger: 0.06, ease: 'power2.out' }, 0.2);
+  });
+  return {
+    kill() {
+      killed = true;
+      lay.kill();
+      tl?.kill();
+    },
+  };
+}
+
+/**
+ * Before another print opens in its place: this one's detail fades off the
+ * paper (the paper stays), and its print goes back on its clip, unseen.
+ */
+export function fadeDetailOut(p: PickParts, reduced: boolean, then: () => void): PickRun {
+  const { print, clone, slot, text } = p;
+  const tl = gsap.timeline({
+    onComplete: () => {
+      gsap.set(print, { y: 0 });
+      print.style.visibility = '';
+      then();
+    },
+  });
+  gsap.set(clone, { autoAlpha: 0 });
+  tl.to(text, { autoAlpha: 0, y: 6, duration: reduced ? 0 : 0.2, stagger: reduced ? 0 : 0.02, ease: 'power1.in' }, 0);
+  tl.to(slot, { autoAlpha: 0, y: -8, duration: reduced ? 0 : 0.28, ease: 'power2.in' }, 0);
+  return { kill: () => tl.kill() };
+}
+
 /** No animation (reduced motion, Find Similar, or an interrupted pick): put everything back. */
 export function resetPick(p: PickParts) {
   gsap.killTweensOf([p.print, ...p.others, p.paper, p.clone, p.slot, ...p.text]);

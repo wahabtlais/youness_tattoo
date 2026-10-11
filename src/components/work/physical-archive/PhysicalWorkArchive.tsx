@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useMatch, useNavigate } from 'react-router';
 import ropeSrc from '../../../assets/work/rope.png';
 import { useReducedMotion } from '../../../hooks/useReducedMotion';
 import type { TattooWork } from '../../../domain/work';
@@ -7,7 +8,16 @@ import { WorkArchiveIntro } from './WorkArchiveIntro';
 import { WorkPhotograph } from './WorkPhotograph';
 import { WorkPhysicalDetail, type PickedPrint } from './WorkPhysicalDetail';
 import type { ArmStage } from './arm/armStage';
-import { playPick, returnPhotoToArchive, resetPick, showDetailStatic, type PickParts, type PickRun } from './pickTimeline';
+import {
+  fadeDetailOut,
+  openDetailDirect,
+  playPick,
+  returnPhotoToArchive,
+  resetPick,
+  showDetailStatic,
+  type PickParts,
+  type PickRun,
+} from './pickTimeline';
 import './physicalArchive.css';
 
 interface PhysicalWorkArchiveProps {
@@ -16,7 +26,18 @@ interface PhysicalWorkArchiveProps {
   onFindSimilar: (workId: string) => void;
 }
 
-type Phase = 'picking' | 'detail' | 'returning';
+/**
+ * picking   - the arm is taking a print down (opened from the rope)
+ * opening   - the detail is opening directly: a shared /work/:slug link, or
+ *             another print chosen from inside the detail
+ * detail    - the detail is open and settled
+ * switching - fading one print's detail out for another
+ * returning - the print is flying back to its clip
+ */
+type Phase = 'picking' | 'opening' | 'detail' | 'switching' | 'returning';
+
+const DETAIL_PATH = '/work/:slug';
+const isDetailUrl = () => /^\/work\/[^/]+\/?$/.test(location.pathname);
 
 /**
  * PROTOTYPE - the Work section as a physical archive: real prints clipped to
@@ -33,7 +54,7 @@ export function PhysicalWorkArchive({ pieces, onFindSimilar }: PhysicalWorkArchi
   const paperRef = useRef<HTMLDivElement>(null);
   const slotRef = useRef<HTMLDivElement>(null);
   const cloneRef = useRef<HTMLSpanElement>(null);
-  const textRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
   const armCanvasRef = useRef<HTMLCanvasElement>(null);
   const arm = useRef<ArmStage | null>(null);
 
@@ -72,6 +93,17 @@ export function PhysicalWorkArchive({ pieces, onFindSimilar }: PhysicalWorkArchi
   const phase = useRef<Phase | null>(null);
   const run = useRef<PickRun | null>(null);
 
+  // the open detail has its own address (/work/:slug) - shareable, and the
+  // browser's Back closes it the same way the Close control does
+  const navigate = useNavigate();
+  const slug = useMatch(DETAIL_PATH)?.params.slug ?? null;
+  /** we pushed the detail's URL ourselves (so closing steps back, not replaces) */
+  const pushed = useRef(false);
+  /** the detail has closed and its address is being left: ignore it until it has gone */
+  const leaving = useRef(false);
+  /** the address's slug last time it was looked at (to tell Back from a pick still arriving) */
+  const lastSlug = useRef<string | null>(null);
+
   const parts = useCallback((index: number): PickParts | null => {
     const stage = stageRef.current;
     const dialog = paperRef.current?.parentElement;
@@ -91,38 +123,94 @@ export function PhysicalWorkArchive({ pieces, onFindSimilar }: PhysicalWorkArchi
     };
   }, [getEngine]);
 
-  const pick = useCallback(
-    (index: number) => {
-      const e = getEngine();
-      if (!e || phase.current || e.consumeDrag()) return;
-      const pose = e.pose(index);
+  /** the print as it hangs right now: what the detail is built from */
+  const measure = useCallback(
+    (index: number): PickedPrint | null => {
+      const pose = getEngine()?.pose(index);
       const img = stageRef.current?.querySelectorAll<HTMLImageElement>('[data-print] img')[index];
-      if (!pose || !img) return;
-      phase.current = 'picking';
-      setPicked({ index, w: pose.w, h: pose.h, border: pose.border, src: img.currentSrc || img.src });
+      if (!pose || !img) return null;
+      return { index, w: pose.w, h: pose.h, border: pose.border, src: img.currentSrc || img.src };
     },
     [getEngine],
   );
 
-  // the dialog is open and laid out: run the choreography
+  const pick = useCallback(
+    (index: number) => {
+      const e = getEngine();
+      if (!e || phase.current || e.consumeDrag()) return;
+      const next = measure(index);
+      if (!next) return;
+      phase.current = 'picking';
+      setPicked(next);
+      pushed.current = true;
+      navigate(`/work/${pieces[index].slug}`);
+    },
+    [getEngine, measure, navigate, pieces],
+  );
+
+  /** the detail has arrived: the visitor's focus goes to what they opened */
+  const arrived = useCallback(() => {
+    phase.current = 'detail';
+    titleRef.current?.focus({ preventScroll: true });
+  }, []);
+
+  // the dialog is open and laid out: run the choreography for how it opened
   useLayoutEffect(() => {
-    if (!picked || phase.current !== 'picking') return;
+    if (!picked) return;
+    const mode = phase.current;
+    if (mode !== 'picking' && mode !== 'opening') return;
     const p = parts(picked.index);
     if (!p) return;
     if (reducedMotion) {
       showDetailStatic(p);
-      phase.current = 'detail';
+      arrived();
       return;
     }
-    run.current = playPick(p, () => (phase.current = 'detail'));
-  }, [picked, parts, reducedMotion]);
+    if (mode === 'picking') run.current = playPick(p, arrived);
+    else {
+      const pose = p.engine.pose(picked.index);
+      if (pose) run.current = openDetailDirect(p, pose, arrived);
+    }
+  }, [picked, parts, reducedMotion, arrived]);
+
+  // the page title follows the open piece
+  useEffect(() => {
+    if (!picked) return;
+    const before = document.title;
+    const piece = pieces[picked.index];
+    document.title = `${piece.title} ${String(picked.index + 1).padStart(2, '0')} — Younes Tattoo`;
+    return () => {
+      document.title = before;
+    };
+  }, [picked, pieces]);
+
+  // focus goes back to the print that went back on the rope - not
+  // necessarily the one that opened the detail (another may have been
+  // chosen inside it, or it was opened from a link). Runs after the
+  // dialog's own close, which returns focus to its opener.
+  const returned = useRef<number | null>(null);
+  useEffect(() => {
+    if (picked || returned.current === null) return;
+    stageRef.current?.querySelectorAll<HTMLElement>('.pa-photo')[returned.current]?.focus({ preventScroll: true });
+    returned.current = null;
+  }, [picked]);
 
   const finish = useCallback(() => {
     phase.current = null;
     run.current = null;
     getEngine()?.hold(false);
-    setPicked(null);
-  }, [getEngine]);
+    setPicked((current) => {
+      returned.current = current?.index ?? null;
+      return null;
+    });
+    // leave the detail's address (unless Back already did)
+    if (isDetailUrl()) {
+      leaving.current = true;
+      if (pushed.current) navigate(-1);
+      else navigate('/', { replace: true });
+    }
+    pushed.current = false;
+  }, [getEngine, navigate]);
 
   /** close: fly the print back to its clip (or snap back when that isn't possible) */
   const close = useCallback(() => {
@@ -140,16 +228,62 @@ export function PhysicalWorkArchive({ pieces, onFindSimilar }: PhysicalWorkArchi
     run.current = returnPhotoToArchive(p, finish);
   }, [picked, parts, reducedMotion, finish]);
 
-  const findSimilar = useCallback(
-    (piece: TattooWork) => {
-      const p = picked && parts(picked.index);
-      run.current?.kill();
-      if (p) resetPick(p);
-      finish();
-      onFindSimilar(piece.id);
+  // Find similar opens the consultation over the detail, with this piece as
+  // its starting reference; closing the consultation comes back to the piece
+  const findSimilar = useCallback((piece: TattooWork) => onFindSimilar(piece.id), [onFindSimilar]);
+
+  /** another print, chosen from inside the detail: the detail changes over in place */
+  const openOther = useCallback(
+    (index: number) => {
+      if (!picked || phase.current !== 'detail' || index === picked.index) return;
+      const p = parts(picked.index);
+      if (!p) return;
+      phase.current = 'switching';
+      run.current = fadeDetailOut(p, reducedMotion, () => {
+        const next = measure(index);
+        if (!next) return;
+        phase.current = 'opening';
+        setPicked(next);
+        navigate(`/work/${pieces[index].slug}`, { replace: true });
+      });
     },
-    [picked, parts, finish, onFindSimilar],
+    [picked, parts, reducedMotion, measure, navigate, pieces],
   );
+
+  // the address drives the detail too: a shared link opens it directly over
+  // the archive; Back (or a link to another piece) closes or changes it
+  useEffect(() => {
+    const was = lastSlug.current;
+    lastSlug.current = slug;
+    if (leaving.current) {
+      if (slug === null) leaving.current = false;
+      return;
+    }
+    const index = slug === null ? -1 : pieces.findIndex((w) => w.slug === slug);
+    if (slug !== null && index < 0) {
+      navigate('/', { replace: true });
+      return;
+    }
+    if (index < 0) {
+      // the address LEFT the detail (Back): close it the usual way - but not
+      // when a pick has opened it and its address hasn't arrived yet
+      if (was !== null && picked && phase.current !== 'returning') close();
+      return;
+    }
+    if (picked?.index === index || phase.current) return;
+    // arriving on /work/:slug: bring the archive into view behind the
+    // detail (so closing returns the print to a rope you can see), and give
+    // it a frame to settle there before the print is measured and opened
+    stageRef.current?.scrollIntoView({ block: 'center', behavior: 'instant' });
+    const frame = requestAnimationFrame(() => {
+      if (phase.current) return;
+      const next = measure(index);
+      if (!next) return;
+      phase.current = 'opening';
+      setPicked(next);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [slug, pieces, picked, close, measure, navigate]);
 
   const hover = useCallback((i: number | null) => getEngine()?.hover(i), [getEngine]);
   const focus = useCallback((i: number) => {
@@ -189,15 +323,15 @@ export function PhysicalWorkArchive({ pieces, onFindSimilar }: PhysicalWorkArchi
       </p>
 
       <WorkPhysicalDetail
-        piece={picked ? pieces[picked.index] : null}
+        pieces={pieces}
         picked={picked}
-        total={pieces.length}
         onClose={close}
         onFindSimilar={findSimilar}
+        onOpenOther={openOther}
         paperRef={paperRef}
         slotRef={slotRef}
         cloneRef={cloneRef}
-        textRef={textRef}
+        titleRef={titleRef}
         armCanvasRef={armCanvasRef}
       />
     </section>

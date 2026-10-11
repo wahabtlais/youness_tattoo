@@ -8,6 +8,7 @@ React Router 8 in data-router mode (`createBrowserRouter`). The route table is [
 SiteLayout            Nav, RegistrationMarks, <main>, ConsultationProvider
 └── (errorElement: RouteError, rendered inside the layout)
     ├── /             HomePage
+    │   └── work/:slug    (no element) the piece's detail, opened over the archive
     └── *             NotFoundPage
 ```
 
@@ -19,7 +20,7 @@ Pages are thin: they compose sections and wire them to app services (the consult
 |---|---|---|---|
 | `/` | Home: hero, work, studio, booking intro | Built | |
 | `/work` | Full archive with filters | 2 | Only if the home wall stops being enough. Otherwise `/#work`. |
-| `/work/:slug` | Tattoo detail: large image, real metadata, related work, **Find Similar** | 3 | `slug` is on `TattooWork` today (equal to `id`). Replaces the viewer dialog as the shareable view; the dialog can stay as a quick look. |
+| `/work/:slug` | Tattoo detail: large image, metadata, other pieces, **Find Similar** | Built | A child of `/` with no element: the physical archive reads the slug and opens its detail over itself, so the archive never remounts. Unknown slugs go to `/`. See [PROTOTYPE_PHYSICAL_ARCHIVE.md](PROTOTYPE_PHYSICAL_ARCHIVE.md#the-detail). |
 | `/consultation` | Consultation (if it outgrows the dialog) | 5 | Takes the entry via search params, e.g. `?from=find-similar&work=03` |
 | `/consultation/:id` | Summary and status for a submitted consultation | 6–7 | Needs the API; reached through a private link |
 | `/studio` | Studio / about Younes | 8 | Only once real content exists |

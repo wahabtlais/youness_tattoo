@@ -79,11 +79,26 @@ The strip is made seamless once (its tail cross-faded over its head) so it can t
 - **Handoff:** the copy and the hanging print match to well under a pixel. The dialog teardown (a React update) runs 180ms later, out of the landing frame.
 - **Hover and focus:** a print just re-hung doesn't lift for hover or focus until the pointer or focus moves on, so the hover state that touch screens keep on a tapped print can't make it jump. Its focus ring fades in a beat after landing.
 
-**Find similar** opens the existing consultation with `{ from: 'find-similar', workId }`. There is no similarity logic yet.
+## The detail
 
-**Keyboard:** Tab reaches every print (the archive scrolls to the focused one), Enter takes it down, and Escape returns it with focus back on that print.
+The print laid out on paper: the photograph large (left, or on top on portrait screens and phones), and beside it, in order:
+- **Counter:** `/ 03 of 08`, from the piece's place in the archive data.
+- **Title:** the piece's `title`, or the neutral "Tattoo study".
+- **Style / placement and the story:** from `style`, `placement` and `description` on `TattooWork` when they exist. Until then, understated placeholders say they will come from the studio. Nothing is invented.
+- **Find similar →:** opens the existing consultation over the detail with `{ from: 'find-similar', workId }`. The consultation shows the piece as its starting reference. Closing it comes back to the detail, focus on Find similar. There is no similarity logic.
+- **More from the archive:** the next four prints along the rope, as small prints. It is plainly archive order and does not claim the pieces are similar. Choosing one fades this detail off the paper and the other on (its print leaves the rope unseen; the URL is replaced, not pushed).
 
-**Reduced motion:** no drift, swing or rope play, and no arm. three.js and the model are never downloaded. Selecting goes straight to the detail and back.
+**Address:** an open detail is `/work/:slug` (see [ROUTES.md](ROUTES.md)). The route renders nothing itself; the archive reads the slug, so moving between `/` and a detail never remounts the archive, its rope or the arm.
+- **Picking** a print pushes its URL; closing steps back. The browser's Back closes it with the same return animation.
+- **A shared link** opens the home page with the archive scrolled into view behind the detail. The paper is laid first, then the print rises onto it, then the text. No arm. Closing returns the print to its clip on the visible rope and replaces the URL with `/`.
+- **An unknown slug** goes to `/`.
+- The page title follows the open piece.
+
+**Focus:** the title takes focus when the detail arrives. Tab goes to Find similar, then the other prints, then Close. On close, focus goes to the print that went back on the rope (not necessarily the one that opened the detail).
+
+**Keyboard:** Tab reaches every print (the archive scrolls to the focused one), Enter or Space takes it down, and Escape returns it.
+
+**Reduced motion:** no drift, swing or rope play, and no arm. three.js and the model are never downloaded. Selecting, switching and closing go straight to the next state.
 
 ## The arm
 
@@ -136,7 +151,8 @@ The renderer pre-compiles its shaders and shadow map when the model loads, so th
 |---|---|
 | **Arm** (`younes_tattoo_arm_rigged.glb`) | A licensed stock model (CC BY 4.0). **Its sleeve is someone else's tattoo design, not Younes's work.** Before this ships, either credit it visibly and make clear it isn't his, or replace it with a model wearing his own work. The public site also needs a visible attribution line. |
 | **Rope** (`src/assets/work/rope.png`) | Provided for this prototype. **Its source and licence are not recorded yet.** Record them (as in INK_ASSETS.md) before it ships. |
-| **Detail copy** | Title is the archive's neutral label. Style, placement and the story are marked "to be added": nothing is invented. |
+| **Detail copy** | Title is the archive's neutral label. Style, placement and the story are marked "to be added": nothing is invented. They fill in from `TattooWork` when the studio supplies them. |
+| **More from the archive** | Archive order, not similarity. Real "similar work" needs tags or style data first. |
 | **Intro copy** | Draft ("Original pieces / no repeats" is from the brief, so confirm it is accurate). "View all works" jumps to the archive, which holds all eight works. |
 
 ## Known limits of the prototype

@@ -1,6 +1,8 @@
 import type { ConsultationEntry } from '../../domain/consultation';
+import { useWork } from '../../hooks/useWork';
 import { Button } from '../ui/Button';
 import { Dialog } from '../ui/Dialog';
+import { ResponsiveImage } from '../ui/ResponsiveImage';
 
 interface ConsultationPanelProps {
   /** null when closed */
@@ -14,6 +16,13 @@ interface ConsultationPanelProps {
  * field marks where a message (typed or spoken) will enter the flow.
  */
 export function ConsultationPanel({ entry, onClose }: ConsultationPanelProps) {
+  // Find similar: the piece the visitor started from is the first reference
+  const work = useWork();
+  const reference =
+    entry?.from === 'find-similar' && work.status === 'success'
+      ? work.data.find((w) => w.id === entry.workId)
+      : undefined;
+
   return (
     <Dialog
       open={entry !== null}
@@ -33,6 +42,23 @@ export function ConsultationPanel({ entry, onClose }: ConsultationPanelProps) {
           This is where the conversation will start — describing what you want, seeing reference pieces, and
           moving toward a booking. Voice consultation is still in development.
         </p>
+        {reference && (
+          <figure className="mb-7 flex items-center gap-4 border-t border-rule pt-6">
+            <ResponsiveImage
+              image={reference.image}
+              alt={reference.alt}
+              sizes="56px"
+              ratio="4 / 5"
+              frameClassName="w-14 shrink-0 border-[3px] border-paper"
+            />
+            <figcaption>
+              <p className="type-meta text-ink-muted">Starting from</p>
+              <p className="mt-1 font-serif text-lede">
+                {reference.title} <span className="text-ink-muted">{reference.id}</span>
+              </p>
+            </figcaption>
+          </figure>
+        )}
         <form className="flex gap-3 border-t border-rule pt-6" onSubmit={(e) => e.preventDefault()}>
           <input
             type="text"
