@@ -465,25 +465,6 @@ export function fadeDetailOut(p: PickParts, reduced: boolean, then: () => void):
   return { kill: () => tl.kill() };
 }
 
-/**
- * Version B only (detail-v2): the detail has swapped another print into
- * the large place by itself. Behind the paper, the rope catches up - the
- * print that was open goes back on its clip, receded like the others, and
- * the new one leaves it, unseen, as itself - and the flying copy is parked
- * on the new large print exactly as after a pick, so Close returns the
- * right photograph from the right place.
- */
-export function adoptDetail(p: PickParts, previous: HTMLElement, pose: PrintPose) {
-  gsap.set(previous, { y: 0, opacity: 0.45, filter: 'saturate(0.6)' });
-  previous.style.visibility = '';
-  gsap.set(p.print, { y: 0, opacity: 1, filter: 'none' });
-  p.print.style.visibility = 'hidden';
-  placeClone(p.clone, pose);
-  const b = base!;
-  const box = slotBox(p.slot);
-  gsap.set(p.clone, { x: box.cx - b.cx, y: box.cy - b.cy, scale: box.w / b.w, rotation: 0, autoAlpha: 0.001, willChange: 'transform' });
-}
-
 /** No animation (reduced motion, Find Similar, or an interrupted pick): put everything back. */
 export function resetPick(p: PickParts) {
   gsap.killTweensOf([p.print, ...p.others, p.paper, p.clone, p.slot, ...p.text]);

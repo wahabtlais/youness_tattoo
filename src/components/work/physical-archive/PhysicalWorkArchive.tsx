@@ -7,11 +7,8 @@ import { useArchiveMotion } from './useArchiveMotion';
 import { WorkArchiveIntro } from './WorkArchiveIntro';
 import { WorkPhotograph } from './WorkPhotograph';
 import { WorkPhysicalDetail, type PickedPrint } from './WorkPhysicalDetail';
-import { WorkDetailV2 } from './detail-v2/WorkDetailV2';
-import { detailVersion } from './detailVersion';
 import type { ArmStage } from './arm/armStage';
 import {
-  adoptDetail,
   fadeDetailOut,
   openDetailDirect,
   playPick,
@@ -34,12 +31,10 @@ interface PhysicalWorkArchiveProps {
  * opening   - the detail is opening directly: a shared /work/:slug link, or
  *             another print chosen from inside the detail
  * detail    - the detail is open and settled
- * switching - fading one print's detail out for another (Version B: two
- *             prints changing places inside the detail)
- * adopting  - Version B: the rope catching up with the detail's new print
+ * switching - fading one print's detail out for another
  * returning - the print is flying back to its clip
  */
-type Phase = 'picking' | 'opening' | 'detail' | 'switching' | 'adopting' | 'returning';
+type Phase = 'picking' | 'opening' | 'detail' | 'switching' | 'returning';
 
 const DETAIL_PATH = '/work/:slug';
 const isDetailUrl = () => /^\/work\/[^/]+\/?$/.test(location.pathname);
@@ -290,39 +285,6 @@ export function PhysicalWorkArchive({ pieces, onFindSimilar }: PhysicalWorkArchi
     return () => cancelAnimationFrame(frame);
   }, [slug, pieces, picked, close, measure, navigate]);
 
-  // ---- Version B (detail-v2): the detail swaps prints by itself and tells
-  // the archive, which catches the rope up behind the paper ----
-
-  /** a print's size as it hangs here: Version B scales its prints from it */
-  const archiveSize = useCallback((i: number) => getEngine()?.pose(i) ?? null, [getEngine]);
-  const switching = useCallback(() => {
-    if (phase.current === 'detail') phase.current = 'switching';
-  }, []);
-  /** the piece that was open before Version B swapped another in */
-  const adoptFrom = useRef<number | null>(null);
-  const switched = useCallback(
-    (index: number) => {
-      if (!picked || phase.current !== 'switching') return;
-      const next = measure(index);
-      if (!next) return;
-      adoptFrom.current = picked.index;
-      phase.current = 'adopting';
-      setPicked(next);
-      navigate(`/work/${pieces[index].slug}`, { replace: true });
-    },
-    [picked, measure, navigate, pieces],
-  );
-  useLayoutEffect(() => {
-    if (!picked || phase.current !== 'adopting') return;
-    const p = parts(picked.index);
-    const from = adoptFrom.current;
-    const previous = from === null ? null : stageRef.current?.querySelectorAll<HTMLElement>('[data-print]')[from];
-    const pose = p?.engine.pose(picked.index);
-    if (p && pose && previous) adoptDetail(p, previous, pose);
-    adoptFrom.current = null;
-    phase.current = 'detail';
-  }, [picked, parts]);
-
   const hover = useCallback((i: number | null) => getEngine()?.hover(i), [getEngine]);
   const focus = useCallback((i: number) => {
     getEngine()?.reveal(i);
@@ -360,35 +322,18 @@ export function PhysicalWorkArchive({ pieces, onFindSimilar }: PhysicalWorkArchi
         <span>{reducedMotion ? 'Drag or tab to explore' : 'Drag to explore'}</span>
       </p>
 
-      {detailVersion === 'b' ? (
-        <WorkDetailV2
-          pieces={pieces}
-          picked={picked}
-          onClose={close}
-          onFindSimilar={findSimilar}
-          onSwitching={switching}
-          onSwitched={switched}
-          archiveSize={archiveSize}
-          paperRef={paperRef}
-          slotRef={slotRef}
-          cloneRef={cloneRef}
-          titleRef={titleRef}
-          armCanvasRef={armCanvasRef}
-        />
-      ) : (
-        <WorkPhysicalDetail
-          pieces={pieces}
-          picked={picked}
-          onClose={close}
-          onFindSimilar={findSimilar}
-          onOpenOther={openOther}
-          paperRef={paperRef}
-          slotRef={slotRef}
-          cloneRef={cloneRef}
-          titleRef={titleRef}
-          armCanvasRef={armCanvasRef}
-        />
-      )}
+      <WorkPhysicalDetail
+        pieces={pieces}
+        picked={picked}
+        onClose={close}
+        onFindSimilar={findSimilar}
+        onOpenOther={openOther}
+        paperRef={paperRef}
+        slotRef={slotRef}
+        cloneRef={cloneRef}
+        titleRef={titleRef}
+        armCanvasRef={armCanvasRef}
+      />
     </section>
   );
 }
