@@ -18,7 +18,13 @@ src/components/work/physical-archive/
 ├── arm/
 │   ├── armStage.ts           the 3D tattooed arm: one WebGL canvas (three.js)
 │   └── armConfig.ts          the arm's performance as tunable transforms
-├── WorkPhysicalDetail.tsx    the detail view (native dialog) + the arm's canvas
+├── WorkPhysicalDetail.tsx    the detail, Version A (native dialog) + the arm's canvas
+├── detailVersion.ts          which detail opens: Version A or B
+├── detail-v2/                the detail, Version B (prototype) - see below
+│   ├── WorkDetailV2.tsx      the scene: rope, large print, small prints, details
+│   ├── layoutV2.ts           its composition, as a pure function of order + screen
+│   ├── swapTimeline.ts       two prints changing places - GSAP
+│   └── workDetailV2.css
 └── physicalArchive.css       print paper and shadow, clip
 ```
 
@@ -99,6 +105,36 @@ The print laid out on paper: the photograph large (left, or on top on portrait s
 **Keyboard:** Tab reaches every print (the archive scrolls to the focused one), Enter or Space takes it down, and Escape returns it.
 
 **Reduced motion:** no drift, swing or rope play, and no arm. three.js and the model are never downloaded. Selecting, switching and closing go straight to the next state.
+
+## Detail Version B (prototype)
+
+**Status: an alternative to evaluate, not the default.** Version A (above) stays the default and is unchanged.
+
+**Switching:** `DETAIL_VERSION` in `detailVersion.ts` (`'a'` or `'b'`) chooses for everyone. To compare without rebuilding, open the site with `?detail=a` or `?detail=b`; that wins for the rest of the visit (it is read once, when the page loads, so it survives opening and closing prints).
+
+**The scene:** the selected print hangs large at the lowest point of its own rope, and the other seven hang smaller along the same rope, on clips and wires, at slight angles. Its details sit beneath it: the counter, the title, style/placement and description only when they exist, and `FIND SIMILAR →`. The rope and prints are the archive's own (rope.png through `ropeRenderer`, `.pa-print`, `.pa-clip`, `.pa-wire`). The rope here is still, drawn once per layout.
+- **Order:** opened on a piece, it hangs in the middle with the archive's order running on either side (three before it, four after).
+- **Small prints** keep their own size and tilt wherever they hang. They are as large as fits across the screen whichever piece is in the middle, and never below a comfortable size. Below that (1100px and narrower), the rope row scrolls sideways on its own; the page never does.
+- **The large print** is sized like Version A's detail image. Its paper border and shadow scale from the print's archive size, so the flying print and the large print match exactly.
+
+**Choosing a small print** swaps the two: one GSAP timeline, layout first and then motion (FLIP). React lays every print out in its new place; each starts drawn where it was and travels home.
+- The two prints take separate curved paths so they pass rather than meet. The large one goes back up toward the rope, behind; the chosen one is drawn down off its clip and comes to the middle, toward the viewer, in front. Each has one progress value and one ease driving path, scale and angle, plus a deeper "held" shadow that swells and goes. The swap takes 1.05–1.3s depending on distance.
+- The neighbours slide along the rope to make room, clips and all. A scrolling rope row recentres on the new print in the same timeline.
+- The details fade out, change while unseen, and come back as the print arrives. A polite live region announces the new piece; focus stays on the title.
+- Further clicks are ignored until the swap lands. A close asked for mid-swap waits for it.
+- Afterwards the archive catches up behind the paper (`adoptDetail` in `pickTimeline.ts`, used only by Version B): the previous print goes back on its clip, the new one comes off, and the flying copy is parked on the new large print. The URL becomes `/work/<new>` (replaced), and Find similar and Close act on the new piece.
+
+**Opening and closing reuse the archive's choreography unchanged.** Version B hands over the same refs as Version A: the paper is the whole scene and the slot is the large print's paper. So the arm pick, the direct `/work/:slug` open, the return, Escape, Close, a click on the empty paper, Back, focus restoration and reduced motion all behave as in Version A.
+- **One owner per property:** the archive's timelines own the large print's paper (visibility, lift); Version B's swap owns the print boxes around it (position, scale, angle).
+- **No double exposure:** the rope row waits until the paper the archive lays down is about 92% opaque before fading in, and leaves within 0.12s when the return starts. Otherwise the same photographs would show twice, on two ropes, mid-fade. Version B reads this from its own paper element's style, so the archive's timelines did not change.
+
+**Reduced motion:** as Version A, with no arm and no 3D download. A swap is instant.
+
+**Limits:**
+- Prototype only: it has not been through design review.
+- On narrow screens the small prints are reached by swiping the rope row. There is no drag-to-scroll with a mouse.
+- The rope in the detail is still; it doesn't react to a swap.
+- Resizing during a swap is applied after it lands.
 
 ## The arm
 
