@@ -412,7 +412,9 @@ export function openDetailDirect(p: PickParts, pose: PrintPose, onDetail: () => 
   const { engine, print, others, paper, clone, slot, text } = p;
   engine.hold(true);
   placeClone(clone, pose);
-  gsap.set(print, { y: 0 });
+  // (when chosen from inside the detail it was receded as one of the
+  // others: it must land back on its clip as itself)
+  gsap.set(print, { y: 0, opacity: 1, filter: 'none' });
   print.style.visibility = 'hidden';
   gsap.set(others, { opacity: 0.45, filter: 'saturate(0.6)' });
   gsap.set(text, { autoAlpha: 0, y: 14 });
