@@ -85,7 +85,7 @@ The print laid out on paper: the photograph large (left, or on top on portrait s
 - **Counter:** `/ 03 of 08`, from the piece's place in the archive data.
 - **Title:** the piece's `title`, or the neutral "Tattoo study".
 - **Style / placement and the story:** from `style`, `placement` and `description` on `TattooWork` when they exist. Until then, understated placeholders say they will come from the studio. Nothing is invented.
-- **Find similar →:** opens the existing consultation over the detail with `{ from: 'find-similar', workId }`. The consultation shows the piece as its starting reference. Closing it comes back to the detail, focus on Find similar. There is no similarity logic.
+- **Find similar →:** opens Find Similar over the detail, starting from this piece (see [UX_FLOWS.md](UX_FLOWS.md#4-find-similar)). Leaving it comes back to the detail, focus on Find similar. The detail's own open, close and return don't change.
 - **More from the archive:** the next four prints along the rope, as small prints. It is plainly archive order and does not claim the pieces are similar. Choosing one fades this detail off the paper and the other on (its print leaves the rope unseen; the URL is replaced, not pushed).
 
 **Address:** an open detail is `/work/:slug` (see [ROUTES.md](ROUTES.md)). The route renders nothing itself; the archive reads the slug, so moving between `/` and a detail never remounts the archive, its rope or the arm.

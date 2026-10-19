@@ -7,8 +7,28 @@
 /** Where the client entered the consultation from. */
 export type ConsultationEntry =
   | { from: 'hero' | 'work' | 'book' }
-  /** "Find similar" / "Ask about a piece like this" on a specific tattoo */
-  | { from: 'find-similar'; workId: string };
+  /**
+   * "Find similar" on a specific tattoo (`workId`: the piece they started
+   * from), with what they chose along the way when they went through Find
+   * Similar's steps rather than straight to the consultation
+   */
+  | { from: 'find-similar'; workId: string; selection?: FindSimilarSelection };
+
+/**
+ * What a client says draws them to a piece - their preference, not a fact
+ * about the artwork (the work itself carries no such metadata yet).
+ */
+export type PreferenceSignal = 'subject' | 'composition' | 'linework' | 'style' | 'mood' | 'placement' | 'other';
+
+/** What a client brings out of Find Similar into the consultation. */
+export interface FindSimilarSelection {
+  /** what they said speaks to them about the piece they started from */
+  drawnTo: PreferenceSignal[];
+  /** the same, in their own words */
+  note?: string;
+  /** further pieces of Younes's work they kept, in the order they kept them */
+  references: string[];
+}
 
 /**
  * A visual reference attached to a consultation, in the order the product

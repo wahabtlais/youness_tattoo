@@ -1,4 +1,6 @@
 import { useConsultation } from '../components/consultation/consultationContext';
+import { FindSimilar } from '../components/find-similar/FindSimilar';
+import { useOpenFindSimilar } from '../components/find-similar/useFindSimilarRoute';
 import { Hero } from '../sections/Hero';
 import { PhysicalWorkArchive } from '../components/work/physical-archive/PhysicalWorkArchive';
 import { useWork } from '../hooks/useWork';
@@ -11,6 +13,7 @@ export function HomePage() {
   // PROTOTYPE: the physical archive stands in for the Work section on this
   // branch; sections/Work.tsx is untouched and comes back by swapping this
   const work = useWork();
+  const openFindSimilar = useOpenFindSimilar();
 
   return (
     <>
@@ -18,9 +21,11 @@ export function HomePage() {
       {work.status === 'success' && (
         <PhysicalWorkArchive
           pieces={work.data}
-          onFindSimilar={(workId) => consultation.open({ from: 'find-similar', workId })}
+          onFindSimilar={openFindSimilar}
         />
       )}
+      {/* over the piece it was opened from; hands what was chosen to the consultation */}
+      {work.status === 'success' && <FindSimilar pieces={work.data} onContinue={consultation.open} />}
       <Studio />
       <Book onOpen={() => consultation.open({ from: 'book' })} />
     </>

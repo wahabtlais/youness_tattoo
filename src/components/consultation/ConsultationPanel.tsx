@@ -1,5 +1,6 @@
 import type { ConsultationEntry } from '../../domain/consultation';
 import { useWork } from '../../hooks/useWork';
+import { preferenceLabel } from '../find-similar/findSimilarSession';
 import { Button } from '../ui/Button';
 import { Dialog } from '../ui/Dialog';
 import { ResponsiveImage } from '../ui/ResponsiveImage';
@@ -18,10 +19,13 @@ interface ConsultationPanelProps {
 export function ConsultationPanel({ entry, onClose }: ConsultationPanelProps) {
   // Find similar: the piece the visitor started from is the first reference
   const work = useWork();
-  const reference =
-    entry?.from === 'find-similar' && work.status === 'success'
-      ? work.data.find((w) => w.id === entry.workId)
-      : undefined;
+  const pieces = work.status === 'success' ? work.data : [];
+  const reference = entry?.from === 'find-similar' ? pieces.find((w) => w.id === entry.workId) : undefined;
+  // what they chose in Find Similar, when they came through its steps
+  const selection = entry?.from === 'find-similar' ? entry.selection : undefined;
+  const kept = (selection?.references ?? [])
+    .map((id) => pieces.find((w) => w.id === id))
+    .filter((w) => w !== undefined);
 
   return (
     <Dialog
@@ -58,6 +62,34 @@ export function ConsultationPanel({ entry, onClose }: ConsultationPanelProps) {
               </p>
             </figcaption>
           </figure>
+        )}
+        {selection && (
+          <div className="-mt-3 mb-7 flex flex-col gap-3">
+            {kept.length > 0 && (
+              <div>
+                <p className="type-meta text-ink-muted">Also kept</p>
+                <ul className="mt-2 flex flex-wrap gap-2">
+                  {kept.map((w) => (
+                    <li key={w.id} className="w-10">
+                      <ResponsiveImage
+                        image={w.image}
+                        alt={`${w.title} ${w.id}`}
+                        sizes="40px"
+                        ratio="4 / 5"
+                        frameClassName="border-[3px] border-paper"
+                      />
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {selection.drawnTo.length > 0 && (
+              <p className="text-body leading-copy text-ink-soft">
+                Drawn to {selection.drawnTo.map(preferenceLabel).join(' · ').toLowerCase()}
+              </p>
+            )}
+            {selection.note && <p className="font-serif text-lede text-ink-soft italic">“{selection.note}”</p>}
+          </div>
         )}
         <form className="flex gap-3 border-t border-rule pt-6" onSubmit={(e) => e.preventDefault()}>
           <input

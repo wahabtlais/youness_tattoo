@@ -30,7 +30,8 @@ src/
 │   ├── layout/     Nav, RegistrationMarks - the frame on every page
 │   ├── hero/       the hero's planes: portrait, type, marks, ink, voice dial, cursor
 │   ├── work/       WorkGallery, WorkItem, WorkMeta, WorkViewer
-│   └── consultation/  ConsultationProvider + useConsultation, ConsultationPanel
+│   ├── consultation/  ConsultationProvider + useConsultation, ConsultationPanel
+│   └── find-similar/  FindSimilar (sheet + steps), its session model and address (useFindSimilarRoute)
 ├── domain/         TypeScript types for the product: work, consultation, client, media
 ├── hooks/          useWork (data boundary), useInView, useReducedMotion, hero engines
 ├── data/           static records (work, studio copy) - what an API replaces
@@ -110,6 +111,7 @@ component  →  hook (useWork)  →  data/ (static today)  |  API (later)
 ## App-level state
 
 - **Consultation:** `ConsultationProvider` (in `SiteLayout`) owns the single consultation dialog. Any page opens it with `useConsultation().open(entry)`, where `entry` says where the client came from (`hero`, `work`, `book`, or `find-similar` + `workId`). Sections don't import the context; pages wire it into their props, so sections stay reusable.
+- **Find Similar:** `HomePage` renders `FindSimilar` and opens it from the work detail. Which piece and which step are in the address (`?similar=03&step=pieces`, see [ROUTES.md](ROUTES.md)). What the client chose is local state in `FindSimilar`, a typed `FindSimilarSession`, kept while the page is open. Continuing hands a typed `FindSimilarSelection` to the consultation through the same `useConsultation().open(entry)`.
 - **Hero → page:** the hero publishes `--hero-p` / `--hero-q` on `:root` for the nav and the Work hand-off. That is deliberately CSS, not React state, so scrolling never re-renders.
 - Everything else is local component state. Add a global store only when two distant parts of the UI need the same changing data and props or context have become awkward.
 
@@ -145,7 +147,7 @@ When behaviour lands, add **Vitest + Testing Library** (unit and component) and 
 | Area | What |
 |---|---|
 | Work filtering (Phase 2) | Filters only offer existing metadata; combinations; empty result |
-| Find Similar (Phase 4) | From a piece, the consultation opens with `{ from: 'find-similar', workId }`; deep link to `/work/:slug` |
+| Find Similar (Phase 4) | From a piece, Find Similar opens on it; Back walks the steps; the consultation receives `{ from: 'find-similar', workId, selection }`. Checked with browser automation during development; not yet automated in the repo. |
 | Consultation state (Phase 5) | Summary fills in, corrections apply, reference ordering (work → external → concept) |
 | Summary rendering (Phase 6) | Every field optional; concept images always labelled |
 | UI primitives | Dialog focus and Escape, Button variants, StateMessage roles |

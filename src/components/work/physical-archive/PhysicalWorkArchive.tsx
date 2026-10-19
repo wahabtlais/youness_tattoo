@@ -22,7 +22,7 @@ import './physicalArchive.css';
 
 interface PhysicalWorkArchiveProps {
   pieces: TattooWork[];
-  /** Find Similar: opens the consultation with this piece */
+  /** Find Similar on the open piece (the page opens it over the detail) */
   onFindSimilar: (workId: string) => void;
 }
 
@@ -228,8 +228,8 @@ export function PhysicalWorkArchive({ pieces, onFindSimilar }: PhysicalWorkArchi
     run.current = returnPhotoToArchive(p, finish);
   }, [picked, parts, reducedMotion, finish]);
 
-  // Find similar opens the consultation over the detail, with this piece as
-  // its starting reference; closing the consultation comes back to the piece
+  // Find similar opens over the detail, starting from this piece; leaving it
+  // (or the consultation it leads to) comes back to the piece
   const findSimilar = useCallback((piece: TattooWork) => onFindSimilar(piece.id), [onFindSimilar]);
 
   /** another print, chosen from inside the detail: the detail changes over in place */

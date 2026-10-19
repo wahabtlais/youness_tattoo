@@ -39,9 +39,21 @@ Today this is the Work viewer dialog, with prev/next, arrow keys, Escape and foc
 
 ### 4. Find Similar
 
-From a piece, the client chooses Find Similar. A consultation opens that already knows the reference (`ConsultationEntry { from: 'find-similar', workId }`). The first question is about the piece: *what do you like about it?* The line work, the subject, the shading, the placement, the scale?
+From a piece's detail, the client chooses **Find similar →**. A sheet opens over the detail, starting from that piece. It is two steps, image-led, with short copy and no chat bubbles:
 
-**Status:** the entry seam exists. The viewer's "Ask Younes about a piece like this" already opens the consultation with the piece's id. The conversation itself is Phase 4–5.
+1. **What speaks to you about this piece?** The piece is shown large, labelled *Starting from … 03 of 08*. The client can tick any of: subject, composition, linework and detail, style, mood or feeling, placement, something else. They can also write in their own words. Everything is optional. These are the client's preferences, not facts about the piece.
+2. **More of Younes's work.** Real pieces from the archive, four at a time.
+   - The client can **keep** a piece (shown by a burgundy frame, a tick and "Kept") or set it aside as **not for me** (it leaves the list and can be brought back).
+   - **Show me something different** pages through the rest.
+   - The starting piece and everything kept are always in view as *Your references*: a column on desktop, a bar along the bottom on smaller screens.
+   - **Continue** opens the consultation over the sheet, carrying the starting piece, the kept pieces, the ticked preferences and the note (`ConsultationEntry { from: 'find-similar', workId, selection }`). Closing the consultation comes back to step 2 as it was.
+
+The suggestions are honest: the archive has no style, subject or placement data yet, so they are simply the rest of the archive in archive order, and the copy says they are not matched to the client's answers. When `TattooWork.tags` / `style` / `placement` exist, ranking by them replaces this in one function (`suggestionPool`).
+
+**Status:** built (Phase 4).
+- Each step has its own address (`?similar=03`, then `&step=pieces`). The browser's Back walks back through the steps to the piece, and Close or Escape returns to it directly.
+- What was chosen stays while the page is open: reopening Find Similar on the same piece picks up where the client left off. A different piece starts fresh.
+- Nothing is sent anywhere yet. The consultation shows what it received; the conversation itself is Phase 5.
 
 ### 5. Consultation
 

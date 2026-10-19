@@ -105,10 +105,18 @@
 
   --animate-fade-in: fade-in var(--duration-normal) var(--ease-editorial);
   --animate-sheet-in: sheet-in var(--duration-slow) var(--ease-editorial);
+  /* a step of a flow arriving on the same sheet (Find Similar) */
+  --animate-rise-in: rise-in var(--duration-slow) var(--ease-editorial);
 
   @keyframes fade-in {
     from {
       opacity: 0;
+    }
+  }
+  @keyframes rise-in {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
     }
   }
   /* a sheet laid down on the paper */

@@ -25,7 +25,7 @@ YOUNES REVIEW              status moves only by Younes
 ```
 
 Frontend contracts that already exist (`src/domain/consultation.ts`):
-- `ConsultationEntry` records where the conversation started. `find-similar` carries the `workId`.
+- `ConsultationEntry` records where the conversation started. `find-similar` carries the `workId` and, when the client went through Find Similar, a `FindSimilarSelection`: their `drawnTo` preference signals, an optional note, and the further pieces they kept (`references`). That selection is the first input an assistant can build on.
 - `ConsultationSummary` has every field optional, `references: TattooReference[]`, likes and dislikes.
 - `TattooReference` is a discriminated union in fallback order: `work` → `upload` → `external` → `concept`. A `concept` keeps its `prompt` and is never shown as a final design.
 - `ConsultationStatus` runs `draft` → `submitted` → `under-review` → `accepted | changes-requested | declined` → `contacted` → `booking` → `completed`.

@@ -7,7 +7,7 @@ Phases run in order. Don't jump ahead: each one is designed against the hero ben
 | 1 | **Foundation** ✅ | Tailwind + tokens, folder layers, UI primitives, router, domain types, data boundary, state patterns, docs | |
 | 2 | **Work / Gallery** | Evolve the archive wall. Filtering only on real metadata. Move `Work.css` layout to Tailwind where practical. | Real work metadata from Younes (style, placement, tags) |
 | 3 | **Tattoo detail** | `/work/:slug`: large image, real metadata, related work, Find Similar CTA | 2 |
-| 4 | **Find Similar → consultation entry** | Find Similar opens the consultation with the piece; the first question is about it | 3 |
+| 4 | **Find Similar → consultation entry** ✅ | From a piece: what speaks to you about it, more of the work to keep or set aside, then the consultation with all of it. Suggestions are the rest of the archive until real metadata allows ranking | 3 |
 | 5 | **Consultation experience** | Conversational UI (text first), summary filling in, Younes-work search, external inspiration, uploads | 4, an API, `TattooWork.tags` |
 | 6 | **Consultation summary** | Review and correct the summary before submitting | 5 |
 | 7 | **Client submission / status** | Submit with contact details; a simple status for the client | 6, API + storage |
