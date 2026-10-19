@@ -1,3 +1,5 @@
+import type { TattooPlacement } from './work';
+
 /**
  * The consultation: how a client's idea becomes something Younes can review.
  * See docs/UX_FLOWS.md. Nothing here is persisted yet - these are the
@@ -45,20 +47,50 @@ export type TattooReference =
 export type ColourPreference = 'black-and-grey' | 'colour' | 'undecided';
 
 /**
+ * Roughly where on the body - a starting point for the conversation, not a
+ * specification. Shares the archive's placement words where it can, so a
+ * client's answer and a piece's placement can be compared later.
+ */
+export type BodyArea =
+  | Extract<TattooPlacement, 'forearm' | 'upper-arm' | 'shoulder' | 'chest' | 'back' | 'leg' | 'hand'>
+  | 'other'
+  | 'not-sure';
+
+/** Roughly how big - Younes settles the real size with the client. */
+export type TattooScale = 'small' | 'medium' | 'large' | 'large-scale' | 'not-sure';
+
+/** When the client would like it - a wish, never a booking. */
+export type Timeframe = 'soon' | 'months' | 'no-rush' | 'not-sure';
+
+/**
  * What the conversation has understood so far. Every field is optional:
  * the summary fills in as the conversation goes, and the client reviews it
  * before anything is sent.
  */
 export interface ConsultationSummary {
+  /** what they would like tattooed */
   concept?: string;
+  /** the idea, story or feeling behind it */
   meaning?: string;
   style?: string;
+  /** roughly where (a choice) ... */
+  bodyArea?: BodyArea;
+  /** ... and in their words ("inner forearm, near the wrist") */
   placement?: string;
-  /** free text ("palm-sized", "about 10 cm") - not a number on purpose */
+  /** roughly how big (a choice) ... */
+  scale?: TattooScale;
+  /** ... and in their words ("palm-sized", "about 10 cm") - not a number on purpose */
   size?: string;
+  timing?: Timeframe;
   colour?: ColourPreference;
   likes?: string[];
   dislikes?: string[];
+  /**
+   * References the client adds in the consultation itself (uploads, later
+   * external images). Pieces of Younes's work brought from Find Similar
+   * stay in `Consultation.entry`, where nothing in the form can overwrite
+   * them - read both with `consultationReferences`.
+   */
   references: TattooReference[];
   notes?: string;
 }
@@ -93,5 +125,23 @@ export interface Consultation {
   contact?: ClientContact;
   /** ISO 8601 */
   createdAt: string;
+  /**
+   * The client finished reviewing it on this device. Nothing has been sent:
+   * a reviewed consultation is still a 'draft' until it is submitted.
+   */
+  reviewedAt?: string;
   submittedAt?: string;
+}
+
+/**
+ * Every reference in a consultation, in the order the product reaches for
+ * them: the piece they started from, the further pieces they kept in Find
+ * Similar, then whatever they added in the consultation.
+ */
+export function consultationReferences({ entry, summary }: Consultation): TattooReference[] {
+  const work: TattooReference[] =
+    entry.from === 'find-similar'
+      ? [entry.workId, ...(entry.selection?.references ?? [])].map((workId) => ({ kind: 'work', workId }))
+      : [];
+  return [...work, ...summary.references];
 }

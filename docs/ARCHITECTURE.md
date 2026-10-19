@@ -77,7 +77,7 @@ Cascade:
 
 ## UI primitives
 
-There are only five, built because existing code needed them:
+There are only six, built because existing code needed them:
 
 | | |
 |---|---|
@@ -86,8 +86,9 @@ There are only five, built because existing code needed them:
 | `Reveal` | Rise-and-fade once on first view; static under reduced motion |
 | `ResponsiveImage` | The one way to render a photograph (see the design system's image treatment) |
 | `StateMessage` | The shared loading / empty / error pattern |
+| `TextField` | A labelled text field, one line or several, that says when it is optional. Used by the consultation |
 
-Add a primitive when a second real use appears, not before. Next likely: `Input`/`Textarea` (Phase 5), `Badge` for consultation status (Phase 7) and `Drawer` (if consultation becomes a side sheet).
+Add a primitive when a second real use appears, not before. Next likely: `Badge` for consultation status (Phase 7) and `Drawer` (if consultation becomes a side sheet).
 
 ## Data boundary
 
@@ -157,7 +158,12 @@ Pieces can be verified one at a time. A verified piece may still have blanks, an
 
 ## App-level state
 
-- **Consultation:** `ConsultationProvider` (in `SiteLayout`) owns the single consultation dialog. Any page opens it with `useConsultation().open(entry)`, where `entry` says where the client came from (`hero`, `work`, `book`, or `find-similar` + `workId`). Sections don't import the context; pages wire it into their props, so sections stay reusable.
+- **Consultation:** `ConsultationProvider` (in `SiteLayout`) owns the single consultation dialog. Any page opens it with `useConsultation().open(entry)`, where `entry` says where the client came from (`hero`, `work`, `book`, or `find-similar` + `workId` + `selection`). Sections don't import the context; pages wire it into their props, so sections stay reusable.
+  - **Drafts:** the provider keeps the client's drafts for the visit in memory (`consultation/consultationDraft.ts`): one general draft, and one per Find Similar starting piece.
+  - **Domain vs UI:** each draft is a domain `Consultation` (`status: 'draft'`, `summary` holding the answers, `reviewedAt` once finished) plus UI state (the step, and whether a step was opened from the review).
+  - **Find Similar's references:** they stay in `entry` and are read with `consultationReferences()`, so no form edit can overwrite them.
+  - **The address:** an open consultation is one history entry, `?consult` (see [ROUTES.md](ROUTES.md)). `open` and `close` read the address only when called, so pages using them never re-render as it changes.
+  - **Not built yet:** nothing is stored or sent. Submitting (Phase 7) will send this same `Consultation` (with `contact`) to the API and set `submittedAt`.
 - **Find Similar:** `HomePage` renders `FindSimilar` and opens it from the work detail. Which piece and which step are in the address (`?similar=03&step=pieces`, see [ROUTES.md](ROUTES.md)). What the client chose is local state in `FindSimilar`, a typed `FindSimilarSession`, kept while the page is open. Continuing hands a typed `FindSimilarSelection` to the consultation through the same `useConsultation().open(entry)`.
 - **Hero → page:** the hero publishes `--hero-p` / `--hero-q` on `:root` for the nav and the Work hand-off. That is deliberately CSS, not React state, so scrolling never re-renders.
 - Everything else is local component state. Add a global store only when two distant parts of the UI need the same changing data and props or context have become awkward.

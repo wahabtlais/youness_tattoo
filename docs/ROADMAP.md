@@ -8,9 +8,9 @@ Phases run in order. Don't jump ahead: each one is designed against the hero ben
 | 2 | **Work / Gallery** | Evolve the archive wall. Filtering only on real metadata. Move `Work.css` layout to Tailwind where practical. | Real work metadata from Younes (style, placement, tags) |
 | 3 | **Tattoo detail** | `/work/:slug`: large image, real metadata, related work, Find Similar CTA | 2 |
 | 4 | **Find Similar → consultation entry** ✅ | From a piece: what speaks to you about it, more of the work to keep or set aside, then the consultation with all of it. Suggestions are the rest of the archive until real metadata allows ranking | 3 |
-| 5 | **Consultation experience** | Conversational UI (text first), summary filling in, Younes-work search, external inspiration, uploads | 4, an API, `TattooWork.tags` |
-| 6 | **Consultation summary** | Review and correct the summary before submitting | 5 |
-| 7 | **Client submission / status** | Submit with contact details; a simple status for the client | 6, API + storage |
+| 5 | **Consultation experience** — guided draft ✅ | Built: a guided text draft (idea, placement and scale, timing and notes) that carries Find Similar's references. Still to come: Younes-work search inside it, external inspiration, uploads | 4, an API, `TattooWork.tags` |
+| 6 | **Consultation summary** — review ✅ | Built: review and change every answer before finishing (local only). Submitting it is Phase 7 | 5 |
+| 7 | **Client submission / status** | Submit the reviewed draft with contact details; a simple status for the client. Until then the draft's last screen says plainly that nothing is sent | 6, API + storage |
 | 8 | **Studio / about** | Real biography, studio and photography | Real content from Younes |
 | 9 | **Booking foundation** | Show confirmed appointments and studio details (no payments) | 7 |
 | 10 | **AI / voice** | Orchestrator, voice, concept generation as the last resort ([FUTURE_AI.md](FUTURE_AI.md)) | 5–7 |

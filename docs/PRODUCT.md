@@ -24,13 +24,13 @@ FIND A PIECE         a tattoo that speaks to them → its detail view
   ↓
 FIND SIMILAR         the bridge from discovery into consultation
   ↓
-CONSULTATION         a conversation, not a form: idea, meaning, style, placement, size
+CONSULTATION         a conversation, not a form: idea, meaning, placement, size, timing (a guided draft today)
   ↓
 REFERENCES           Younes's work first → external inspiration → generated concept (last resort)
   ↓
-SUMMARY              the client reviews what was understood
+SUMMARY              the client reviews what was understood (built as the draft's review)
   ↓
-SUBMIT TO YOUNES     Younes reviews; he is the decision maker
+SUBMIT TO YOUNES     Younes reviews; he is the decision maker (not built: the draft is never sent today)
   ↓
 YOUNES RESPONDS      he contacts the client and continues the discussion
   ↓

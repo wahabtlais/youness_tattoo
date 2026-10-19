@@ -46,7 +46,7 @@ From a piece's detail, the client chooses **Find similar →**. A sheet opens ov
    - The client can **keep** a piece (shown by a burgundy frame, a tick and "Kept") or set it aside as **not for me** (it leaves the list and can be brought back).
    - **Show me something different** pages through the rest.
    - The starting piece and everything kept are always in view as *Your references*: a column on desktop, a bar along the bottom on smaller screens.
-   - **Continue** opens the consultation over the sheet, carrying the starting piece, the kept pieces, the ticked preferences and the note (`ConsultationEntry { from: 'find-similar', workId, selection }`). Closing the consultation comes back to step 2 as it was.
+   - **Continue** opens the guided consultation (§5) over the sheet, carrying the starting piece, the kept pieces, the ticked preferences and the note (`ConsultationEntry { from: 'find-similar', workId, selection }`). Closing the consultation comes back to step 2 as it was.
 
 **How the suggestions are ordered:**
 - **With answers:** pieces closest to what the client said speaks to them come first. This is basic metadata matching against the starting piece, not AI (see ARCHITECTURE.md, "Tattoo metadata").
@@ -71,7 +71,33 @@ A conversation (voice or text) that helps the client understand and develop thei
 
 It asks one thing at a time, in Younes's voice, and never as a long form. The understanding builds up in a `ConsultationSummary` the client can see.
 
-**Status:** the shell dialog is built (Ask Younes from the hero, work and booking). The conversation is Phase 5.
+**Status:** the guided draft is built. It is a frontend-only draft: nothing is stored beyond the page, and nothing is sent.
+
+It is a sheet over the page with four steps, a quiet progress line (*Consultation · 2 of 4 · Placement and scale*) and Back / Continue on every step. Every answer is optional.
+
+1. **The idea.** *Let's talk about your tattoo.*
+   - Two open questions: what they'd like tattooed, and the idea, story or feeling behind it.
+   - From Find Similar, the step shows what they bring: the starting piece (labelled as such), the pieces they kept, what drew them and their note.
+   - From Ask Younes or the booking section there are no references, and nothing stands in for them: *No references needed — a few words are enough to begin.*
+2. **Placement and scale.** Rough choices, never specifications (*we'll settle placement and size together*), each with an optional "in your words":
+   - Where: forearm, upper arm, shoulder, chest, back, leg, hand or fingers, somewhere else, not sure yet.
+   - How big: small, medium, large, large-scale, not sure yet.
+3. **Timing and details.** A timeframe (as soon as possible, the next few months, no rush, not sure yet), and anything else to know. The step says plainly there's no booking here. Nothing personal is asked.
+4. **Review.** *Here's your idea.*
+   - Everything gathered, grouped to read: references, the idea, placement and scale, timing, anything else. Unanswered parts say "Not answered — that's fine".
+   - Each part has **Change**, which goes to that step and back to the review.
+   - References belong to Find Similar: closing the consultation returns there to change them.
+
+**Finish consultation** ends the flow honestly: *Your consultation draft is ready… Nothing has been sent yet. Sending it to me directly is still to come.* It never says Younes has received anything or will be in touch. The draft is marked `reviewedAt` but stays `status: 'draft'`.
+
+**Drafts:**
+- There is one draft for general entries (Ask Younes, the booking section) and one per starting piece in Find Similar, so a general idea and a piece-led one never overwrite each other.
+- Closing (Close, Escape, a click outside) or the browser's Back keeps the draft, and reopening resumes the same step. A finished draft reopens as ready.
+- The open consultation is one history entry (`?consult`), so Back closes it and leaves Find Similar as it was.
+- **Changing references:** Find Similar's references are the source of truth. Continuing from it again refreshes them in the draft and keeps the answers. If the draft was already finished, it goes back to the review to be looked over.
+- Drafts last only while the page is open. A reload drops them, and the `?consult` mark with them. Cross-visit persistence is a separate decision.
+
+**Not built yet:** sending to Younes (§9), contact details, uploads, external inspiration, and any AI or voice. The Ask Younes dial still opens the text consultation; its voice is Phase 10.
 
 ### 6. Inspiration search
 
@@ -99,7 +125,7 @@ Before anything is sent, the client sees what was understood:
 
 They can correct any part in place.
 
-**Status:** Phase 6. The type `ConsultationSummary` exists.
+**Status:** the review step of the guided consultation (§5) does this for what the draft gathers today: the client sees every answer and changes any part in place. Style, colour, likes and dislikes join it when the consultation asks about them.
 
 ### 9. Submit to Younes
 
