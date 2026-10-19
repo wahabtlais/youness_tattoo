@@ -32,9 +32,10 @@ src/
 │   ├── work/       WorkGallery, WorkItem, WorkMeta, WorkViewer
 │   ├── consultation/  ConsultationProvider + useConsultation, ConsultationPanel
 │   └── find-similar/  FindSimilar (sheet + steps), its session model and address (useFindSimilarRoute)
-├── domain/         TypeScript types for the product: work, consultation, client, media
+│                      (the matching it uses is domain/workMatching.ts)
+├── domain/         TypeScript types for the product (work, consultation, client, media) and pure rules over them (workMatching)
 ├── hooks/          useWork (data boundary), useInView, useReducedMotion, hero engines
-├── data/           static records (work, studio copy) - what an API replaces
+├── data/           static records (work, its demo metadata, studio copy) - what an API replaces
 ├── lib/            tiny helpers: cx, AsyncState
 ├── styles/         theme.css (tokens), base.css (element defaults)
 ├── assets/         bundled images (hero plates, ink strips, placeholders)
@@ -98,6 +99,52 @@ component  →  hook (useWork)  →  data/ (static today)  |  API (later)
 - `hooks/useWork` is the boundary. Today it returns the static archive synchronously, so there's no loading flash under the hero hand-off. When the archive moves to an API, only this hook changes: it fetches, aborts on unmount, and exposes `retry`. Every caller already handles `loading`, `error` and empty.
 - `domain/` types are the contract with a future API. Optional fields mean "may not exist yet". Never fill them with guesses.
 - When there are several resources and caching matters (Phase 5+), introduce a query library (e.g. TanStack Query) behind the same hooks. Don't add one before then.
+
+## Tattoo metadata
+
+> **The current metadata is temporary demo data.** It is fictional, it does not describe the photographs, and it must be replaced with metadata verified by Younes before launch.
+
+**The model** (`domain/work.ts`): `TattooWork` is the photograph and its identity (`id`, `slug`, `title`, `image`, `alt`) plus `TattooTraits`. All traits are optional, and absent means "not known yet":
+
+| Field | Type |
+|---|---|
+| `description` | Short text, in Younes's words |
+| `subject`, `style`, `composition`, `linework`, `mood` | Lists from closed vocabularies (`TattooSubject`, `TattooStyle`, …) |
+| `placement`, `colour` | One value each |
+| `tags` | Free words for future search |
+
+Every piece also carries a required `metadataStatus`:
+- **`'demo'`:** sample values for building the product.
+- **`'verified'`:** confirmed by Younes.
+
+To add a word to a vocabulary, add it to its union type.
+
+**Where the data lives:**
+- `data/work.ts` builds the archive (ids, images, archive order).
+- The traits come from `data/workDemoMetadata.ts`, a separate, clearly labelled demo file keyed by piece id. Every piece is marked `metadataStatus: 'demo'`.
+- Both reach components only through `hooks/useWork`.
+
+**Demo values are never shown as facts.** `verifiedFacts(piece)` is the only way the UI states a piece's style, placement or description, and it returns nothing unless the piece is verified. That is why Work Detail V1 keeps its "to be added by the studio" placeholders today. Demo values are used only for ordering Find Similar's suggestions. While they drive that order, Find Similar says so in one quiet line ("Ordered using sample descriptions · not yet confirmed by Younes").
+
+**Matching** (`domain/workMatching.ts`, `rankByPreferences`): basic, deterministic metadata matching, not AI.
+- **Scoring:** for each thing the visitor said speaks to them about the starting piece (subject, composition, linework, style, mood, placement), every other piece is compared with the starting piece on that trait:
+  - **2 points:** it shares a value.
+  - **1 point:** either side isn't described (unknown).
+  - **0 points:** both are described and share nothing.
+- **Missing data:** it never counts as a mismatch. It ranks between matches and known differences.
+- **Ties:** go first to more shared values, then to archive order.
+- **Something else:** "Something else" has no trait, so with no answers (or only that one) the archive order stands.
+
+Find Similar's `suggestionPool` removes the starting piece and anything set aside, then ranks what's left. Keeping a piece never reorders anything. Changing the answers re-ranks from the first page; kept pieces stay kept.
+
+**When the artist dashboard arrives:**
+1. It writes verified traits for each piece through the API, with `metadataStatus: 'verified'`.
+2. `hooks/useWork` fetches from it instead of the static files (see "Data boundary" above). Nothing in Find Similar, the matching or the detail changes.
+3. Delete `data/workDemoMetadata.ts` and its spread in `data/work.ts`.
+4. The demo line in Find Similar goes by itself: it shows only while demo records drive the order (`suggestionBasis`). No flag needs switching.
+5. Verified style, placement and description then appear in Work Detail V1 in place of its placeholders.
+
+Pieces can be verified one at a time. A verified piece may still have blanks, and they rank as unknown.
 
 ## Loading, empty, error, success
 

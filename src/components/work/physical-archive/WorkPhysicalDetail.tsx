@@ -1,5 +1,5 @@
 import type { CSSProperties, RefObject } from 'react';
-import type { TattooWork } from '../../../domain/work';
+import { verifiedFacts, type TattooWork } from '../../../domain/work';
 import { Button } from '../../ui/Button';
 import { Dialog } from '../../ui/Dialog';
 import { ResponsiveImage } from '../../ui/ResponsiveImage';
@@ -16,8 +16,9 @@ export interface PickedPrint {
 
 /**
  * Copy shown until the studio supplies the real thing. Nothing about a
- * piece is invented: when `style`, `placement` or `description` exist on
- * the artwork they replace these.
+ * piece is invented: when Younes has verified its style, placement or
+ * description they replace these. (Demo metadata, used to build Find
+ * Similar's matching, is never shown here.)
  */
 const PLACEHOLDER_META = 'Style and placement — to be added by the studio';
 const PLACEHOLDER_STORY = 'The story behind this piece will come from Younes.';
@@ -86,7 +87,7 @@ export function WorkPhysicalDetail({
   const piece = picked ? pieces[picked.index] : null;
   const size = picked && slotSize(picked);
   const total = pieces.length;
-  const meta = piece ? [piece.style, piece.placement].filter(Boolean).join(' / ') : '';
+  const { meta, description } = piece ? verifiedFacts(piece) : { meta: '', description: undefined };
   const title = piece?.title || FALLBACK_TITLE;
   const more = picked
     ? Array.from({ length: Math.min(MORE, total - 1) }, (_, k) => (picked.index + 1 + k) % total)
@@ -144,9 +145,9 @@ export function WorkPhysicalDetail({
             </p>
             <p
               data-detail-text
-              className={`mt-2 font-serif text-lede italic ${piece.description ? 'text-ink-soft' : 'text-ink-muted'}`}
+              className={`mt-2 font-serif text-lede italic ${description ? 'text-ink-soft' : 'text-ink-muted'}`}
             >
-              {piece.description ?? PLACEHOLDER_STORY}
+              {description ?? PLACEHOLDER_STORY}
             </p>
             <div data-detail-text className="mt-6">
               <Button onClick={() => onFindSimilar(piece)}>Find similar &rarr;</Button>

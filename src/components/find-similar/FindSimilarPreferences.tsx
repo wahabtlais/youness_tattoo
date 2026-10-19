@@ -66,7 +66,7 @@ export function FindSimilarPreferences({
           What speaks to you about this piece?
         </h2>
         <p className="mt-4 max-w-measure text-body leading-copy text-ink-soft">
-          Choose as many as you like, or none. It helps Younes see what you’re drawn to.
+          Choose as many as you like, or none. Your answers order the pieces that follow, and Younes sees them too.
         </p>
 
         <fieldset className="mt-7">

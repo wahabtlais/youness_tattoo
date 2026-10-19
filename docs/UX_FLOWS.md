@@ -48,7 +48,11 @@ From a piece's detail, the client chooses **Find similar →**. A sheet opens ov
    - The starting piece and everything kept are always in view as *Your references*: a column on desktop, a bar along the bottom on smaller screens.
    - **Continue** opens the consultation over the sheet, carrying the starting piece, the kept pieces, the ticked preferences and the note (`ConsultationEntry { from: 'find-similar', workId, selection }`). Closing the consultation comes back to step 2 as it was.
 
-The suggestions are honest: the archive has no style, subject or placement data yet, so they are simply the rest of the archive in archive order, and the copy says they are not matched to the client's answers. When `TattooWork.tags` / `style` / `placement` exist, ranking by them replaces this in one function (`suggestionPool`).
+**How the suggestions are ordered:**
+- **With answers:** pieces closest to what the client said speaks to them come first. This is basic metadata matching against the starting piece, not AI (see ARCHITECTURE.md, "Tattoo metadata").
+- **Without answers:** the archive order.
+
+The metadata behind this order is **demo data for now**. Find Similar says so in one quiet line, and the line goes once Younes verifies the pieces. Pieces set aside never come back unless the client brings them back, and changing the answers re-orders the suggestions without touching what was kept.
 
 **Status:** built (Phase 4).
 - Each step has its own address (`?similar=03`, then `&step=pieces`). The browser's Back walks back through the steps to the piece, and Close or Escape returns to it directly.

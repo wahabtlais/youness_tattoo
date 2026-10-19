@@ -1,10 +1,15 @@
 import type { TattooWork } from '../domain/work';
+import { DEMO_METADATA } from './workDemoMetadata';
 
 /**
  * Real tattoo work by Younes, photographed as delivered. No titles, styles,
- * placements or descriptions have been supplied, so each piece only carries
- * its number and a neutral label - add the real fields here (they exist on
- * TattooWork) when Younes provides them. Do not invent them.
+ * placements or descriptions have been supplied, so each piece carries its
+ * number and a neutral label.
+ *
+ * Its descriptive fields come from DEMO_METADATA: fictional sample values
+ * for building Find Similar's matching, marked `metadataStatus: 'demo'` and
+ * never shown as facts. Verified fields from Younes replace them (and the
+ * status becomes 'verified') - see docs/ARCHITECTURE.md, "Tattoo metadata".
  *
  * Originals live untouched in public/work/; the site serves the WebP copies
  * in public/work/web/ made by scripts/build-work-images.py (`widths` lists
@@ -43,5 +48,7 @@ export const WORK: TattooWork[] = SOURCES.map(({ file, width, height, widths }, 
     title: LABEL,
     alt: `${LABEL} ${id} - tattoo by Younes`,
     image: { src: variants[variants.length - 1].src, width, height, variants },
+    ...DEMO_METADATA[id],
+    metadataStatus: 'demo',
   };
 });

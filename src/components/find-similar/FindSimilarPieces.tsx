@@ -12,6 +12,8 @@ interface FindSimilarPiecesProps {
   pieces: TattooWork[];
   /** what to suggest: the archive minus the origin and what was set aside */
   pool: TattooWork[];
+  /** what the order is based on (see suggestionBasis) */
+  basis: { byAnswers: boolean; demo: boolean };
   page: number;
   kept: string[];
   setAside: string[];
@@ -37,6 +39,7 @@ export function FindSimilarPieces({
   origin,
   pieces,
   pool,
+  basis,
   page,
   kept,
   setAside,
@@ -118,9 +121,17 @@ export function FindSimilarPieces({
           More of Younes’s work.
         </h2>
         <p className="mt-4 max-w-measure text-body leading-copy text-ink-soft">
-          Keep the pieces that speak to you and set aside the rest. They come from Younes’s archive as it is —
-          not matched to your answers yet. Younes will see what you chose.
+          Keep the pieces that speak to you and set aside the rest.{' '}
+          {basis.byAnswers
+            ? 'Those closest to what you said draws you come first.'
+            : 'They’re in the order of Younes’s archive.'}{' '}
+          Younes will see what you chose.
         </p>
+        {/* honest about what the order rests on while the descriptions are samples
+            (it goes once the pieces are verified - docs/ARCHITECTURE.md) */}
+        {basis.demo && (
+          <p className="mt-2 type-meta text-ink-soft">Ordered using sample descriptions · not yet confirmed by Younes</p>
+        )}
 
         {items.length > 0 ? (
           <ul

@@ -87,4 +87,5 @@ The hero is the visual benchmark. Everything built after it must belong to the s
 ## Content rules
 
 - Never fabricate tattoo artwork, metadata, biography, credentials, testimonials or client details. Where real information doesn't exist yet, the UI shows less rather than inventing more.
+- **The one exception is marked demo metadata for development.** Fictional traits (`metadataStatus: 'demo'`) exist only so Find Similar's matching can be built and tested. They are never shown as facts about a piece, the ordering they drive is labelled as using samples, and they are replaced by Younes's verified metadata before launch (ARCHITECTURE.md, "Tattoo metadata").
 - Only use third-party assets with verified commercial licences, recorded in [INK_ASSETS.md](INK_ASSETS.md) or an equivalent record.

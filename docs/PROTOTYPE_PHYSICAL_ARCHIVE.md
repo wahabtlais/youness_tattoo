@@ -84,7 +84,7 @@ The strip is made seamless once (its tail cross-faded over its head) so it can t
 The print laid out on paper: the photograph large (left, or on top on portrait screens and phones), and beside it, in order:
 - **Counter:** `/ 03 of 08`, from the piece's place in the archive data.
 - **Title:** the piece's `title`, or the neutral "Tattoo study".
-- **Style / placement and the story:** from `style`, `placement` and `description` on `TattooWork` when they exist. Until then, understated placeholders say they will come from the studio. Nothing is invented.
+- **Style / placement and the story:** from `style`, `placement` and `description` on `TattooWork` once Younes has verified them (`verifiedFacts`). Until then, including while the pieces carry demo metadata, understated placeholders say they will come from the studio. Nothing is invented.
 - **Find similar →:** opens Find Similar over the detail, starting from this piece (see [UX_FLOWS.md](UX_FLOWS.md#4-find-similar)). Leaving it comes back to the detail, focus on Find similar. The detail's own open, close and return don't change.
 - **More from the archive:** the next four prints along the rope, as small prints. It is plainly archive order and does not claim the pieces are similar. Choosing one fades this detail off the paper and the other on (its print leaves the rope unseen; the URL is replaced, not pushed).
 

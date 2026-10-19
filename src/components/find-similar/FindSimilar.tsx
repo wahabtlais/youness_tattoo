@@ -3,7 +3,14 @@ import type { ConsultationEntry, PreferenceSignal } from '../../domain/consultat
 import type { TattooWork } from '../../domain/work';
 import { Button } from '../ui/Button';
 import { Dialog } from '../ui/Dialog';
-import { newSession, suggestionPool, TAP, toConsultation, type FindSimilarSession } from './findSimilarSession';
+import {
+  newSession,
+  suggestionBasis,
+  suggestionPool,
+  TAP,
+  toConsultation,
+  type FindSimilarSession,
+} from './findSimilarSession';
 import { FindSimilarPieces } from './FindSimilarPieces';
 import { FindSimilarPreferences } from './FindSimilarPreferences';
 import { useFindSimilarRoute } from './useFindSimilarRoute';
@@ -94,6 +101,9 @@ export function FindSimilar({ pieces, onContinue }: FindSimilarProps) {
                     drawnTo: s.drawnTo.includes(signal)
                       ? s.drawnTo.filter((x) => x !== signal)
                       : [...s.drawnTo, signal],
+                    // new answers, new order: start again from its best matches
+                    // (what they kept stays kept)
+                    page: 0,
                   }))
                 }
                 onNote={(note) => update(() => ({ note }))}
@@ -105,6 +115,7 @@ export function FindSimilar({ pieces, onContinue }: FindSimilarProps) {
                 origin={origin}
                 pieces={pieces}
                 pool={suggestionPool(pieces, session)}
+                basis={suggestionBasis(pieces, session)}
                 page={session.page}
                 kept={session.kept}
                 setAside={session.setAside}

@@ -33,7 +33,7 @@ Phases run in order. Don't jump ahead: each one is designed against the hero ben
 ## Open decisions
 
 - **`ink-muted` contrast** (3.2:1 on paper) is below WCAG AA for small text. Darkening it changes the hero's metadata (see the design system's accessibility section).
-- **Work metadata.** Phases 2–5 need real styles, placements and tags from Younes. Nothing is invented in the meantime.
+- **Work metadata.** Phases 2–5 need real styles, placements and tags from Younes. The model and matching exist. Until Younes verifies it, the metadata is clearly marked demo data, used only to order Find Similar's suggestions and never shown as fact. It must be verified before launch.
 - **Studio content.** The section is a placeholder until a real biography and photography exist.
 - **Backend / API.** Its shape and hosting need choosing before Phase 5.
 - **Test stack.** Vitest + Testing Library + Playwright, introduced with the first behaviour that needs it (see ARCHITECTURE.md's testing section).

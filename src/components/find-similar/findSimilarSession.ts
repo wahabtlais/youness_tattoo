@@ -1,5 +1,6 @@
 import type { ConsultationEntry, PreferenceSignal } from '../../domain/consultation';
 import type { TattooWork } from '../../domain/work';
+import { rankByPreferences } from '../../domain/workMatching';
 
 /**
  * Find Similar's model: what a client can say about a piece, what they keep
@@ -51,16 +52,32 @@ export const TAP = 'inline-flex min-h-11 items-center desktop:min-h-0';
 export const PAGE_SIZE = 4;
 
 /**
- * The pieces to suggest. The archive has no style, subject or placement
- * data yet, so nothing can honestly be ranked as "similar": this is simply
- * the rest of the archive, in archive order starting after the piece they
- * began with, less anything they set aside. When real metadata exists
- * (TattooWork.tags, style, placement), ranking by it belongs here.
+ * The pieces to suggest: the rest of the archive (never the piece they
+ * started from, nothing they set aside), in archive order from the
+ * starting piece on - then ordered by what they said speaks to them, by
+ * the metadata matching in domain/workMatching (stable, so archive order
+ * breaks ties). Kept pieces stay in it; keeping never reorders anything.
  */
 export function suggestionPool(pieces: TattooWork[], session: FindSimilarSession) {
   const start = pieces.findIndex((p) => p.id === session.origin);
-  const ordered = pieces.slice(start + 1).concat(pieces.slice(0, Math.max(start, 0)));
-  return ordered.filter((p) => p.id !== session.origin && !session.setAside.includes(p.id));
+  const origin = pieces[start];
+  const inOrder = pieces
+    .slice(start + 1)
+    .concat(pieces.slice(0, Math.max(start, 0)))
+    .filter((p) => p.id !== session.origin && !session.setAside.includes(p.id));
+  if (!origin) return inOrder;
+  return rankByPreferences(origin, inOrder, session.drawnTo).map((m) => m.piece);
+}
+
+/**
+ * How the suggestions are ordered, for the page to say so: by their
+ * answers or in archive order, and whether the descriptions behind the
+ * order are demo data rather than verified by Younes.
+ */
+export function suggestionBasis(pieces: TattooWork[], session: FindSimilarSession) {
+  const byAnswers = session.drawnTo.some((p) => p !== 'other');
+  const demo = byAnswers && pieces.some((p) => p.metadataStatus === 'demo');
+  return { byAnswers, demo };
 }
 
 /** the group of suggestions on show (it wraps round as the pool shrinks) */
