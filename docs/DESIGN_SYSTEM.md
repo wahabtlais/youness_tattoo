@@ -15,8 +15,11 @@ Depth comes from **layers sliding over one another** (parallax, the portrait cro
 | Token | Value | Use |
 |---|---|---|
 | `paper` | `#f3f1ec` | The sheet. Hero, work, booking, page body |
-| `paper-light` | `#faf8f5` | A lifted sheet: dialogs, panels |
-| `white` | `#ffffff` | Contrast sections (Studio), input fields |
+| `paper-light` | `#faf8f5` | A lifted sheet: dialogs, panels; the Journal's bright magazine stock on the home page |
+| `paper-deep` | `#ebe7df` | A heavier, quieter stock: the Process chapter and the footer |
+| `paper-toned` | `#e6dfd2` | A warm, kraft-like insert: the Canvas Calls band (under a 2px burgundy rule) |
+| `paper-stone` | `#e7e6e1` | A cooler stone grey: the Artist chapter, so the portrait's white print lifts off it |
+| `white` | `#ffffff` | Input fields (and any future contrast section) |
 | `ink` | `#14131a` | Type, rules, marks |
 | `ink-soft` | `#4a4740` | Running copy on paper |
 | `ink-muted` | `#8a867f` | Metadata, captions, secondary labels |
@@ -28,6 +31,10 @@ Depth comes from **layers sliding over one another** (parallax, the portrait cro
 Rules:
 - Burgundy is used sparingly: one or two touches per view. It marks meaning ("you", the name's anchors, the thing you're acting on), never decoration.
 - No other hues. Photographs bring their own colour; the interface stays ink on paper.
+- **Paper stocks, not panels.** The home page changes stock to mark its chapters, top to bottom: Hero and Work on `paper`; the Artist on `paper-stone` (cooler, so the person reads as a chapter of their own after the work); Client Experiences back on `paper`; Process on `paper-deep`; the Journal on `paper-light`; Canvas Calls on `paper-toned`; the closing invitation (Book) on `paper-light`; the footer on `paper-deep`. Each change is a full-width band, so the colour itself is the boundary; no two neighbours share a stock. `ink`, `ink-soft` and `burgundy` hold at least 7:1 on every stock; `ink-muted` drops to 2.7–2.9:1 on the deeper ones, so it carries no text there.
+- **Links that act like buttons** (`ui/ButtonLink`: the Button variants on a router link) for important ways to another page: "Read the journal" and "All canvas calls" share the `navigate` variant (a full-ink frame, 44px, an arrow that steps on with hover and focus). Story actions inside a whole-card link (the Journal's "Read the story") are not links of their own: a burgundy underline that is always visible, thickening with the arrow stepping on, on hover and keyboard focus.
+- **Buttons by weight.** One `primary` (solid burgundy, paper text, 9.2:1) per place for its main action; `secondary` (ink frame, fills with ink on hover) for lesser actions; `text` for quiet controls inside flows; plain underlined links for navigation. Square corners, no shadows; every one keeps the mono caps and the site's focus ring.
+- **The logo.** The official crowned mark (`public/youness_tattoo_logo.png`, served as `youness_tattoo_logo-640.webp`) is the brand in the masthead, its menu and the footer (`layout/BrandLogo`). It is never set as type. Only one variant exists (ink and burgundy on transparent), so it sits only on light stocks.
 - Translucent ink uses the opacity modifier (`border-ink/50`), or `color-mix(in srgb, var(--color-ink) N%, transparent)` in hand-written CSS. Don't write raw `rgba(20, 19, 26, …)`.
 
 ## Typography
@@ -81,7 +88,7 @@ Orientation matters for tablets: the hero and ink have portrait-tablet rules (`o
 ## Shape: borders, radius, shadow
 
 - **Borders** are 1px hairlines (`border-rule`, or `border-ink` for marks). Frames are crop marks or hairlines, never boxes with fills.
-- **Radius:** none. Circles are the exception (`rounded-full`): the construction circle and the voice dial.
+- **Radius:** none. Circles are the exception (`rounded-full`): the construction circle, the voice dial, and the testimonials' round controls (play/pause, previous/next).
 - **Shadows:** none. Depth is layering and parallax.
 
 ## Motion

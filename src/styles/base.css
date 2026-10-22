@@ -3,6 +3,9 @@
     /* the paper also fills the scrollbar gutter kept while a dialog is open */
     background: var(--color-paper);
     scroll-behavior: smooth;
+    /* a sideways trackpad swipe (the archive's rope takes it) never becomes
+       the browser's back / forward gesture - without a blocking wheel listener */
+    overscroll-behavior-x: none;
     /* the site was designed on the browser's own line-height; preflight's
        1.5 would loosen every line that doesn't set one */
     line-height: normal;

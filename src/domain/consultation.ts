@@ -8,7 +8,13 @@ import type { TattooPlacement } from './work';
 
 /** Where the client entered the consultation from. */
 export type ConsultationEntry =
-  | { from: 'hero' | 'work' | 'book' }
+  | { from: 'hero' | 'work' | 'process' | 'journal' | 'footer' | 'book' }
+  /**
+   * Responding to a Canvas Call (`callSlug`), with its title as the visitor
+   * saw it, so Younes knows which opportunity it answers; `demo` when the
+   * call was a fictional example
+   */
+  | { from: 'canvas-call'; callSlug: string; title: string; demo?: boolean }
   /**
    * "Find similar" on a specific tattoo (`workId`: the piece they started
    * from), with what they chose along the way when they went through Find

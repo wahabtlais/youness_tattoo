@@ -36,7 +36,7 @@ export function StateMessage({ kind, title, detail, action, className }: StateMe
       <p className="type-heading max-w-measure text-title">{title}</p>
       {detail && <div className="max-w-measure text-body leading-copy text-ink-soft">{detail}</div>}
       {action && (
-        <Button className="mt-3" onClick={action.onClick}>
+        <Button variant="secondary" className="mt-3" onClick={action.onClick}>
           {action.label}
         </Button>
       )}

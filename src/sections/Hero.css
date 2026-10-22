@@ -11,6 +11,14 @@
  * starting and stopping at hard scroll positions.
  * With reduced motion the hook never writes --p, so everything stays at 0.
  *
+ * Where the browser has scroll-driven animations, every layer that moves
+ * with the scroll gets its own scroll-driven transform / opacity animation
+ * reproducing these formulas ("the scroll, on the compositor", below): the
+ * compositor runs them in step with the scroll offset it paints, so the
+ * counter-scrolled word and the portrait never lag a wheel step behind and
+ * snap back. --p (from the JS listener) then only remains as the fallback
+ * for browsers without scroll timelines; see Hero.tsx.
+ *
  * Breathing: portrait, type and construction marks share one 8s cycle so
  * the page reads as a single living composition (portrait sinks while the
  * word lifts). Amplitudes are a few px - felt, not seen.
@@ -37,6 +45,8 @@
   --fs: min(calc((100vw - var(--spacing-page-x) * 2) / 3.86), calc(var(--ph) * 0.38));
   /* cap-top sits just under the beard: the face stays completely clear */
   --type-top: calc(var(--ptop) + var(--ph) * 0.37);
+  /* how far the word lifts as it collapses into the masthead (phase 3) */
+  --hero-lift: calc(var(--type-top) - var(--spacing-page-y) * 1.05);
   /* the burgundy token, deepened toward ink at display size so two giant
      accent letters anchor the portrait without outshouting his face */
   --accent-type: var(--color-burgundy-deep);
@@ -47,6 +57,283 @@
   background: var(--color-paper);
   color: var(--color-ink);
   isolation: isolate;
+}
+
+/* ---------- the scroll, on the compositor ----------
+   Every layer that moves with the scroll is ALSO given its own scroll-driven
+   animation of transform / opacity - keyframes that reproduce the calc()
+   rules (generated from the same formulas; the eased collapse --q is
+   sampled every ~2.4% of its range). The browser runs these on the
+   compositor, in step with the scroll offset it paints, so the word and the
+   portrait follow the page exactly even while the main thread is busy -
+   where a main-thread --p always let the scroll paint first and the word
+   lurch with it, then snap back. The calc() rules stay as the fallback (no
+   scroll timelines) and for reduced motion (--p stays 0). */
+@keyframes heroScrollWord {
+  0% {
+    transform: translate3d(0, calc(0 * var(--sh) - 0 * var(--hero-lift)), 0) scale(1);
+    opacity: 1;
+  }
+  18% {
+    transform: translate3d(0, calc(0.18 * var(--sh) - 0 * var(--hero-lift)), 0) scale(1);
+    opacity: 1;
+  }
+  20.35% {
+    transform: translate3d(0, calc(0.2035 * var(--sh) - 0.0072 * var(--hero-lift)), 0) scale(0.9936);
+    opacity: 1;
+  }
+  22.7% {
+    transform: translate3d(0, calc(0.227 * var(--sh) - 0.028 * var(--hero-lift)), 0) scale(0.9754);
+    opacity: 1;
+  }
+  25.05% {
+    transform: translate3d(0, calc(0.2505 * var(--sh) - 0.0608 * var(--hero-lift)), 0) scale(0.9465);
+    opacity: 1;
+  }
+  27.4% {
+    transform: translate3d(0, calc(0.274 * var(--sh) - 0.104 * var(--hero-lift)), 0) scale(0.9085);
+    opacity: 1;
+  }
+  29.75% {
+    transform: translate3d(0, calc(0.2975 * var(--sh) - 0.1562 * var(--hero-lift)), 0) scale(0.8625);
+    opacity: 1;
+  }
+  32.1% {
+    transform: translate3d(0, calc(0.321 * var(--sh) - 0.216 * var(--hero-lift)), 0) scale(0.8099);
+    opacity: 1;
+  }
+  34.45% {
+    transform: translate3d(0, calc(0.3445 * var(--sh) - 0.2818 * var(--hero-lift)), 0) scale(0.7521);
+    opacity: 1;
+  }
+  36.8% {
+    transform: translate3d(0, calc(0.368 * var(--sh) - 0.352 * var(--hero-lift)), 0) scale(0.6902);
+    opacity: 1;
+  }
+  39.15% {
+    transform: translate3d(0, calc(0.3915 * var(--sh) - 0.4252 * var(--hero-lift)), 0) scale(0.6258);
+    opacity: 1;
+  }
+  41.5% {
+    transform: translate3d(0, calc(0.415 * var(--sh) - 0.5 * var(--hero-lift)), 0) scale(0.56);
+    opacity: 0.8889;
+  }
+  43.85% {
+    transform: translate3d(0, calc(0.4385 * var(--sh) - 0.5748 * var(--hero-lift)), 0) scale(0.4942);
+    opacity: 0.7228;
+  }
+  46.2% {
+    transform: translate3d(0, calc(0.462 * var(--sh) - 0.648 * var(--hero-lift)), 0) scale(0.4298);
+    opacity: 0.56;
+  }
+  48.55% {
+    transform: translate3d(0, calc(0.4855 * var(--sh) - 0.7183 * var(--hero-lift)), 0) scale(0.3679);
+    opacity: 0.4039;
+  }
+  50.9% {
+    transform: translate3d(0, calc(0.509 * var(--sh) - 0.784 * var(--hero-lift)), 0) scale(0.3101);
+    opacity: 0.2578;
+  }
+  53.25% {
+    transform: translate3d(0, calc(0.5325 * var(--sh) - 0.8438 * var(--hero-lift)), 0) scale(0.2575);
+    opacity: 0.125;
+  }
+  55.6% {
+    transform: translate3d(0, calc(0.556 * var(--sh) - 0.896 * var(--hero-lift)), 0) scale(0.2115);
+    opacity: 0.0089;
+  }
+  57.95% {
+    transform: translate3d(0, calc(0.5795 * var(--sh) - 0.9392 * var(--hero-lift)), 0) scale(0.1735);
+    opacity: 0;
+  }
+  60.3% {
+    transform: translate3d(0, calc(0.603 * var(--sh) - 0.972 * var(--hero-lift)), 0) scale(0.1446);
+    opacity: 0;
+  }
+  62.65% {
+    transform: translate3d(0, calc(0.6265 * var(--sh) - 0.9928 * var(--hero-lift)), 0) scale(0.1264);
+    opacity: 0;
+  }
+  65% {
+    transform: translate3d(0, calc(0.65 * var(--sh) - 1 * var(--hero-lift)), 0) scale(0.12);
+    opacity: 0;
+  }
+  100% {
+    transform: translate3d(0, calc(1 * var(--sh) - 1 * var(--hero-lift)), 0) scale(0.12);
+    opacity: 0;
+  }
+}
+@keyframes heroScrollPortrait {
+  0% {
+    transform: translate3d(0, calc(0 * var(--sh)), 0) scale(1);
+    opacity: 1;
+  }
+  8% {
+    transform: translate3d(0, calc(0.024 * var(--sh)), 0) scale(1);
+    opacity: 1;
+  }
+  55% {
+    transform: translate3d(0, calc(0.165 * var(--sh)), 0) scale(1.0513);
+    opacity: 1;
+  }
+  63% {
+    transform: translate3d(0, calc(0.189 * var(--sh)), 0) scale(1.06);
+    opacity: 0.8;
+  }
+  95% {
+    transform: translate3d(0, calc(0.285 * var(--sh)), 0) scale(1.06);
+    opacity: 0;
+  }
+  100% {
+    transform: translate3d(0, calc(0.3 * var(--sh)), 0) scale(1.06);
+    opacity: 0;
+  }
+}
+@keyframes heroScrollMarks {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(0, calc(0.12 * var(--sh)), 0);
+  }
+}
+@keyframes heroScrollInkDrops {
+  0% {
+    transform: translate3d(0, calc(0 * var(--sh)), 0);
+    opacity: 1;
+  }
+  30% {
+    transform: translate3d(0, calc(0.03 * var(--sh)), 0);
+    opacity: 1;
+  }
+  70% {
+    transform: translate3d(0, calc(0.07 * var(--sh)), 0);
+    opacity: 0;
+  }
+  100% {
+    transform: translate3d(0, calc(0.1 * var(--sh)), 0);
+    opacity: 0;
+  }
+}
+@keyframes heroScrollInkField {
+  0% {
+    transform: translate3d(0, calc(0 * var(--sh)), 0);
+    opacity: 1;
+  }
+  25% {
+    transform: translate3d(0, calc(0.035 * var(--sh)), 0);
+    opacity: 1;
+  }
+  70% {
+    transform: translate3d(0, calc(0.098 * var(--sh)), 0);
+    opacity: 0;
+  }
+  100% {
+    transform: translate3d(0, calc(0.14 * var(--sh)), 0);
+    opacity: 0;
+  }
+}
+@keyframes heroScrollLetter {
+  0% {
+    transform: translate3d(calc((var(--i) - 2.5) * 0 * 1.1vw), calc(var(--dy) * 0 * 2.2vh), 0);
+  }
+  2.5% {
+    transform: translate3d(calc((var(--i) - 2.5) * 0.0146 * 1.1vw), calc(var(--dy) * 0.0146 * 2.2vh), 0);
+  }
+  5% {
+    transform: translate3d(calc((var(--i) - 2.5) * 0.0554 * 1.1vw), calc(var(--dy) * 0.0554 * 2.2vh), 0);
+  }
+  7.5% {
+    transform: translate3d(calc((var(--i) - 2.5) * 0.1181 * 1.1vw), calc(var(--dy) * 0.1181 * 2.2vh), 0);
+  }
+  10% {
+    transform: translate3d(calc((var(--i) - 2.5) * 0.1983 * 1.1vw), calc(var(--dy) * 0.1983 * 2.2vh), 0);
+  }
+  12.5% {
+    transform: translate3d(calc((var(--i) - 2.5) * 0.2915 * 1.1vw), calc(var(--dy) * 0.2915 * 2.2vh), 0);
+  }
+  15% {
+    transform: translate3d(calc((var(--i) - 2.5) * 0.3936 * 1.1vw), calc(var(--dy) * 0.3936 * 2.2vh), 0);
+  }
+  17.5% {
+    transform: translate3d(calc((var(--i) - 2.5) * 0.5 * 1.1vw), calc(var(--dy) * 0.5 * 2.2vh), 0);
+  }
+  20% {
+    transform: translate3d(calc((var(--i) - 2.5) * 0.6064 * 1.1vw), calc(var(--dy) * 0.6064 * 2.2vh), 0);
+  }
+  22.5% {
+    transform: translate3d(calc((var(--i) - 2.5) * 0.7085 * 1.1vw), calc(var(--dy) * 0.7085 * 2.2vh), 0);
+  }
+  25% {
+    transform: translate3d(calc((var(--i) - 2.5) * 0.8017 * 1.1vw), calc(var(--dy) * 0.8017 * 2.2vh), 0);
+  }
+  27.5% {
+    transform: translate3d(calc((var(--i) - 2.5) * 0.8819 * 1.1vw), calc(var(--dy) * 0.8819 * 2.2vh), 0);
+  }
+  30% {
+    transform: translate3d(calc((var(--i) - 2.5) * 0.9446 * 1.1vw), calc(var(--dy) * 0.9446 * 2.2vh), 0);
+  }
+  32.5% {
+    transform: translate3d(calc((var(--i) - 2.5) * 0.9854 * 1.1vw), calc(var(--dy) * 0.9854 * 2.2vh), 0);
+  }
+  35% {
+    transform: translate3d(calc((var(--i) - 2.5) * 1 * 1.1vw), calc(var(--dy) * 1 * 2.2vh), 0);
+  }
+  100% {
+    transform: translate3d(calc((var(--i) - 2.5) * 1 * 1.1vw), calc(var(--dy) * 1 * 2.2vh), 0);
+  }
+}
+@keyframes heroScrollUi {
+  0% {
+    opacity: 1;
+  }
+  10%,
+  100% {
+    opacity: 0;
+  }
+}
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .heroType__scroll,
+    .heroPortrait__scroll,
+    .heroMarks__circle,
+    .inkDrops__scroll,
+    .inkField__scroll,
+    .heroUi {
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: scroll(root block);
+      animation-range: 0px var(--sh);
+    }
+    .heroType__scroll {
+      animation-name: heroScrollWord;
+    }
+    .heroPortrait__scroll {
+      animation-name: heroScrollPortrait;
+    }
+    .heroMarks__circle {
+      animation-name: heroScrollMarks;
+    }
+    .inkDrops__scroll {
+      animation-name: heroScrollInkDrops;
+    }
+    .inkField__scroll {
+      animation-name: heroScrollInkField;
+    }
+    .heroUi {
+      animation-name: heroScrollUi;
+    }
+    /* each letter: its entrance as before, plus its loosening drift on the scroll */
+    .hero .heroWord span {
+      animation-name: heroLetterIn, heroScrollLetter;
+      animation-duration: 1.6s, auto;
+      animation-timing-function: var(--ease-editorial), linear;
+      animation-delay: calc(0.25s + var(--i) * 0.07s), 0s;
+      animation-fill-mode: backwards, both;
+      animation-timeline: auto, scroll(root block);
+      animation-range: normal, 0px var(--sh);
+    }
+  }
 }
 
 /* ---------- background ---------- */
@@ -163,7 +450,7 @@
   transform-origin: var(--spacing-page-x) 0;
   transform: translate3d(
       0,
-      calc(var(--p) * var(--sh) - var(--q) * (var(--type-top) - var(--spacing-page-y) * 1.05)),
+      calc(var(--p) * var(--sh) - var(--q) * var(--hero-lift)),
       0
     )
     scale(calc(1 - var(--q) * 0.88));

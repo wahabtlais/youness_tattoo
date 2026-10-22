@@ -35,6 +35,9 @@ const knockMaskStyle = {
   maskImage: `url(${printUrl})`,
 } as CSSProperties;
 
+/** the browser can run the hero's scroll choreography on the compositor (see Hero.css) */
+const SCROLL_TIMELINE = typeof CSS !== 'undefined' && CSS.supports('animation-timeline: scroll()');
+
 interface HeroProps {
   /** opens the Ask Younes consultation shell */
   onAsk: () => void;
@@ -78,22 +81,31 @@ export function Hero({ onAsk }: HeroProps) {
     parallaxLayers: layers,
     radius: SPOT_RADIUS,
     cursorRef,
+    areaRef: stageRef,
     reducedMotion,
   });
 
-  // The fixed nav picks up how far the word has collapsed toward it (phase 3),
-  // and the Work section times its arrival from the same number (--hero-p).
+  // The fixed nav picks up how far the word has collapsed toward it (phase 3)
+  // and when to lay its paper strip (--hero-q / --hero-p). Written on the
+  // masthead itself - its only reader - not on <html>: a custom property on
+  // the root is inherited by every element, so each scroll frame would
+  // restyle the whole document.
   const onProgress = useCallback((p: number) => {
     const q = Math.min(1, Math.max(0, (p - 0.2) / 0.45));
-    const root = document.documentElement.style;
-    root.setProperty('--hero-q', q.toFixed(3));
-    root.setProperty('--hero-p', p.toFixed(4));
+    const nav = document.querySelector<HTMLElement>('.siteNav')?.style;
+    nav?.setProperty('--hero-q', q.toFixed(3));
+    nav?.setProperty('--hero-p', p.toFixed(4));
   }, []);
-  useScrollProgress(stageRef, { disabled: reducedMotion, onProgress });
+  // Where scroll-driven animations exist, Hero.css moves every scroll layer
+  // on the compositor and nothing reads --p: the listener then only feeds
+  // the masthead (onProgress), writing its own number to a variable nothing
+  // reads (so no hero-wide restyle per frame). Elsewhere it writes --p, as before.
+  useScrollProgress(stageRef, { disabled: reducedMotion, onProgress, varName: SCROLL_TIMELINE ? '--hero-p-js' : '--p' });
   useEffect(() => {
     return () => {
-      document.documentElement.style.removeProperty('--hero-q');
-      document.documentElement.style.removeProperty('--hero-p');
+      const nav = document.querySelector<HTMLElement>('.siteNav')?.style;
+      nav?.removeProperty('--hero-q');
+      nav?.removeProperty('--hero-p');
     };
   }, []);
 
@@ -134,7 +146,12 @@ export function Hero({ onAsk }: HeroProps) {
         el.style.setProperty('--ar', (Math.sign(dx) * near).toFixed(3));
       }
     }
+    // the hero off screen: nothing to measure (the listener stays, the work doesn't)
+    let visible = true;
+    const io = new IntersectionObserver(([entry]) => (visible = entry.isIntersecting));
+    io.observe(stage);
     function onMove(e: PointerEvent) {
+      if (!visible) return;
       px = e.clientX;
       py = e.clientY;
       if (!raf) raf = requestAnimationFrame(updateNear);
@@ -162,6 +179,7 @@ export function Hero({ onAsk }: HeroProps) {
     document.documentElement.addEventListener('pointerleave', onLeave);
     return () => {
       cancelAnimationFrame(raf);
+      io.disconnect();
       removeEventListener('pointermove', onMove);
       document.documentElement.removeEventListener('pointerleave', onLeave);
     };

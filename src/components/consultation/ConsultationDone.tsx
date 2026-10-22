@@ -1,6 +1,7 @@
 import type { TattooWork } from '../../domain/work';
 import { Button } from '../ui/Button';
 import { ConsultationReferences } from './ConsultationReferences';
+import { ConsultationCall } from './ConsultationCall';
 import { TAP, type DraftState } from './consultationDraft';
 
 interface ConsultationDoneProps {
@@ -35,8 +36,13 @@ export function ConsultationDone({ draft, pieces, onReview, onClose }: Consultat
           <ConsultationReferences entry={entry} pieces={pieces} compact />
         </div>
       )}
+      {entry.from === 'canvas-call' && (
+        <div className="mt-7 border-t border-rule pt-6">
+          <ConsultationCall entry={entry} />
+        </div>
+      )}
       <div className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-3 border-t border-rule pt-6">
-        <Button className={TAP} onClick={onReview}>
+        <Button variant="secondary" onClick={onReview}>
           Look it over again
         </Button>
         <Button variant="text" className={TAP} onClick={onClose}>

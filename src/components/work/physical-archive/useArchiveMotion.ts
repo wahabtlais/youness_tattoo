@@ -285,9 +285,12 @@ export function useArchiveMotion({ pieces, stageRef, canvasRef, ropeSrc, reduced
       }
     }
     function onWheel(e: WheelEvent) {
-      // only horizontal intent; vertical wheel keeps scrolling the page
+      // only horizontal intent; vertical wheel keeps scrolling the page.
+      // Passive: a blocking wheel listener would make every vertical scroll
+      // over the rope wait for the main thread. The page never scrolls
+      // sideways, and the root's overscroll-behavior-x (styles/base.css)
+      // keeps a sideways swipe from turning into back / forward.
       if (held || Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
-      e.preventDefault();
       target = null;
       offset -= e.deltaX;
       flingV = clamp(-e.deltaX * 8, -900, 900);
@@ -309,7 +312,7 @@ export function useArchiveMotion({ pieces, stageRef, canvasRef, ropeSrc, reduced
     stage.addEventListener('pointermove', onPointerMove);
     stage.addEventListener('pointerup', onPointerUp);
     stage.addEventListener('pointercancel', onPointerUp);
-    stage.addEventListener('wheel', onWheel, { passive: false });
+    stage.addEventListener('wheel', onWheel, { passive: true });
     stage.addEventListener('pointerenter', onEnter);
     stage.addEventListener('pointerleave', onLeave);
     stage.addEventListener('focusin', onFocusIn);

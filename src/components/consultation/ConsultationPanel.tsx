@@ -7,6 +7,7 @@ import { Dialog } from '../ui/Dialog';
 import { TextField } from '../ui/TextField';
 import { ChoiceGroup } from './ChoiceGroup';
 import { ConsultationReferences } from './ConsultationReferences';
+import { ConsultationCall } from './ConsultationCall';
 import { ConsultationDone } from './ConsultationDone';
 import { ConsultationReview } from './ConsultationReview';
 import {
@@ -119,6 +120,10 @@ export function ConsultationPanel({ draft, onChange, onClose }: ConsultationPane
                 <div className="mt-7 border-t border-rule pt-6">
                   <p className="mb-4 type-meta text-ink-soft">You’re starting from</p>
                   <ConsultationReferences entry={fromFindSimilar} pieces={pieces} />
+                </div>
+              ) : entry.from === 'canvas-call' ? (
+                <div className="mt-7 border-t border-rule pt-6">
+                  <ConsultationCall entry={entry} />
                 </div>
               ) : (
                 <p className="mt-3 text-micro leading-copy text-ink-soft">No references needed — a few words are enough to begin.</p>
@@ -246,7 +251,7 @@ export function ConsultationPanel({ draft, onChange, onClose }: ConsultationPane
               ) : (
                 <span />
               )}
-              <Button className={TAP} onClick={next}>
+              <Button variant="primary" onClick={next}>
                 {draft.fromReview ? 'Back to review' : 'Continue'}
               </Button>
             </div>

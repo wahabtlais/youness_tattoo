@@ -1,22 +1,23 @@
 import type { ButtonHTMLAttributes } from 'react';
 import { cx } from '../../lib/cx';
+import { BUTTON_BASE, VARIANTS, type Variant } from './buttonStyles';
 
 /**
- * - line:    the editorial call to action - a burgundy rule that lengthens on
- *            hover/focus, then mono caps ("Ask Younes", "Start a consultation")
- * - text:    a quiet control (Close, Prev, Next)
- * - outline: a framed control for forms
- * No filled, rounded or shadowed buttons: this is print, not an app.
+ * The site's buttons, by how much they ask for attention:
+ * - primary:   the one main action of a place - a solid burgundy block with
+ *              paper text ("Start a consultation", "Continue", "Respond to
+ *              this call"). Deepens on hover, presses down a pixel.
+ * - secondary: an action beside or below a primary one, or a lesser way in
+ *              ("Find similar", "Start a general consultation") - an ink
+ *              frame that fills with ink on hover.
+ * - text:      a quiet control inside a flow (Close, Back, Keep, Change) -
+ *              no frame, underlined in burgundy on hover and focus.
+ * - line:      the older editorial call to action, a burgundy rule before
+ *              caps; kept for compatibility, no longer used for main actions.
+ * - outline:   a framed control for forms.
+ * Square corners and no shadows: this is print, not an app. Every variant
+ * keeps the site's mono caps, and the global focus ring (styles/base.css).
  */
-type Variant = 'line' | 'text' | 'outline';
-
-const VARIANTS: Record<Variant, string> = {
-  line: 'group inline-flex items-center gap-4 py-2 text-ink',
-  text: 'opacity-70 transition-opacity duration-(--duration-fast) ease-editorial hover:opacity-100 focus-visible:opacity-100',
-  outline:
-    'border border-rule px-4 py-3 whitespace-nowrap text-ink transition-colors duration-(--duration-fast) ease-editorial hover:border-ink disabled:text-ink-muted disabled:hover:border-rule',
-};
-
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
 }
@@ -25,7 +26,7 @@ export function Button({ variant = 'line', type = 'button', className, children,
   return (
     <button
       type={type}
-      className={cx('type-label disabled:cursor-not-allowed disabled:opacity-60', VARIANTS[variant], className)}
+      className={cx(BUTTON_BASE, VARIANTS[variant], className)}
       {...rest}
     >
       {variant === 'line' && (

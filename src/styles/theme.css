@@ -17,8 +17,14 @@
   --color-*: initial;
   /* the printed sheet every section sits on */
   --color-paper: #f3f1ec;
-  /* a lifted sheet: dialogs, panels */
+  /* a lifted sheet: dialogs, panels - and the Journal's bright magazine stock */
   --color-paper-light: #faf8f5;
+  /* a heavier, quieter stock under the paper: the Process chapter, the footer */
+  --color-paper-deep: #ebe7df;
+  /* a warm kraft-like insert: Canvas Calls (ink-soft holds 7:1 on it) */
+  --color-paper-toned: #e6dfd2;
+  /* a cooler, stone-grey stock: the Artist chapter, so the portrait's print lifts off it */
+  --color-paper-stone: #e7e6e1;
   --color-white: #ffffff;
   --color-ink: #14131a;
   /* running copy on paper */

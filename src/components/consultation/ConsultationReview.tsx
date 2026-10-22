@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import type { TattooWork } from '../../domain/work';
 import { Button } from '../ui/Button';
 import { ConsultationReferences } from './ConsultationReferences';
+import { ConsultationCall } from './ConsultationCall';
 import {
   BODY_AREAS,
   labelOf,
@@ -48,6 +49,11 @@ export function ConsultationReview({ draft, pieces, onEdit, onBack, onFinish }: 
             <ConsultationReferences entry={entry} pieces={pieces} />
           </Part>
         )}
+        {entry.from === 'canvas-call' && (
+          <Part term="The call" hint="Opened from the call’s page.">
+            <ConsultationCall entry={entry} />
+          </Part>
+        )}
         <Part term="The idea" onEdit={() => onEdit('idea')} editLabel="Change the idea">
           {text(summary.concept) || text(summary.meaning) ? (
             <>
@@ -85,7 +91,7 @@ export function ConsultationReview({ draft, pieces, onEdit, onBack, onFinish }: 
         <Button variant="text" className={TAP} onClick={onBack}>
           &larr; Back
         </Button>
-        <Button className={TAP} onClick={onFinish}>
+        <Button variant="primary" onClick={onFinish}>
           Finish consultation
         </Button>
       </div>

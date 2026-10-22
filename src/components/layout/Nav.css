@@ -22,8 +22,12 @@
   opacity: calc(clamp(0, (var(--hero-p, 1) - 0.8) / 0.2, 1) * 0.94);
 }
 
-/* editorial masthead. The hairline under the brand draws in as the giant
-   YOUNES collapses into this slot (--hero-q, set by the hero). */
+/* the masthead's brand: the studio's logo (BrandLogo), a link home. The
+   hairline under it draws in as the giant YOUNES collapses into this slot
+   (--hero-q, set by the hero); on inner pages it is simply drawn. */
+.siteNav__logo {
+  height: clamp(2.1rem, 1.1vw + 1.55rem, 2.85rem);
+}
 .siteNav__brand {
   position: relative;
   font-family: var(--font-serif);
@@ -44,20 +48,55 @@
   position: absolute;
   left: 0;
   right: 0.16em;
-  bottom: -0.55em;
+  bottom: -0.4rem;
   height: 1px;
   background: var(--color-ink);
   transform-origin: 0 50%;
   transform: scaleX(var(--hero-q, 0));
 }
 
-.siteNav nav {
+/* inner pages: the brand's hairline is simply drawn (no hero to collapse into it) */
+.siteNav--page .siteNav__brand::after {
+  transform: scaleX(1);
+}
+
+.siteNav__links {
   display: flex;
   gap: clamp(0.9rem, 2vw, 2.1rem);
   pointer-events: auto;
 }
 
-.siteNav nav a {
+/* the page you are on: full ink, a burgundy hairline under it */
+.siteNav__links a[aria-current='page'] {
+  opacity: 1;
+  text-decoration: underline;
+  text-decoration-color: var(--color-burgundy);
+  text-underline-offset: 0.55em;
+  text-decoration-thickness: 1px;
+}
+
+.siteNav__menu {
+  display: none;
+  pointer-events: auto;
+  min-height: 2.75rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-ink);
+}
+
+/* five links don't fit beside the wordmark: a menu instead */
+@media (max-width: 899px) {
+  .siteNav__links {
+    display: none;
+  }
+  .siteNav__menu {
+    display: block;
+  }
+}
+
+.siteNav__links a {
   font-family: var(--font-mono);
   font-size: var(--text-label);
   letter-spacing: 0.2em;
@@ -67,21 +106,17 @@
   opacity: 0.75;
   transition: opacity var(--duration-fast) var(--ease-editorial);
 }
-.siteNav nav a:hover,
-.siteNav nav a:focus-visible {
+.siteNav__links a:hover,
+.siteNav__links a:focus-visible {
   opacity: 1;
 }
 
 @media (max-width: 520px) {
-  .siteNav .siteNav__brand {
-    font-size: 0.82rem;
-    letter-spacing: 0.12em;
+  .siteNav__logo {
+    height: 1.9rem;
   }
-  .siteNav nav {
-    gap: 0.85rem;
-  }
-  .siteNav nav a {
-    font-size: 0.56rem;
+  .siteNav__menu {
+    font-size: 0.62rem;
     letter-spacing: 0.16em;
   }
 }

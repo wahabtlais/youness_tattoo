@@ -109,7 +109,7 @@ export function FindSimilarPieces({
           <p className="mt-7 text-micro leading-copy text-ink-soft">
             These go to the consultation with your answers.
           </p>
-          <Button className="mt-2" onClick={onContinue}>
+          <Button variant="primary" className="mt-2" onClick={onContinue}>
             Continue
           </Button>
         </div>
@@ -239,7 +239,7 @@ export function FindSimilarPieces({
               {references} {references === 1 ? 'reference' : 'references'}
             </li>
           </ul>
-          <Button onClick={onContinue} className={cx(TAP, 'shrink-0')}>
+          <Button variant="primary" onClick={onContinue} className="shrink-0">
             Continue
           </Button>
         </div>

@@ -34,3 +34,13 @@ Every external asset the site ships, with its licence. The ink footage has its o
 ## Rope
 
 `src/assets/work/rope.png` was provided for the prototype. **Its source and licence are not recorded yet.** Add them here before it ships.
+
+`src/assets/work/rope-vertical.webp` (24 × 438 px, 9 KB) is derived from it, not a new asset: the rope's band cut from `rope.png`, made seamless (its last 120 px cross-faded over its first, as the archive's rope renderer does), turned upright and scaled. It tiles the /work page's vertical ropes. Its licence is `rope.png`'s.
+
+## Social-media marks
+
+| | |
+|---|---|
+| Package | `simple-icons` 16.35.0 (npm, pinned) |
+| Licence | The icon data is [CC0 1.0](https://github.com/simple-icons/simple-icons/blob/develop/LICENSE.md). The marks themselves are the trademarks of their owners (Instagram, TikTok, Facebook, YouTube, Threads, X); use them only to link to the studio's own accounts, following each network's brand guidelines. |
+| Used in | `components/layout/socialIcons.ts`: only the glyphs of networks listed there are bundled. Shown in the footer for accounts in `data/social.ts` (none yet). |

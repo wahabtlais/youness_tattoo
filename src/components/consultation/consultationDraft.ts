@@ -67,7 +67,11 @@ export const labelOf = <T extends string>(list: { value: T; label: string }[], v
  * client's general idea and a piece-led one never overwrite each other.
  */
 export const draftKey = (entry: ConsultationEntry) =>
-  entry.from === 'find-similar' ? `find-similar:${entry.workId}` : 'general';
+  entry.from === 'find-similar'
+    ? `find-similar:${entry.workId}`
+    : entry.from === 'canvas-call'
+      ? `canvas-call:${entry.callSlug}`
+      : 'general';
 
 const newId = () => `draft-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 

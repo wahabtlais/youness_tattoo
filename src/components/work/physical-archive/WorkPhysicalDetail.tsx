@@ -150,7 +150,7 @@ export function WorkPhysicalDetail({
               {description ?? PLACEHOLDER_STORY}
             </p>
             <div data-detail-text className="mt-6">
-              <Button onClick={() => onFindSimilar(piece)}>Find similar &rarr;</Button>
+              <Button variant="secondary" onClick={() => onFindSimilar(piece)}>Find similar &rarr;</Button>
             </div>
 
             {more.length > 0 && (

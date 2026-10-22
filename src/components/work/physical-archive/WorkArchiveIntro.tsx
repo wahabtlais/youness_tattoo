@@ -1,3 +1,5 @@
+import { Link } from 'react-router';
+
 /**
  * The archive's heading, set like the rest of the site: plate number,
  * display title, a mono line, one sentence. Copy is a prototype draft.
@@ -14,9 +16,9 @@ export function WorkArchiveIntro() {
         Tattoos by Younes, hung as they left the studio. <em className="text-burgundy">Take one down</em> to look
         closer.
       </p>
-      <a href="#work-archive" className="mt-8 type-label text-ink underline decoration-burgundy underline-offset-[6px]">
+      <Link to="/work" className="mt-8 type-label text-ink underline decoration-burgundy underline-offset-[6px]">
         View all works
-      </a>
+      </Link>
     </header>
   );
 }

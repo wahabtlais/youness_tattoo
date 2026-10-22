@@ -260,10 +260,8 @@ export function PhysicalWorkArchive({ pieces, onFindSimilar }: PhysicalWorkArchi
       return;
     }
     const index = slug === null ? -1 : pieces.findIndex((w) => w.slug === slug);
-    if (slug !== null && index < 0) {
-      navigate('/', { replace: true });
-      return;
-    }
+    // a piece that isn't in the archive: the route says so (work/UnknownPiece)
+    if (slug !== null && index < 0) return;
     if (index < 0) {
       // the address LEFT the detail (Back): close it the usual way - but not
       // when a pick has opened it and its address hasn't arrived yet

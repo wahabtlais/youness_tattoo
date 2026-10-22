@@ -115,7 +115,7 @@ export function FindSimilarPreferences({
         </label>
 
         <div className="mt-8 flex flex-wrap items-center gap-x-8 gap-y-4">
-          <Button type="submit" className={TAP}>
+          <Button type="submit" variant="primary">
             See more of the work
           </Button>
           <Button variant="text" className={TAP} onClick={onBack}>
