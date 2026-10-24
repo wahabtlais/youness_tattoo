@@ -1,0 +1,15 @@
+# never into an image: secrets, local data, build output, dependencies
+.env
+.env.*
+**/.env
+docker/.env
+storage/
+test-results/
+playwright-report/
+node_modules/
+**/node_modules/
+dist/
+server/dist/
+assets-src/
+.git/
+*.log

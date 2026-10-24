@@ -15,7 +15,31 @@ SiteLayout            ScrollManager, Nav, RegistrationMarks, <main>, Footer, Con
     ├── /canvas-calls         CanvasCallsPage     (lazy)
     ├── /canvas-calls/:slug   CanvasCallPage      (lazy)
     └── *                     NotFoundPage
+
+/studio                       DashboardLayout     (lazy, its own frame - none of SiteLayout's; noindex) the private studio, behind sign-in (AuthGate)
+│   reset?token=                  (in AuthGate)      choose a new password from an emailed link - works signed out
+├── (index)                   OverviewPage        (lazy) the studio at a glance, from /api/studio/overview
+├── inquiries                InquiriesPage       (lazy) the inquiry map (React Flow) and an explore panel; ?find searches the map
+│   ├── :stage                    (no element)       the map with that stage's inquiries in the panel - ?q, ?sort (oldest, name)
+│   ├── :inquiryId                (no element)       one inquiry, full width - ?from (the stage it was opened from) keeps the way back
+│   └── :stage/:inquiryId         (no element)       an older address: becomes /inquiries/:inquiryId?from=:stage
+├── clients                   ClientsPage         (lazy) every client, by relationship; search
+│   └── :clientId                 (no element)       one client beside the list: ideas, appointments, contact, follow-ups, notes, history
+├── calendar                  CalendarPage        (lazy) ?view (day | week | month, default week) and ?date (yyyy-mm-dd); book, confirm, cancel
+├── portfolio                 PortfolioPage       (lazy) every piece (published or private) as a grid; filter, find by number, upload
+│   └── :pieceId                  (no element)       one piece beside the grid: photograph, details (edit, confirm), publish, where it's used
+├── publishing                PublishingPage      (lazy) the Journal (default) and Canvas Calls
+│   ├── :type                     (no element)       journal | calls
+│   └── :type/:slug               (no element)       one post or call beside the list: preview, links, responses
+├── assistant                 AssistantPage       (lazy) the assistant's status and spending; open conversation isn't built (it works inside each inquiry)
+├── settings                  SettingsPage        (lazy) the studio's settings, its email outbox, password, signed-in devices
+├── :section                  SectionPlaceholder  (lazy) an unknown section: "no such page"
+└── *                         SectionPlaceholder  unknown studio address, inside the studio frame
 ```
+
+The studio dashboard lives in `src/dashboard/` and loads only when visited: none of it is in the public entry bundle. Its pages render only after sign-in (password, then the authenticator code), and the data behind them comes from `/api/studio/*`, which refuses anyone not fully signed in - the page code being public reveals nothing. `noindex` keeps the address out of search results.
+
+The home page also takes `?sitePreview` (signed in only): the saved draft of the website content, with a banner, instead of the published version.
 
 **Scrolling** (`components/layout/ScrollManager`): arriving on another page starts at its top; a section link such as `/#studio` scrolls to it from any page (re-placing it while the home page settles); moving within a page (a piece's detail over the archive, `?piece`, `?similar`, `?consult`) keeps the scroll; Back and Forward keep the browser's own restoration.
 
@@ -53,7 +77,20 @@ Both survive a reload, close with Escape, Close, an outside click or Back, retur
 | `/booking` | Booking information (no payments) | 9 | |
 | `/aftercare` | Aftercare information | later | |
 
-The artist dashboard will be a **separate app or a separately protected route tree** (e.g. `/studio-os/*`). It must never ship in the public bundle. See [FUTURE_AI.md](FUTURE_AI.md).
+## The API (server/)
+
+Same origin as the site: `/api` and `/media` (Vite proxies them to the API in development; in production the API serves the site itself). Contracts: `packages/contracts`. Details: [server/README.md](../server/README.md).
+
+| Path | Who | What |
+|---|---|---|
+| `GET /api/health` | anyone | the process and the database are up; whether the assistant is on |
+| `GET /api/public/content` | anyone | the published bundle: home-page content, works, journal, calls, testimonials (ETag) |
+| `POST /api/public/consultations` | anyone | a consultation (5 per 10 minutes per address; idempotent) → `201` with its reference |
+| `GET /media/public/*` | anyone | the published pieces' images only (cached a day); anything else is 404 |
+| `/api/auth/*` | | `state`, `setup`, `login`, `logout`, `mfa/enroll`, `mfa/enroll/confirm`, `mfa/verify`, `password/forgot`, `password/reset`, `password/change`, `sessions` (list, `DELETE :id`, `revoke-others`), `me` |
+| `/api/studio/*` | the owner, fully signed in | `overview`, `activity`; `inquiries/:id` (+ `status`, `notes`); `clients/:id` (+ `notes`); `follow-ups`; `appointments` (range, create, update); `availability`; `content/home` (+ `draft`, `publish`, `rollback`, `preview`); `works`; `media` (upload, private image); `journal`, `calls`, `testimonials` (publish switch); `settings`; `outbox` (+ retry); `ai/status`, `ai/inquiries/:id/summary|reply-draft`, `ai/proposals/:id/decision` |
+
+Every state-changing request must come from an allowed origin; the studio's own also carry `X-Requested-With: younes-studio`. Errors are `application/problem+json` with a plain-language `title` and, for forms, `fields`.
 
 ## Conventions
 
@@ -68,4 +105,4 @@ The artist dashboard will be a **separate app or a separately protected route tr
 
 ## Hosting
 
-This is a single-page app with browser history routing: the host must serve `index.html` for unknown paths (an SPA fallback or rewrite). `vite preview` and the dev server already do this.
+This is a single-page app with browser history routing: the host must serve `index.html` for unknown paths (an SPA fallback or rewrite). The API does this in production (`SERVE_SITE`), writing the published content into the page; `vite preview` and the dev server do it too.

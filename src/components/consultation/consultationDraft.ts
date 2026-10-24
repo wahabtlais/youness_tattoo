@@ -9,25 +9,45 @@ import type {
 
 /**
  * The consultation draft: a `Consultation` (domain) the client is filling
- * in, plus where they are in the steps (UI). Kept in memory for the visit
- * only - nothing is stored or sent (docs/UX_FLOWS.md).
+ * in, plus where they are in the steps (UI). Kept in memory while the page
+ * is open; sent to the studio only when the client sends it from the
+ * review (submitConsultation.ts) - and called sent only once the studio's
+ * server has stored it and returned a receipt.
  */
 
-export type ConsultationStep = 'idea' | 'placement' | 'timing' | 'review' | 'done';
+export type ConsultationStep = 'idea' | 'placement' | 'timing' | 'contact' | 'review' | 'done';
 
 /** the steps with progress, in order ('done' is the confirmation after them) */
 export const STEPS: { step: Exclude<ConsultationStep, 'done'>; name: string }[] = [
   { step: 'idea', name: 'The idea' },
   { step: 'placement', name: 'Placement and scale' },
   { step: 'timing', name: 'Timing and details' },
+  { step: 'contact', name: 'Your details' },
   { step: 'review', name: 'Review' },
 ];
+
+/** how Younes can reach them - only what they choose to give, name and email required */
+export interface DraftContact {
+  name: string;
+  email: string;
+  phone: string;
+  instagram: string;
+}
 
 export interface DraftState {
   consultation: Consultation;
   step: ConsultationStep;
   /** came to a step from the review to change something: it leads back there */
   fromReview: boolean;
+  contact: DraftContact;
+  /** they've read how their details are used, and agreed */
+  consent: boolean;
+  /** this draft's own id for the server: sending it twice files it once */
+  submissionKey: string;
+  /** when the draft began - the server notices a form filled faster than a person could */
+  startedAt: string;
+  /** the studio's receipt, once the server has stored it */
+  receipt?: { receiptId: string; receivedAt: string };
 }
 
 /** the choices offered - starting points for a conversation, never specifications */
@@ -79,6 +99,10 @@ export const newDraft = (entry: ConsultationEntry): DraftState => ({
   consultation: { id: newId(), status: 'draft', entry, summary: { references: [] }, createdAt: new Date().toISOString() },
   step: 'idea',
   fromReview: false,
+  contact: { name: '', email: '', phone: '', instagram: '' },
+  consent: false,
+  submissionKey: crypto.randomUUID(),
+  startedAt: new Date().toISOString(),
 });
 
 /**
@@ -88,6 +112,8 @@ export const newDraft = (entry: ConsultationEntry): DraftState => ({
  * the draft was finished, it goes back to the review to be looked over.
  */
 export function reopenDraft(draft: DraftState, entry: ConsultationEntry): DraftState {
+  // a sent consultation is finished: a new idea starts a new draft (keeping who they are)
+  if (draft.receipt) return { ...newDraft(entry), contact: draft.contact };
   if (entry.from !== 'find-similar') return draft;
   const changed = JSON.stringify(entry) !== JSON.stringify(draft.consultation.entry);
   if (!changed) return draft;

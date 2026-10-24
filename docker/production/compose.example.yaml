@@ -1,0 +1,78 @@
+# EXAMPLE - a production stack for one small server. Prepared, not deployed.
+# Copy this folder to the server, fill production.env (from
+# production.env.example), point the domain's DNS at the server, then:
+#
+#   docker compose -f compose.example.yaml --env-file production.env up -d
+#   docker compose -f compose.example.yaml --env-file production.env run --rm app node server/dist/cli.js migrate
+#   docker compose -f compose.example.yaml --env-file production.env run --rm app node server/dist/cli.js owner:create
+#
+# What's reachable from the internet: Caddy on 80/443, nothing else.
+# PostgreSQL has no published port - only the app reaches it, on the
+# private network. See server/README.md (Production) before using it.
+name: younes-tattoo-prod
+
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD:?set in production.env}
+      YOUNES_MIGRATOR_PASSWORD: ${YOUNES_MIGRATOR_PASSWORD:?set in production.env}
+      YOUNES_APP_PASSWORD: ${YOUNES_APP_PASSWORD:?set in production.env}
+      YOUNES_DATABASES: younes
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ../postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d younes"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    networks: [private]
+    restart: unless-stopped
+    # no `ports:` - never publish PostgreSQL
+
+  app:
+    image: younes-tattoo:latest
+    build:
+      context: ../..
+      dockerfile: server/Dockerfile
+      target: runtime
+    env_file: production.env
+    environment:
+      DATABASE_URL: postgres://younes_app:${YOUNES_APP_PASSWORD}@postgres:5432/younes
+      MIGRATION_DATABASE_URL: postgres://younes_migrator:${YOUNES_MIGRATOR_PASSWORD}@postgres:5432/younes
+      TRUST_PROXY: "true"
+    volumes:
+      - storage:/data/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [private, edge]
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN:?set in production.env}
+    volumes:
+      - ./Caddyfile.example:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [app]
+    networks: [edge]
+    restart: unless-stopped
+
+networks:
+  private:
+    internal: true
+  edge: {}
+
+volumes:
+  pgdata:
+  storage:
+  caddy_data:
+  caddy_config:

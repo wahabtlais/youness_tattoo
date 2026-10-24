@@ -5,6 +5,7 @@ import { DemoNotice } from '../components/ui/DemoNotice';
 import { Reveal } from '../components/ui/Reveal';
 import type { CanvasCall } from '../domain/canvasCall';
 import { useCanvasCalls } from '../hooks/useContent';
+import { useSiteContent } from '../hooks/useSiteContent';
 import { formatDate } from '../lib/date';
 
 /**
@@ -17,6 +18,7 @@ import { formatDate } from '../lib/date';
  */
 export function CanvasCallsPreview() {
   const calls = useCanvasCalls();
+  const copy = useSiteContent().content.canvasCalls;
   if (calls.status !== 'success') return null;
   const { items, demo } = calls.data;
   const open = items.filter((c) => c.status === 'open').slice(0, 3);
@@ -30,12 +32,9 @@ export function CanvasCallsPreview() {
             Canvas calls · <span className="text-ink">{String(open.length).padStart(2, '0')} open</span>
           </p>
           <h2 id="callsHeading" className="mt-4 max-w-[14ch] type-heading text-[clamp(2rem,4.2vw,3.25rem)] leading-[1.02]">
-            Looking for a canvas.
+            {copy.heading}
           </h2>
-          <p className="mt-5 max-w-[34ch] text-body leading-copy text-ink-soft">
-            Particular pieces Younes wants to tattoo, each looking for the person to wear it. Respond to one and the
-            consultation starts with the call attached.
-          </p>
+          <p className="mt-5 max-w-[34ch] text-body leading-copy text-ink-soft">{copy.intro}</p>
           {demo && <DemoNotice className="mt-5">Demo content — fictional calls. No offer or deadline here is real.</DemoNotice>}
           {/* the way to the whole list: a framed button, full ink, so it reads at a glance */}
           <ButtonLink to="/canvas-calls" arrow className="mt-7">

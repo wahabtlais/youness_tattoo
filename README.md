@@ -3,10 +3,15 @@
 Site for YOUNES / TATTOO, Detroit, Michigan. React + TypeScript + Vite.
 
 ```bash
-npm run dev      # local dev server
-npm run build    # typecheck + production build
-npm run lint     # oxlint
+npm run dev        # the site (http://localhost:5201)
+npm run dev:api    # the API (http://127.0.0.1:3001) - first: npm run setup, db:up, db:migrate, db:seed
+npm run build      # typecheck + production build of the site (build:api for the server)
+npm run lint       # oxlint
+npm test           # contracts + server integration tests (real PostgreSQL)
+npm run test:e2e   # browser tests (Playwright)
 ```
+
+The backend - consultations, the private studio at `/studio`, sign-in, content publishing, email - is in `server/`: [server/README.md](server/README.md) (setup, configuration, security, backup and restore).
 
 ## Docs
 
@@ -18,6 +23,8 @@ npm run lint     # oxlint
 - [docs/FUTURE_AI.md](docs/FUTURE_AI.md) - consultation AI and artist assistant (not built)
 - [docs/ROADMAP.md](docs/ROADMAP.md) - phases and open decisions
 - [docs/INK_ASSETS.md](docs/INK_ASSETS.md) - licensed ink sources
+- [server/README.md](server/README.md) - the backend: runbook, configuration, security model, backup and restore
+- [docs/PRIVACY_NOTICE_DRAFT.md](docs/PRIVACY_NOTICE_DRAFT.md) - the consultation's privacy notice (draft, to be reviewed)
 
 ## Structure
 

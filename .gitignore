@@ -43,3 +43,12 @@ assets-src/arm/
 
 # python
 __pycache__/
+
+# backend: uploaded and imported media, server build output, test artifacts
+storage/
+server/dist/
+test-results/
+playwright-report/
+
+# production settings live only on the server
+docker/production/production.env

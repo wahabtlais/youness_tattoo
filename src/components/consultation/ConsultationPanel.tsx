@@ -8,6 +8,8 @@ import { TextField } from '../ui/TextField';
 import { ChoiceGroup } from './ChoiceGroup';
 import { ConsultationReferences } from './ConsultationReferences';
 import { ConsultationCall } from './ConsultationCall';
+import { ConsultationContact } from './ConsultationContact';
+import { checkContact, sendConsultation } from './submitConsultation';
 import { ConsultationDone } from './ConsultationDone';
 import { ConsultationReview } from './ConsultationReview';
 import {
@@ -30,15 +32,20 @@ interface ConsultationPanelProps {
 
 /**
  * The guided consultation (docs/UX_FLOWS.md): the idea, placement and
- * scale, timing and anything else, then a review the client can edit, and
- * an honest close - the draft is ready, nothing has been sent. One question
- * or group of questions per step; every answer optional.
+ * scale, timing and anything else, how to reach them, then a review the
+ * client can edit, and sending it to Younes. One question or group of
+ * questions per step; every answer about the tattoo is optional - only a
+ * name and an email (and agreeing to how they're used) are needed to send.
+ * "Sent" is said only once the studio's server has stored it.
  */
 export function ConsultationPanel({ draft, onChange, onClose }: ConsultationPanelProps) {
   const work = useWork();
   const pieces = work.status === 'success' ? work.data : [];
   const sheet = useRef<HTMLDivElement>(null);
   const [said, setSaid] = useState('');
+  const [errors, setErrors] = useState<ReturnType<typeof checkContact>>({});
+  const [sending, setSending] = useState(false);
+  const [failure, setFailure] = useState<string | null>(null);
 
   const step = draft?.step;
   const at = STEPS.findIndex((s) => s.step === step);
@@ -69,7 +76,41 @@ export function ConsultationPanel({ draft, onChange, onClose }: ConsultationPane
     if (i >= 0) setSaid(`Step ${i + 1} of ${STEPS.length}: ${STEPS[i].name}`);
     onChange((d) => ({ ...d, step: to, fromReview }));
   };
-  const next = () => go(draft.fromReview ? 'review' : STEPS[at + 1].step);
+  const next = () => {
+    if (draft.step === 'contact') {
+      const problems = checkContact(draft.contact, draft.consent);
+      setErrors(problems);
+      if (Object.keys(problems).length) {
+        setSaid('Some details need another look.');
+        return;
+      }
+    }
+    go(draft.fromReview ? 'review' : STEPS[at + 1].step);
+  };
+  const send = async () => {
+    setSending(true);
+    setFailure(null);
+    setSaid('Sending your idea to Younes…');
+    const r = await sendConsultation(draft);
+    setSending(false);
+    if (r.ok) {
+      setSaid(`Sent. Your reference is ${r.receipt.receiptId}.`);
+      onChange((d) => ({
+        ...d,
+        step: 'done',
+        fromReview: false,
+        receipt: { receiptId: r.receipt.receiptId, receivedAt: r.receipt.receivedAt },
+        consultation: { ...d.consultation, status: 'submitted', reviewedAt: d.consultation.reviewedAt ?? new Date().toISOString(), submittedAt: r.receipt.receivedAt },
+      }));
+      return;
+    }
+    setFailure(r.message);
+    setSaid(r.message);
+    if (r.fields && Object.keys(r.fields).length) {
+      setErrors(r.fields);
+      go('contact', true);
+    }
+  };
   const back = () => go(STEPS[at - 1].step);
   const fromFindSimilar = entry.from === 'find-similar' ? entry : null;
 
@@ -93,7 +134,7 @@ export function ConsultationPanel({ draft, onChange, onClose }: ConsultationPane
                 · {at + 1} of {STEPS.length} · {STEPS[at].name}
               </span>
             )}
-            {draft.step === 'done' && <span className="text-ink-soft"> · Draft ready</span>}
+            {draft.step === 'done' && <span className="text-ink-soft"> · Sent</span>}
           </p>
           <Button variant="text" className={cx(TAP, '-mt-2 shrink-0')} onClick={onClose}>
             Close &times;
@@ -101,7 +142,7 @@ export function ConsultationPanel({ draft, onChange, onClose }: ConsultationPane
         </div>
         {/* quiet progress: a hairline per step, burgundy up to this one */}
         {at >= 0 && (
-          <ol aria-hidden="true" className="mt-4 grid grid-cols-4 gap-1.5">
+          <ol aria-hidden="true" className="mt-4 grid grid-cols-5 gap-1.5">
             {STEPS.map((s, i) => (
               <li key={s.step} className={cx('h-px', i <= at ? 'bg-burgundy' : 'bg-rule')} />
             ))}
@@ -220,21 +261,35 @@ export function ConsultationPanel({ draft, onChange, onClose }: ConsultationPane
             </>
           )}
 
+          {draft.step === 'contact' && (
+            <>
+              <Heading>How can Younes reach you?</Heading>
+              <Lede>He reads every idea himself and replies personally, usually by email.</Lede>
+              <ConsultationContact
+                contact={draft.contact}
+                consent={draft.consent}
+                errors={errors}
+                onContact={(key, value) => {
+                  setErrors((e) => ({ ...e, [key]: undefined }));
+                  onChange((d) => ({ ...d, contact: { ...d.contact, [key]: value } }));
+                }}
+                onConsent={(value) => {
+                  setErrors((e) => ({ ...e, consent: undefined }));
+                  onChange((d) => ({ ...d, consent: value }));
+                }}
+              />
+            </>
+          )}
+
           {draft.step === 'review' && (
             <ConsultationReview
               draft={draft}
               pieces={pieces}
               onEdit={(to) => go(to, true)}
               onBack={back}
-              onFinish={() => {
-                setSaid('Your consultation draft is ready. Nothing has been sent.');
-                onChange((d) => ({
-                  ...d,
-                  step: 'done',
-                  fromReview: false,
-                  consultation: { ...d.consultation, reviewedAt: new Date().toISOString() },
-                }));
-              }}
+              onFinish={send}
+              sending={sending}
+              failure={failure}
             />
           )}
 
@@ -242,7 +297,7 @@ export function ConsultationPanel({ draft, onChange, onClose }: ConsultationPane
             <ConsultationDone draft={draft} pieces={pieces} onReview={() => go('review')} onClose={onClose} />
           )}
 
-          {(draft.step === 'idea' || draft.step === 'placement' || draft.step === 'timing') && (
+          {(draft.step === 'idea' || draft.step === 'placement' || draft.step === 'timing' || draft.step === 'contact') && (
             <div className="mt-10 flex flex-wrap items-center justify-between gap-x-8 gap-y-3 border-t border-rule pt-6">
               {at > 0 ? (
                 <Button variant="text" className={TAP} onClick={back}>

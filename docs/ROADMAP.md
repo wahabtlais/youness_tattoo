@@ -10,11 +10,11 @@ Phases run in order. Don't jump ahead: each one is designed against the hero ben
 | 4 | **Find Similar → consultation entry** ✅ | From a piece: what speaks to you about it, more of the work to keep or set aside, then the consultation with all of it. Suggestions are the rest of the archive until real metadata allows ranking | 3 |
 | 5 | **Consultation experience** — guided draft ✅ | Built: a guided text draft (idea, placement and scale, timing and notes) that carries Find Similar's references. Still to come: Younes-work search inside it, external inspiration, uploads | 4, an API, `TattooWork.tags` |
 | 6 | **Consultation summary** — review ✅ | Built: review and change every answer before finishing (local only). Submitting it is Phase 7 | 5 |
-| 7 | **Client submission / status** | Submit the reviewed draft with contact details; a simple status for the client. Until then the draft's last screen says plainly that nothing is sent | 6, API + storage |
+| 7 | **Client submission** ✅ / status | Built: the reviewed draft is sent with contact details and consent, stored, and confirmed with a reference only after the database write. Still to come: a status page for the client | 6, API + storage |
 | 8 | **Studio / about** | Real biography, studio and photography | Real content from Younes |
-| 9 | **Booking foundation** | Show confirmed appointments and studio details (no payments) | 7 |
+| 9 | **Booking foundation** — studio side ✅ | Built: the studio's calendar (book, confirm, cancel; overlaps refused by the database). Still to come: anything client-facing. No payments | 7 |
 | 10 | **AI / voice** | Orchestrator, voice, concept generation as the last resort ([FUTURE_AI.md](FUTURE_AI.md)) | 5–7 |
-| 11 | **Artist dashboard** | Private OS: Today, consultations, clients, appointments, aftercare | 7, auth |
+| 11 | **Artist dashboard** ✅ | Built and connected: sign-in with two-factor, inquiries, clients, calendar, portfolio (upload, publish), journal and calls (publish switch), website content (draft, preview, publish, rollback), assistant proposals (when configured), settings and email | 7, auth |
 | 12 | **AI secretary + channels** | Read / prepare / execute, unified inbox, AI Activity | 11, channel APIs |
 
 ## Phase 1: what was done
@@ -34,7 +34,9 @@ Phases run in order. Don't jump ahead: each one is designed against the hero ben
 
 - **Social accounts.** Add the studio's verified accounts to `data/social.ts` (exact handle and the account's own URL); the footer's Follow area appears once there is at least one.
 - **Hosting fallback.** Every page is client-routed: the host must serve `index.html` for any path that isn't a file (`/work`, `/journal/…`, `/canvas-calls/…`, `/work/04`). Checked with `vite preview` on the production build. The site must be served from the domain root: asset and photograph paths are absolute (`/work/web/…`, `/youness_tattoo_logo-640.webp`); a sub-path would need Vite's `base` and those paths updated.
-- **No environment variables or secrets** are needed today. `import.meta.env.DEV` only shows the Artist section's marked placeholder in development.
+- **Environment and secrets** live only on the server (`server/.env`, see server/README.md). The browser needs none. `import.meta.env.DEV` only shows the Artist section's marked placeholder in development.
+- **Privacy notice.** The consultation shows draft wording ([PRIVACY_NOTICE_DRAFT.md](PRIVACY_NOTICE_DRAFT.md)). It must be reviewed and completed before real consultations are taken.
+- **Production** is prepared, not deployed: `server/Dockerfile`, `docker/production/` (see server/README.md, Production).
 - **Demo content** must be switched off or replaced (testimonials, journal, canvas calls, synthetic voices, sample work metadata): see the items below.
 - **Not yet checked:** Safari, Firefox, real phones and tablets, and a screen-reader pass.
 
@@ -52,5 +54,5 @@ Phases run in order. Don't jump ahead: each one is designed against the hero ben
 - **Portfolio filters.** `/work` filters on the demo metadata today and says so. They become real the moment pieces are `metadataStatus: 'verified'`.
 - **Process copy (to confirm with Younes).** The Process section's four steps (`data/process.ts`) are an indicative outline drawn from what the site already establishes, and say so. Younes should confirm or reword them. Nothing about fees, deposits, availability, timelines or revisions is stated, and nothing should be until he supplies it.
 - **Artist content.** The Artist section (after Work) is built and states only known facts: his name, Detroit, Michigan, by appointment, and that the archive is his work. Its portrait is the photograph chosen for it (original kept out of Git in `assets-src/artist-section.png`), shown whole. His introduction is an empty slot in `data/artist.ts` (`intro`): production shows nothing there, and development shows a marked placeholder. It needs Younes's own words. The masthead still labels the link to it "Studio" (`#studio`), which may want renaming.
-- **Backend / API.** Its shape and hosting need choosing before Phase 5.
-- **Test stack.** Vitest + Testing Library + Playwright, introduced with the first behaviour that needs it (see ARCHITECTURE.md's testing section).
+- **Backend / API.** Built: a self-owned Node.js + Fastify API over PostgreSQL (server/README.md). Still to choose: the host, the back-up destination and the email provider.
+- **Test stack.** Vitest (contracts, and the server against the real test database) and Playwright (the site and studio end to end): `npm test`, `npm run test:e2e`.

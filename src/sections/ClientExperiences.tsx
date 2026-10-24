@@ -1,7 +1,8 @@
 import { TestimonialCarousel, type TestimonialArtwork } from '../components/testimonials/TestimonialCarousel';
 import { Reveal } from '../components/ui/Reveal';
-import { CLIENT_EXPERIENCES } from '../data/clientExperiences';
+import { useTestimonials } from '../hooks/useTestimonials';
 import { useReducedMotion } from '../hooks/useReducedMotion';
+import { useSiteContent } from '../hooks/useSiteContent';
 import { useWork } from '../hooks/useWork';
 
 /**
@@ -18,6 +19,8 @@ import { useWork } from '../hooks/useWork';
 export function ClientExperiences() {
   const reducedMotion = useReducedMotion();
   const work = useWork();
+  const copy = useSiteContent().content.experiences;
+  const CLIENT_EXPERIENCES = useTestimonials();
   if (CLIENT_EXPERIENCES.status === 'awaiting') return null;
   const demo = CLIENT_EXPERIENCES.status === 'demo';
 
@@ -45,15 +48,13 @@ export function ClientExperiences() {
       <Reveal className="mx-auto grid max-w-page gap-y-[clamp(2.25rem,6vh,3.5rem)] border-t border-rule pt-[clamp(3rem,9vh,6.5rem)] desktop:grid-cols-12 desktop:gap-x-[clamp(2rem,4vw,4rem)]">
         <div className="grid gap-x-[clamp(2rem,6vw,5rem)] gap-y-5 tablet:grid-cols-2 tablet:items-end desktop:col-span-4 desktop:grid-cols-1 desktop:content-start desktop:items-start">
           <header>
-            <p className="type-eyebrow text-burgundy">Client experiences</p>
+            <p className="type-eyebrow text-burgundy">{copy.eyebrow}</p>
             <h2 id="experiencesHeading" className="mt-4 max-w-[16ch] type-heading text-headline">
-              More than the finished piece.
+              {copy.heading}
             </h2>
           </header>
           <div className="desktop:mt-4">
-            <p className="max-w-[34ch] text-body leading-copy text-ink-soft">
-              Stories about the ideas, conversations, and decisions behind a tattoo.
-            </p>
+            <p className="max-w-[34ch] text-body leading-copy text-ink-soft">{copy.intro}</p>
             {demo && (
               <p
                 id="experiencesDemo"

@@ -5,6 +5,7 @@ import { DemoNotice } from '../components/ui/DemoNotice';
 import { Reveal } from '../components/ui/Reveal';
 import { journalWhen, type JournalKind, type JournalPost } from '../domain/journal';
 import { useJournal } from '../hooks/useContent';
+import { useSiteContent } from '../hooks/useSiteContent';
 import { cx } from '../lib/cx';
 import { formatDate, formatRange, today } from '../lib/date';
 
@@ -27,6 +28,7 @@ const KIND: Record<JournalKind, string> = {
  */
 export function JournalPreview() {
   const journal = useJournal();
+  const copy = useSiteContent().content.journal;
   if (journal.status !== 'success' || journal.data.items.length === 0) return null;
   const { items, demo } = journal.data;
   const now = today();
@@ -41,15 +43,13 @@ export function JournalPreview() {
       <Reveal className="mx-auto max-w-page">
         <header className="grid items-end gap-x-[clamp(2rem,6vw,5rem)] gap-y-5 border-b border-ink pb-[clamp(1.5rem,4vh,2.25rem)] tablet:grid-cols-2 desktop:grid-cols-12">
           <div className="desktop:col-span-7">
-            <p className="type-eyebrow text-burgundy">Journal</p>
+            <p className="type-eyebrow text-burgundy">{copy.eyebrow}</p>
             <h2 id="journalHeading" className="mt-4 max-w-[16ch] type-heading text-[clamp(2rem,4.2vw,3.25rem)] leading-[1.02]">
-              News from the studio.
+              {copy.heading}
             </h2>
           </div>
           <div className="grid gap-4 desktop:col-span-4 desktop:col-start-9 desktop:pb-1">
-            <p className="max-w-[38ch] text-body leading-copy text-ink-soft">
-              Conventions, guest spots, results and studio news — what’s coming up, and what has happened.
-            </p>
+            <p className="max-w-[38ch] text-body leading-copy text-ink-soft">{copy.intro}</p>
             <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
               {demo && <DemoNotice>Demo content — fictional examples</DemoNotice>}
               {/* the way to the whole Journal: the same framed button as "All canvas calls" */}

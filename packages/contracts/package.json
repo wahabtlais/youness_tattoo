@@ -1,0 +1,20 @@
+{
+  "name": "@younes/contracts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The shapes the website, the dashboard and the API agree on - zod schemas and their types.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "vitest": "^5.0.5"
+  }
+}

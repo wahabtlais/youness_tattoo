@@ -3,6 +3,7 @@ import { Reveal } from '../components/ui/Reveal';
 import { ResponsiveImage } from '../components/ui/ResponsiveImage';
 import { ScrollRevealText } from '../components/ui/ScrollRevealText';
 import { ARTIST } from '../data/artist';
+import { useSiteContent } from '../hooks/useSiteContent';
 
 /**
  * The person behind the work, straight after the archive: his portrait,
@@ -14,7 +15,9 @@ import { ARTIST } from '../data/artist';
  * narrower ones read headline, portrait, then the rest. Keeps the #studio anchor the masthead links to.
  */
 export function Artist() {
-  const { label, headline, name, meta, intro, portrait } = ARTIST;
+  // the words from the site's content (data/siteContent.ts); the name and portrait are his own
+  const { label, headline, meta, intro } = useSiteContent().content.artist;
+  const { name, portrait } = ARTIST;
 
   return (
     <section
@@ -48,7 +51,7 @@ export function Artist() {
         </figure>
 
         <div className="flex flex-col gap-5 desktop:col-span-5 desktop:col-start-8 desktop:row-start-2 desktop:self-start">
-          {intro ? (
+          {intro.length > 0 ? (
             // his own words, revealed the same way (from 65%: body text stays 4.5:1 from the start)
             intro.map((paragraph) => (
               <ScrollRevealText key={paragraph} text={paragraph} from={0.65} className="max-w-[34ch] font-serif text-lede text-ink" />

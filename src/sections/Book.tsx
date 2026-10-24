@@ -2,6 +2,7 @@ import { Button } from '../components/ui/Button';
 import type { TattooWork } from '../domain/work';
 import { ResponsiveImage } from '../components/ui/ResponsiveImage';
 import { useInView } from '../hooks/useInView';
+import { useSiteContent } from '../hooks/useSiteContent';
 import { usePieces } from '../hooks/usePieces';
 import { cx } from '../lib/cx';
 
@@ -16,6 +17,7 @@ import { cx } from '../lib/cx';
  */
 export function Book({ onOpen }: { onOpen: () => void }) {
   const [ref, inView] = useInView<HTMLDivElement>();
+  const copy = useSiteContent().content.book;
   const [front, back] = usePieces(['02', '01']);
 
   return (
@@ -68,9 +70,7 @@ export function Book({ onOpen }: { onOpen: () => void }) {
               </svg>
             </span>
           </h2>
-          <p className="mt-[clamp(1.75rem,4vh,2.5rem)] max-w-[36ch] text-body leading-copy text-ink-soft">
-            Tell me what you’re thinking — we’ll take it from there.
-          </p>
+          <p className="mt-[clamp(1.75rem,4vh,2.5rem)] max-w-[36ch] text-body leading-copy text-ink-soft">{copy.intro}</p>
           <Button variant="primary" className="mt-8" onClick={onOpen}>
             Start a consultation
           </Button>

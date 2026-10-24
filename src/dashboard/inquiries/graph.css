@@ -1,0 +1,80 @@
+/*
+ * The inquiry map (React Flow) in the studio's themes: its own variables
+ * mapped onto the --studio-* tokens, so light and dark follow the switch.
+ * Scoped to .studio, and loaded only with the Inquiries page.
+ */
+.studio .react-flow {
+  --xy-background-color: transparent;
+  --xy-edge-stroke: var(--studio-line-strong);
+  --xy-edge-label-background-color: var(--studio-page);
+  --xy-edge-label-color: var(--studio-text-3);
+  --xy-controls-button-background-color: var(--studio-raised);
+  --xy-controls-button-background-color-hover: var(--studio-sunken);
+  --xy-controls-button-color: var(--studio-text-2);
+  --xy-controls-button-color-hover: var(--studio-text);
+  --xy-controls-button-border-color: var(--studio-line);
+  --xy-controls-box-shadow: none;
+  --xy-attribution-background-color: transparent;
+  font-family: var(--font-mono);
+}
+
+.studio .react-flow__controls {
+  border: 1px solid var(--studio-line-strong);
+  border-radius: var(--studio-r-md);
+  overflow: hidden;
+  box-shadow: var(--studio-shadow);
+}
+/* the same size as the dashboard's other icon buttons' hit area, and the same hover */
+.studio .react-flow__controls-button {
+  width: 34px;
+  height: 34px;
+  border-bottom-color: var(--studio-line);
+}
+.studio .react-flow__controls-button svg {
+  fill: currentColor;
+  max-width: 13px;
+  max-height: 13px;
+}
+.studio .react-flow__controls-button:focus-visible {
+  outline: 1.5px solid var(--studio-focus);
+  outline-offset: -3px;
+}
+
+/* the map's own credit, kept but quiet */
+.studio .react-flow__attribution a {
+  color: var(--studio-text-3);
+}
+
+/* nodes are links, not draggable boxes. React Flow switches pointer events
+   off on nodes that are neither selectable, draggable nor clickable (it
+   sets it inline, hence !important) - a stage's link must still take a
+   click, or the pane underneath would */
+.studio .react-flow__node-category {
+  pointer-events: all !important;
+  cursor: pointer;
+}
+.studio .react-flow__node-region {
+  pointer-events: none;
+}
+
+/* edges attach to invisible points - the map can't be rewired */
+.studio .studio-handle {
+  opacity: 0;
+  pointer-events: none;
+  width: 1px;
+  min-width: 1px;
+  height: 1px;
+  min-height: 1px;
+  border: 0;
+}
+
+/* a stage answers the pointer: its colour on the frame (its link carries the focus ring) */
+.studio .studio-node:not([data-selected]):hover {
+  border-color: var(--st-solid);
+  transform: translateY(-1px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .studio .studio-node:not([data-selected]):hover {
+    transform: none;
+  }
+}

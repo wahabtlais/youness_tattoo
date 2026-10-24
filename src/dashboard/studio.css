@@ -1,0 +1,320 @@
+/*
+ * The studio dashboard's design system - dark first, light as deliberate -
+ * scoped to its root (.studio, set by DashboardLayout). Nothing here can
+ * reach the public site: every rule is under .studio, or under
+ * :root[data-studio-theme], which only the dashboard sets (and removes
+ * when it leaves).
+ *
+ * A creative studio's operations tool, not the editorial site:
+ * - surfaces in cool charcoal (dark) or cool neutrals (light), in distinct
+ *   layers: page < chrome (bar, sidebar) < panel < raised, fields set in;
+ * - roles, each with one colour family:
+ *     primary action   the brand burgundy (light) / coral (dark) - the main
+ *                      button of a view, Open Assistant, the prototype mark
+ *     interaction      violet - links, selection, focus rings, toggles
+ *     attention        amber    pending, new, due today
+ *     information      blue     in review, upcoming
+ *     success          green / teal  accepted, booked, confirmed
+ *     danger           red-orange - overdue only; kept clearly apart from
+ *                      the brand (another hue, and always with its icon)
+ *   plus one colour per inquiry stage;
+ * - one radius scale (the site itself has none - print has no rounded
+ *   corners - so the dashboard defines its own): --studio-r-lg 14px for
+ *   panels and sheets, --studio-r-md 9px for controls, rows, nodes and
+ *   panels inside panels, --studio-r-sm 6px for small inner details, and
+ *   fully round for pills and chips;
+ * - a readable system sans for all working text; the brand serif only for
+ *   page titles (.studio-title); mono only for record ids (.studio-code).
+ *
+ * Inside the studio the site's tokens and type utilities act as roles -
+ * paper is the page, ink the text, "burgundy" the interactive accent - so
+ * every dashboard component and the shared ones (Dialog, StateMessage)
+ * follow. See docs/DESIGN_SYSTEM.md.
+ */
+
+.studio {
+  color-scheme: light;
+  --studio-font: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --studio-mono: ui-monospace, 'Cascadia Mono', 'SF Mono', Menlo, Consolas, monospace;
+
+  /* surfaces */
+  --studio-page: #eceef3;
+  --studio-chrome: #f7f8fb;
+  --studio-panel: #ffffff;
+  --studio-raised: #ffffff;
+  --studio-sunken: #f3f4f8;
+  --studio-field: #ffffff;
+  --studio-hover: rgb(15 23 42 / 0.045);
+  --studio-selected: rgb(91 69 224 / 0.09);
+  --studio-line: rgb(15 23 42 / 0.1);
+  --studio-line-strong: rgb(15 23 42 / 0.2);
+  --studio-shadow: 0 1px 2px rgb(15 23 42 / 0.06), 0 2px 8px -2px rgb(15 23 42 / 0.06);
+  --studio-shadow-lift: 0 2px 4px rgb(15 23 42 / 0.06), 0 12px 28px -8px rgb(15 23 42 / 0.18);
+
+  /* text */
+  --studio-text: #121620;
+  --studio-text-2: #3d4454;
+  --studio-text-3: #5b6375;
+
+  /* interactive: violet */
+  --studio-accent: #5b45e0;
+  --studio-accent-hover: #4a35cc;
+  --studio-accent-soft: rgb(91 69 224 / 0.09);
+  --studio-on-accent: #ffffff;
+  --studio-focus: #5b45e0;
+
+  /* brand and primary action: the burgundy */
+  --studio-brand: #9b1f2e;
+  --studio-brand-hover: #7f1825;
+  --studio-brand-soft: rgb(155 31 46 / 0.08);
+  --studio-on-brand: #ffffff;
+
+  /* charts */
+  --studio-mark: #6a56e6;
+  --studio-mark-soft: #b3a8f3;
+  --studio-mark-neutral: #aab1bf;
+  --studio-mark-wash: rgb(106 86 230 / 0.1);
+  --studio-grid: rgb(15 23 42 / 0.07);
+  --studio-r-lg: 14px;
+  --studio-r-md: 9px;
+  --studio-r-sm: 6px;
+  --studio-radius: var(--studio-r-lg);
+
+  /* the site's tokens, as roles */
+  --color-paper: var(--studio-page);
+  --color-paper-light: var(--studio-panel);
+  --color-paper-deep: var(--studio-sunken);
+  --color-ink: var(--studio-text);
+  --color-ink-soft: var(--studio-text-2);
+  --color-ink-muted: var(--studio-text-3);
+  --color-burgundy: var(--studio-accent);
+  --color-burgundy-deep: var(--studio-accent-hover);
+  --color-focus: var(--studio-focus);
+  --color-rule: var(--studio-line);
+
+  /* the site's type, made for reading at a desk: the sans wherever the site uses mono */
+  --font-mono: var(--studio-font);
+  --text-micro: 0.75rem;
+  --text-label: 0.8125rem;
+  --text-body: 0.9375rem;
+
+  font-family: var(--studio-font);
+  background: var(--studio-page);
+  color: var(--studio-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+.studio[data-theme='dark'] {
+  color-scheme: dark;
+  --studio-page: #0d0f13;
+  --studio-chrome: #12151b;
+  --studio-panel: #181c24;
+  --studio-raised: #212631;
+  --studio-sunken: #13161d;
+  --studio-field: #0f1217;
+  --studio-hover: rgb(148 163 184 / 0.08);
+  --studio-selected: rgb(150 132 255 / 0.15);
+  --studio-line: rgb(148 163 184 / 0.14);
+  --studio-line-strong: rgb(148 163 184 / 0.28);
+  --studio-shadow: 0 1px 0 rgb(255 255 255 / 0.03) inset, 0 1px 3px rgb(0 0 0 / 0.4);
+  --studio-shadow-lift: 0 1px 0 rgb(255 255 255 / 0.05) inset, 0 14px 30px -10px rgb(0 0 0 / 0.7);
+
+  --studio-text: #f2f4f8;
+  --studio-text-2: #c5cbd6;
+  --studio-text-3: #9aa2b1;
+
+  --studio-accent: #a99bff;
+  --studio-accent-hover: #c0b6ff;
+  --studio-accent-soft: rgb(150 132 255 / 0.16);
+  --studio-on-accent: #0d0f13;
+  --studio-focus: #b3a7ff;
+
+  --studio-brand: #f27b86;
+  --studio-brand-hover: #f6a0a8;
+  --studio-brand-soft: rgb(242 123 134 / 0.13);
+  --studio-on-brand: #0d0f13;
+
+  --studio-mark: #9686ff;
+  --studio-mark-soft: #5a4fa8;
+  --studio-mark-neutral: #4c5466;
+  --studio-mark-wash: rgb(150 134 255 / 0.14);
+  --studio-grid: rgb(148 163 184 / 0.1);
+}
+
+/* the type utilities, redefined for the dashboard: sentence case, no tracking */
+.studio .type-meta,
+.studio .type-label,
+.studio .type-eyebrow {
+  font-family: var(--studio-font);
+  text-transform: none;
+  letter-spacing: 0;
+}
+.studio .type-meta {
+  font-weight: 500;
+}
+.studio .type-label {
+  font-weight: 600;
+}
+.studio .type-heading {
+  font-family: var(--studio-font);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+/* page titles keep the brand's serif */
+.studio .studio-title {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  letter-spacing: -0.015em;
+}
+/* record ids and other codes */
+.studio .studio-code {
+  font-family: var(--studio-mono);
+}
+
+/*
+ * Meaning in colour. An element sets data-status (an inquiry stage) or
+ * data-tone (attention, info, success, danger, brand, accent, neutral);
+ * it and its children read --st-fg (text), --st-bg (tint), --st-line
+ * (border) and --st-solid (marks, bars). Text colours are validated on
+ * their tint and on the panel in both themes, and always sit beside a
+ * word or an icon - never colour alone.
+ *
+ *   New            amber         In review   blue
+ *   Needs details  magenta       Contacted   cyan
+ *   Accepted       green         Booking     teal
+ *   Completed      sage (quiet)  Declined    slate (quiet)
+ */
+.studio [data-status='submitted'], .studio [data-tone='attention'] { --st-fg: #92400e; --st-bg: #fef3e2; --st-line: #f4c98c; --st-solid: #e08a0b; }
+.studio [data-status='under-review'], .studio [data-tone='info'] { --st-fg: #1d4ed8; --st-bg: #e9f0fe; --st-line: #a9c2f5; --st-solid: #3b74e8; }
+.studio [data-status='changes-requested'] { --st-fg: #a1255f; --st-bg: #fcebf3; --st-line: #efb5cf; --st-solid: #d0457f; }
+.studio [data-status='contacted'] { --st-fg: #0e6378; --st-bg: #e3f5f8; --st-line: #9ed7e2; --st-solid: #1597b0; }
+.studio [data-status='accepted'], .studio [data-tone='success'] { --st-fg: #166534; --st-bg: #e6f5ea; --st-line: #a6d9b4; --st-solid: #2a9d55; }
+.studio [data-status='booking'] { --st-fg: #0b665a; --st-bg: #e0f4ef; --st-line: #97d5c6; --st-solid: #14998a; }
+.studio [data-status='completed'] { --st-fg: #3e6650; --st-bg: #ebf2ee; --st-line: #bfd6c8; --st-solid: #6f9c82; }
+.studio [data-status='declined'], .studio [data-tone='neutral'] { --st-fg: #4b5262; --st-bg: #eef0f4; --st-line: #cdd2db; --st-solid: #8a92a2; }
+.studio [data-tone='danger'] { --st-fg: #b3330b; --st-bg: #fdeee7; --st-line: #f5bea6; --st-solid: #e8541f; }
+.studio [data-tone='brand'] { --st-fg: var(--studio-brand); --st-bg: var(--studio-brand-soft); --st-line: rgb(155 31 46 / 0.35); --st-solid: var(--studio-brand); }
+.studio [data-tone='accent'], .studio [data-status='all'] { --st-fg: var(--studio-accent); --st-bg: var(--studio-accent-soft); --st-line: rgb(91 69 224 / 0.35); --st-solid: var(--studio-accent); }
+
+.studio[data-theme='dark'] [data-status='submitted'], .studio[data-theme='dark'] [data-tone='attention'] { --st-fg: #fbbf5c; --st-bg: rgb(245 166 35 / 0.14); --st-line: rgb(245 166 35 / 0.42); --st-solid: #f5a623; }
+.studio[data-theme='dark'] [data-status='under-review'], .studio[data-theme='dark'] [data-tone='info'] { --st-fg: #8db4ff; --st-bg: rgb(96 145 255 / 0.15); --st-line: rgb(96 145 255 / 0.42); --st-solid: #5b8cf5; }
+.studio[data-theme='dark'] [data-status='changes-requested'] { --st-fg: #f59ac4; --st-bg: rgb(236 110 170 / 0.15); --st-line: rgb(236 110 170 / 0.42); --st-solid: #e66fa6; }
+.studio[data-theme='dark'] [data-status='contacted'] { --st-fg: #74d3e6; --st-bg: rgb(56 189 214 / 0.14); --st-line: rgb(56 189 214 / 0.42); --st-solid: #2fb3cc; }
+.studio[data-theme='dark'] [data-status='accepted'], .studio[data-theme='dark'] [data-tone='success'] { --st-fg: #7ddc9b; --st-bg: rgb(74 200 115 / 0.14); --st-line: rgb(74 200 115 / 0.42); --st-solid: #45c06c; }
+.studio[data-theme='dark'] [data-status='booking'] { --st-fg: #5fdcc6; --st-bg: rgb(45 196 170 / 0.14); --st-line: rgb(45 196 170 / 0.42); --st-solid: #2bbaa2; }
+.studio[data-theme='dark'] [data-status='completed'] { --st-fg: #a9cdb8; --st-bg: rgb(125 170 145 / 0.14); --st-line: rgb(125 170 145 / 0.36); --st-solid: #79a58c; }
+.studio[data-theme='dark'] [data-status='declined'], .studio[data-theme='dark'] [data-tone='neutral'] { --st-fg: #b8bfcc; --st-bg: rgb(148 163 184 / 0.13); --st-line: rgb(148 163 184 / 0.34); --st-solid: #7f889a; }
+.studio[data-theme='dark'] [data-tone='danger'] { --st-fg: #ff9a6b; --st-bg: rgb(255 112 56 / 0.15); --st-line: rgb(255 112 56 / 0.48); --st-solid: #ff7038; }
+.studio[data-theme='dark'] [data-tone='brand'] { --st-line: rgb(242 123 134 / 0.42); }
+.studio[data-theme='dark'] [data-tone='accent'], .studio[data-theme='dark'] [data-status='all'] { --st-line: rgb(150 132 255 / 0.45); }
+
+/* a panel: the surface every dashboard section sits on */
+.studio .studio-card {
+  border: 1px solid var(--studio-line);
+  border-radius: var(--studio-radius);
+  background: var(--studio-panel);
+  box-shadow: var(--studio-shadow);
+}
+
+/* the page behind the studio (overscroll, scrollbars) - set before paint by
+   index.html, kept in step by the layout, removed when the studio is left */
+:root[data-studio-theme='dark'] {
+  color-scheme: dark;
+  background: #0d0f13;
+}
+
+/* the logo: the official one on the light theme; on the dark theme the
+   studio's own dark-mode logo (public/youness_tattoo_logo_dark.png), shown
+   as supplied. It is drawn on black, so it is composited with "lighten":
+   its black takes the bar's charcoal, its white and red are untouched. Both
+   files share one aspect ratio and are set at one height - no shift. */
+.studio[data-theme='dark'] .studio-logo-dark {
+  mix-blend-mode: lighten;
+}
+
+/* "Open Assistant": the bar's one accented action. On arrival a soft ring
+   opens once around it and a highlight crosses it; after that, a slow
+   highlight every nine seconds and a small turn of its spark - quiet
+   enough to sit beside the notifications. Hover fills it with the accent;
+   keyboard focus adds the ring. Without motion, it simply sits there. */
+.studio {
+  --studio-sheen: rgb(155 31 46 / 0.16);
+  --studio-assist-glow: rgb(155 31 46 / 0.22);
+}
+.studio[data-theme='dark'] {
+  --studio-sheen: rgb(255 255 255 / 0.12);
+  --studio-assist-glow: rgb(242 123 134 / 0.3);
+}
+.studio-assist {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.studio-assist::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(110deg, transparent 30%, var(--studio-sheen) 50%, transparent 70%);
+  transform: translateX(-120%);
+  pointer-events: none;
+}
+.studio-assist:hover::after,
+.studio-assist[aria-current='page']::after {
+  opacity: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .studio-assist {
+    animation: studio-assist-in 1.8s var(--ease-editorial) 0.5s both;
+  }
+  .studio-assist::after {
+    animation:
+      studio-sheen 1.4s ease-in-out 0.7s,
+      studio-sheen-idle 9s ease-in-out 4s infinite;
+  }
+  .studio-assist svg {
+    animation: studio-spark 9s ease-in-out 4s infinite;
+  }
+}
+@keyframes studio-assist-in {
+  0% {
+    box-shadow: 0 0 0 0 var(--studio-assist-glow);
+  }
+  35% {
+    box-shadow: 0 0 0 5px var(--studio-assist-glow);
+  }
+  100% {
+    box-shadow: 0 0 0 9px transparent;
+  }
+}
+@keyframes studio-sheen {
+  to {
+    transform: translateX(120%);
+  }
+}
+@keyframes studio-sheen-idle {
+  0%,
+  84% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(120%);
+  }
+}
+@keyframes studio-spark {
+  0%,
+  84%,
+  100% {
+    rotate: 0deg;
+    scale: 1;
+  }
+  92% {
+    rotate: 14deg;
+    scale: 1.12;
+  }
+}
+
+.studio ::selection {
+  background: var(--studio-text);
+  color: var(--studio-page);
+}

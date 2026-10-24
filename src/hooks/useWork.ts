@@ -1,8 +1,10 @@
 import type { AsyncState } from '../lib/async';
 import type { TattooWork } from '../domain/work';
 import { WORK } from '../data/work';
+import { published } from '../lib/publicContent';
 
-const ARCHIVE: AsyncState<TattooWork[]> = { status: 'success', data: WORK };
+// the published archive the server wrote into the page; the bundled one when there is none
+const ARCHIVE: AsyncState<TattooWork[]> = { status: 'success', data: published()?.works ?? WORK };
 
 /**
  * The data boundary for Younes's work: components read the archive here and

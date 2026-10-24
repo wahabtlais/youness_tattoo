@@ -11,6 +11,22 @@
       rel="stylesheet"
     />
     <title>Younes Tattoo — the work is already in you</title>
+    <!-- the private studio's theme before the first paint, so a dark studio
+         never flashes light (src/dashboard/useStudioTheme.ts). Only on
+         /studio: the public site is never touched. -->
+    <style>
+      :root[data-studio-theme='dark'] { background: #0d0f13; color-scheme: dark; }
+    </style>
+    <script>
+      try {
+        if (/^\/studio(\/|$)/.test(location.pathname)) {
+          var studioTheme = localStorage.getItem('younes-studio-theme');
+          if (studioTheme !== 'light' && studioTheme !== 'dark')
+            studioTheme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          document.documentElement.dataset.studioTheme = studioTheme;
+        }
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

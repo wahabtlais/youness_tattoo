@@ -1,6 +1,6 @@
 import { Button } from '../components/ui/Button';
 import { Reveal } from '../components/ui/Reveal';
-import { PROCESS_INTRO, PROCESS_STEPS } from '../data/process';
+import { useSiteContent } from '../hooks/useSiteContent';
 
 const two = (n: number) => String(n).padStart(2, '0');
 
@@ -11,10 +11,11 @@ const two = (n: number) => String(n).padStart(2, '0');
  * sequence: on desktop left to right, each large number running on into a
  * burgundy line toward the next; below 1100px down the page, the line
  * dropping from number to number. It ends by handing over to the
- * consultation that already exists (`onStart`). Copy and its caveats:
- * data/process.ts.
+ * consultation that already exists (`onStart`). Copy: data/siteContent.ts
+ * (the steps and their caveats: data/process.ts).
  */
 export function Process({ onStart }: { onStart: () => void }) {
+  const copy = useSiteContent().content.process;
   return (
     <section
       id="process"
@@ -24,19 +25,19 @@ export function Process({ onStart }: { onStart: () => void }) {
       <Reveal className="mx-auto max-w-page">
         <div className="grid gap-x-[clamp(2rem,6vw,5rem)] gap-y-5 tablet:grid-cols-2 tablet:items-end desktop:grid-cols-12">
           <header className="desktop:col-span-7">
-            <p className="type-eyebrow text-burgundy">The process</p>
+            <p className="type-eyebrow text-burgundy">{copy.eyebrow}</p>
             <h2 id="processHeading" className="mt-4 max-w-[17ch] type-heading text-headline">
-              From the first idea to the final piece.
+              {copy.heading}
             </h2>
           </header>
           <p className="max-w-[38ch] text-body leading-copy text-ink-soft desktop:col-span-4 desktop:col-start-9 desktop:pb-2">
-            {PROCESS_INTRO}
+            {copy.intro}
           </p>
         </div>
 
         <ol className="mt-[clamp(3rem,8vh,5rem)] grid gap-y-[clamp(2rem,5vw,2.75rem)] desktop:grid-cols-4 desktop:gap-x-[clamp(1.5rem,2.6vw,2.75rem)]">
-          {PROCESS_STEPS.map((step, i) => {
-            const last = i === PROCESS_STEPS.length - 1;
+          {copy.steps.map((step, i) => {
+            const last = i === copy.steps.length - 1;
             return (
               <li key={step.title} className="relative grid grid-cols-[3.5rem_minmax(0,1fr)] gap-x-5 tablet:grid-cols-[5rem_minmax(0,1fr)] desktop:block">
                 {/* the number, and the line it runs on into the next stage */}
@@ -63,7 +64,7 @@ export function Process({ onStart }: { onStart: () => void }) {
         </ol>
 
         <div className="mt-[clamp(3rem,8vh,4.5rem)] flex flex-wrap items-center justify-between gap-x-8 gap-y-4 border-t border-ink/15 pt-[clamp(1.25rem,3vh,1.75rem)]">
-          <p className="font-serif text-lede text-ink-soft italic">It begins with a conversation.</p>
+          <p className="font-serif text-lede text-ink-soft italic">{copy.closing}</p>
           <Button variant="secondary" onClick={onStart}>Start a consultation</Button>
         </div>
       </Reveal>

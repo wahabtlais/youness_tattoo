@@ -1,6 +1,6 @@
 # Frontend architecture
 
-React 19, TypeScript (strict), Vite 8, Tailwind CSS 4, React Router 8, oxlint. There is no state library, backend or AI SDK. Each gets added when a phase actually needs it ([ROADMAP.md](ROADMAP.md)).
+React 19, TypeScript (strict), Vite 8, Tailwind CSS 4, React Router 8, oxlint. There is no state library or AI SDK in the browser. The backend - a Node.js + Fastify API over PostgreSQL, with its own sign-in - is in `server/`, and the types and validation both sides share are in `packages/contracts`: see [server/README.md](../server/README.md).
 
 Related docs: [ROUTES.md](ROUTES.md) for routing, [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) for tokens and visual rules, and [FUTURE_AI.md](FUTURE_AI.md) for the AI architecture.
 

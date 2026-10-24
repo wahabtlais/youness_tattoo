@@ -20,7 +20,11 @@ interface ConsultationReviewProps {
   /** go to a step to change it (it leads back here) */
   onEdit: (step: ConsultationStep) => void;
   onBack: () => void;
+  /** send it to the studio */
   onFinish: () => void;
+  sending?: boolean;
+  /** why the last send didn't go through (the draft is untouched) */
+  failure?: string | null;
 }
 
 /**
@@ -28,7 +32,7 @@ interface ConsultationReviewProps {
  * their references, the idea, placement and scale, timing, anything else.
  * Each part can be changed in place; unanswered parts say so gently.
  */
-export function ConsultationReview({ draft, pieces, onEdit, onBack, onFinish }: ConsultationReviewProps) {
+export function ConsultationReview({ draft, pieces, onEdit, onBack, onFinish, sending, failure }: ConsultationReviewProps) {
   const { summary, entry } = draft.consultation;
   const where = joinAnswer(labelOf(BODY_AREAS, summary.bodyArea), text(summary.placement));
   const size = joinAnswer(labelOf(SCALES, summary.scale), text(summary.size));
@@ -82,17 +86,29 @@ export function ConsultationReview({ draft, pieces, onEdit, onBack, onFinish }: 
         <Part term="Anything else" onEdit={() => onEdit('timing')} editLabel="Change anything else">
           {text(summary.notes) ? <p className="text-body leading-copy text-ink">{text(summary.notes)}</p> : <Unanswered />}
         </Part>
+        <Part term="How to reach you" onEdit={() => onEdit('contact')} editLabel="Change your details">
+          <ul className="text-body leading-copy text-ink">
+            <li>{draft.contact.name}</li>
+            <li>{draft.contact.email}</li>
+            {draft.contact.phone && <li>{draft.contact.phone}</li>}
+            {draft.contact.instagram && <li>@{draft.contact.instagram.replace(/^@/, '')}</li>}
+          </ul>
+        </Part>
       </dl>
 
-      <p className="mt-8 text-micro leading-copy text-ink-soft">
-        Finishing keeps this draft here while the page is open. Nothing is sent yet.
-      </p>
+      {failure ? (
+        <p role="alert" className="mt-8 border border-burgundy px-4 py-3 text-body leading-copy text-burgundy">
+          {failure}
+        </p>
+      ) : (
+        <p className="mt-8 text-micro leading-copy text-ink-soft">Sending passes your idea and details to Younes. Nothing is booked - he’ll reply to talk it through.</p>
+      )}
       <div className="mt-4 flex flex-wrap items-center justify-between gap-x-8 gap-y-3">
-        <Button variant="text" className={TAP} onClick={onBack}>
+        <Button variant="text" className={TAP} onClick={onBack} disabled={sending}>
           &larr; Back
         </Button>
-        <Button variant="primary" onClick={onFinish}>
-          Finish consultation
+        <Button variant="primary" onClick={onFinish} disabled={sending} aria-busy={sending || undefined}>
+          {sending ? 'Sending…' : failure ? 'Try sending again' : 'Send to Younes'}
         </Button>
       </div>
     </>
