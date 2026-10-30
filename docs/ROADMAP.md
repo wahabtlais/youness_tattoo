@@ -36,7 +36,7 @@ Phases run in order. Don't jump ahead: each one is designed against the hero ben
 - **Hosting fallback.** Every page is client-routed: the host must serve `index.html` for any path that isn't a file (`/work`, `/journal/…`, `/canvas-calls/…`, `/work/04`). Checked with `vite preview` on the production build. The site must be served from the domain root: asset and photograph paths are absolute (`/work/web/…`, `/youness_tattoo_logo-640.webp`); a sub-path would need Vite's `base` and those paths updated.
 - **Environment and secrets** live only on the server (`server/.env`, see server/README.md). The browser needs none. `import.meta.env.DEV` only shows the Artist section's marked placeholder in development.
 - **Privacy notice.** The consultation shows draft wording ([PRIVACY_NOTICE_DRAFT.md](PRIVACY_NOTICE_DRAFT.md)). It must be reviewed and completed before real consultations are taken.
-- **Production** is prepared, not deployed: `server/Dockerfile`, `docker/production/` (see server/README.md, Production).
+- **Production**: `server/Dockerfile` and `docker/production/deploy.sh` (see server/README.md, Production).
 - **Demo content** must be switched off or replaced (testimonials, journal, canvas calls, synthetic voices, sample work metadata): see the items below.
 - **Not yet checked:** Safari, Firefox, real phones and tablets, and a screen-reader pass.
 

@@ -1,14 +1,20 @@
-# EXAMPLE - a production stack for one small server. Prepared, not deployed.
-# Copy this folder to the server, fill production.env (from
-# production.env.example), point the domain's DNS at the server, then:
+# The production stack for one small server. Use it through deploy.sh in this
+# folder (see server/README.md, Production):
 #
-#   docker compose -f compose.example.yaml --env-file production.env up -d
-#   docker compose -f compose.example.yaml --env-file production.env run --rm app node server/dist/cli.js migrate
-#   docker compose -f compose.example.yaml --env-file production.env run --rm app node server/dist/cli.js owner:create
+#   ./deploy.sh init your.domain     write production.env with fresh secrets
+#   ./deploy.sh install              build, start, migrate, import the content
+#   ./deploy.sh update               after `git pull`: rebuild, migrate, restart
+#   ./deploy.sh owner                create the studio owner (asks for a password)
+#   ./deploy.sh backup               database + images into ./backups
 #
-# What's reachable from the internet: Caddy on 80/443, nothing else.
-# PostgreSQL has no published port - only the app reaches it, on the
-# private network. See server/README.md (Production) before using it.
+# Two ways in from the internet:
+#   - the server already runs a web server (nginx, Caddy...) for another site:
+#     leave USE_CADDY=false and point it at 127.0.0.1:${APP_PORT}
+#     (nginx.example.conf);
+#   - nothing else on 80/443: USE_CADDY=true and the bundled Caddy takes
+#     80/443 and gets the certificates itself (Caddyfile.example).
+# PostgreSQL has no published port in either case - only the app reaches it,
+# on the private network.
 name: younes-tattoo-prod
 
 services:
@@ -43,6 +49,9 @@ services:
       DATABASE_URL: postgres://younes_app:${YOUNES_APP_PASSWORD}@postgres:5432/younes
       MIGRATION_DATABASE_URL: postgres://younes_migrator:${YOUNES_MIGRATOR_PASSWORD}@postgres:5432/younes
       TRUST_PROXY: "true"
+    # this machine only (for a web server already on it); never 0.0.0.0
+    ports:
+      - "127.0.0.1:${APP_PORT:-3001}:3001"
     volumes:
       - storage:/data/storage
     depends_on:
@@ -51,8 +60,30 @@ services:
     networks: [private, edge]
     restart: unless-stopped
 
+  # one-off jobs from the full checkout: importing the site's content
+  tools:
+    image: younes-tattoo-tools:latest
+    build:
+      context: ../..
+      dockerfile: server/Dockerfile
+      target: tools
+    profiles: [tools]
+    user: node
+    env_file: production.env
+    environment:
+      DATABASE_URL: postgres://younes_app:${YOUNES_APP_PASSWORD}@postgres:5432/younes
+      MIGRATION_DATABASE_URL: postgres://younes_migrator:${YOUNES_MIGRATOR_PASSWORD}@postgres:5432/younes
+      STORAGE_DIR: /data/storage
+    volumes:
+      - storage:/data/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [private]
+
   caddy:
     image: caddy:2
+    profiles: [caddy]
     ports:
       - "80:80"
       - "443:443"

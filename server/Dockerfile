@@ -4,7 +4,7 @@
 #
 #   docker build -f server/Dockerfile -t younes-tattoo .
 #
-# Prepared, not deployed: see docker/production/ for the stack around it
+# See docker/production/ (deploy.sh) for the stack around it
 # (PostgreSQL on a private network, a reverse proxy for HTTPS) and
 # server/README.md for the runbook.
 

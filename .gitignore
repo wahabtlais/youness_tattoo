@@ -52,3 +52,4 @@ playwright-report/
 
 # production settings live only on the server
 docker/production/production.env
+docker/production/backups/

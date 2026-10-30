@@ -19,7 +19,7 @@ unless configured.
 - [Security model](#security-model)
 - [Backup and restore](#backup-and-restore)
 - [Recovery](#recovery)
-- [Production (prepared, not deployed)](#production-prepared-not-deployed)
+- [Production](#production)
 
 ## Layout
 
@@ -340,30 +340,67 @@ The development database was only read, by `pg_dump`. Results:
 | `409 slot_taken` | Another proposed or confirmed appointment overlaps. Move or cancel one. |
 | A bad migration | `npm run db:rollback` undoes the latest. In production, restore the pre-deploy backup instead of improvising. |
 
-## Production (prepared, not deployed)
+## Production
 
-Nothing has been deployed, and no DNS, paid service or real email account has
-been set up. Prepared:
+Everything runs in Docker on one Linux server: PostgreSQL (private network, no
+published port), the app (the API plus the built site), and optionally Caddy
+for HTTPS. `docker/production/deploy.sh` does each step; it was run end to end
+locally (2026-10-30): install, content import, update and backup.
+
+What's there:
 
 - `server/Dockerfile`: multi-stage.
   - The `runtime` image has production dependencies, `server/dist` and the
     built site, runs as the unprivileged `node` user, and has a health check.
   - The `tools` stage is the full checkout, for `npm run db:seed`.
-- `docker/production/compose.example.yaml`:
-  - PostgreSQL on an internal network, no published port.
-  - The app.
-  - Caddy (`Caddyfile.example`) on 80/443 with automatic HTTPS.
-- `docker/production/production.env.example`: every value to fill (it's
-  ignored by Git once copied to `production.env`).
+- `docker/production/compose.example.yaml`: `postgres`, `app` (on
+  `127.0.0.1:APP_PORT` only), `tools` (one-off jobs) and `caddy` (only with
+  `USE_CADDY=true`).
+- `docker/production/production.env.example`: every setting.
+- `docker/production/nginx.example.conf`: for a server whose nginx (or Caddy)
+  already serves another site.
+- `docker/production/deploy.sh`: the steps below.
 
-Before going live:
+**First install.** On the server, with Docker installed, a firewall allowing
+only SSH, 80 and 443 (`sudo ufw allow OpenSSH && sudo ufw allow 80 && sudo ufw
+allow 443 && sudo ufw enable`), and the domain's A record pointing at it:
 
-- Choose a host and back-up destination.
-- Set up a transactional email provider's SMTP.
+```bash
+git clone -b <branch> git@github.com:wahabtlais/youness_tattoo.git ~/younes
+cd ~/younes/docker/production
+./deploy.sh init your.domain     # production.env, with every secret generated
+nano production.env              # the SMTP_* lines; USE_CADDY (see below)
+./deploy.sh install              # build, start, migrate, import the content
+./deploy.sh owner                # the studio owner (asks for email and password)
+```
+
+Then the web server:
+
+- **Another site already uses 80/443** (`USE_CADDY=false`, the default): add
+  `nginx.example.conf` with your domain to that nginx, reload it, and run
+  `sudo certbot --nginx -d your.domain` for HTTPS. The other site isn't
+  touched. Sign-in needs HTTPS (its cookies are `Secure`).
+- **Nothing else on 80/443**: set `USE_CADDY=true` before `install`; Caddy
+  gets and renews the certificate itself.
+
+Then sign in at `https://your.domain/studio` and set up two-factor.
+
+**Updating:** `git pull`, then `./deploy.sh update`. It backs up first, then
+rebuilds, migrates and restarts.
+
+**Backups:** `./deploy.sh backup` writes the database dump, the images and
+`production.env` (it holds `TOTP_ENC_KEY`) into `docker/production/backups/`.
+Run it nightly from cron and copy the folder off the server. Restore as in
+[Backup and restore](#backup-and-restore), using this stack's containers.
+
+Before telling people about the site:
+
+- Set up a transactional email provider's SMTP. Until then the site works but
+  nothing is sent.
 - Have the privacy notice reviewed (`docs/PRIVACY_NOTICE_DRAFT.md`).
-- Replace or switch off the demo content (`docs/ROADMAP.md`, Before
-  publishing).
-- Remove `OWNER_SETUP_TOKEN` after the owner exists.
+- Replace or unpublish the demo content (`docs/ROADMAP.md`, Before
+  publishing). The import includes the three demo testimonials.
+- Remove `OWNER_SETUP_TOKEN` if you set one.
 - Do a restore drill.
 
 Note: the app container is given both database URLs, because migrations run

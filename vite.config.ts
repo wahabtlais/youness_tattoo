@@ -33,7 +33,8 @@ function publishedContent(): Plugin {
 export default defineConfig({
   plugins: [react(), tailwindcss(), publishedContent()],
   server: {
-    allowedHosts: ["hunter-some-exit-arg.trycloudflare.com"],
+    // Cloudflare quick tunnels get a new random name every run; the leading dot allows any of them
+    allowedHosts: ["hunter-some-exit-arg.trycloudflare.com", ".trycloudflare.com"],
     // the API and its media, on the same origin as the site (cookies, no CORS)
     proxy: {
       "/api": { target: API, changeOrigin: false },
