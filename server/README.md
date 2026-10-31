@@ -422,10 +422,12 @@ container. The code is `server/src/db/seed/demo.ts`.
   to (a real inquiry, appointment or follow-up, or a real record pointing at
   one of its sample inquiries) is kept with everything attached to it, and
   listed by name. Notes written on the removed samples go with them.
-- **The figures.** The Overview's cards, charts, pipeline and workload, and
-  the assistant page's counts, leave samples out: they only ever describe
-  real business. The work lists (what needs attention, Inquiries, Clients,
-  Calendar) show the samples, labelled.
+- **The figures.** While samples exist, the Overview has an "Include sample
+  data" switch. It's on at the start of every visit, so the studio has
+  figures to look at, and an amber indicator says so. Switched off, the
+  cards, charts, pipeline, workload and attention queue count real records
+  only. The assistant page's counts always leave samples out. The lists
+  (Inquiries, Clients, Calendar) show the samples, labelled.
 
 **Backups:** `./deploy.sh backup` writes the database dump, the images and
 `production.env` (it holds `TOTP_ENC_KEY`) into `docker/production/backups/`.

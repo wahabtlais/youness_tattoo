@@ -23,18 +23,20 @@ import { useOverview } from '../useOverview';
  * activity under it. The assistant is a page of its own, opened from the
  * top bar. In a narrower
  * workspace the panels stack in that order. Every figure is counted from
- * the same records (analytics.overviewRecords) - the real ones: sample
- * records are left out of every figure, chart and the attention queue,
- * unless "Include sample data" is switched on (for trying the studio out;
- * off on every visit, and said plainly while on). The samples stay listed,
- * labelled, on the pages they belong to.
+ * the same records (analytics.overviewRecords). While sample records
+ * exist, "Include sample data" is on at the start of every visit - so the
+ * studio can be tried out with figures to look at - and said plainly (the
+ * amber indicator); switched off, every figure, chart and the attention
+ * queue counts the real records only. The samples stay listed, labelled,
+ * on the pages they belong to.
  */
 export function OverviewPage() {
   useDocumentTitle('Studio overview');
   // one "now" for the visit, so every relative time on the page agrees
   const [now] = useState(() => new Date());
   const overview = useOverview(now);
-  const [withSamples, setWithSamples] = useState(false);
+  // on at the start of every visit (not remembered); only shown, and only matters, while samples exist
+  const [withSamples, setWithSamples] = useState(true);
 
   if (overview.status !== 'success') {
     return <StateMessage kind={overview.status === 'loading' ? 'loading' : 'error'} title="The overview couldn’t be loaded." />;

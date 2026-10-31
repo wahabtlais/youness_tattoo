@@ -61,7 +61,7 @@ test('settings: the studio settings save, and devices are listed', async ({ page
   await expect(page.getByText('This device')).toBeVisible();
 });
 
-test('overview: "Include sample data" is off by default, and switches every figure without a reload', async ({ page }) => {
+test('overview: "Include sample data" is on by default, and switches every figure without a reload', async ({ page }) => {
   await page.goto('/studio');
   const samples = await page.evaluate(() =>
     fetch('/api/studio/overview')
@@ -76,25 +76,37 @@ test('overview: "Include sample data" is off by default, and switches every figu
   // the conversion card says "booked of received": received is every inquiry the figures count
   const received = async () => Number((await page.getByText(/ of \d+ reached a booking/).textContent())!.match(/of (\d+)/)![1]);
 
-  await expect(toggle).toHaveAttribute('aria-checked', 'false');
-  await expect(status).toHaveText('Sample records are listed, not counted in these figures');
-  await expect(attentionPanel.getByText('· Sample')).toHaveCount(0);
-  const real = await received();
+  const included = async () => {
+    await expect(toggle).toHaveAttribute('aria-checked', 'true');
+    await expect(status).toHaveText('Sample data included — these figures aren’t real business');
+    await expect(page.getByRole('heading', { name: 'Key figures, including sample data' })).toBeAttached();
+    await expect(attentionPanel.getByText('· Sample').first()).toBeVisible();
+  };
 
+  // on from the start: the samples are in the figures, with the amber indicator
+  await included();
+  const all = await received();
+
+  // off: real records only - exactly the samples fewer
   await page.evaluate(() => ((globalThis as unknown as { stillHere: boolean }).stillHere = true));
   await toggle.click();
-  await expect(toggle).toHaveAttribute('aria-checked', 'true');
-  await expect(status).toHaveText('Sample data included — these figures aren’t real business');
-  await expect.poll(received).toBe(real + samples);
-  await expect(page.getByRole('heading', { name: 'Key figures, including sample data' })).toBeAttached();
-  await expect(attentionPanel.getByText('· Sample').first()).toBeVisible();
-  // the same page: nothing reloaded
+  await expect(toggle).toHaveAttribute('aria-checked', 'false');
+  await expect(status).toHaveText('Sample records are listed, not counted in these figures');
+  await expect(page.getByRole('heading', { name: 'Key figures', exact: true })).toBeAttached();
+  await expect(attentionPanel.getByText('· Sample')).toHaveCount(0);
+  await expect.poll(received).toBe(all - samples);
+
+  // on again: back to every record
+  await toggle.click();
+  await included();
+  await expect.poll(received).toBe(all);
+  // the same page throughout: nothing reloaded
   expect(await page.evaluate(() => (globalThis as unknown as { stillHere?: boolean }).stillHere)).toBe(true);
 
+  // switched off, then refreshed: a fresh visit starts on again
   await toggle.click();
   await expect(toggle).toHaveAttribute('aria-checked', 'false');
-  await expect.poll(received).toBe(real);
-  // and a fresh visit starts with it off again
   await page.reload();
-  await expect(page.getByRole('switch', { name: 'Include sample data' })).toHaveAttribute('aria-checked', 'false');
+  await included();
+  await expect.poll(received).toBe(all);
 });
