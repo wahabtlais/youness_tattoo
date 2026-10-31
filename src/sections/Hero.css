@@ -1,107 +1,1067 @@
-.stage {
-  position: relative;
-  height: 100vh;
-  min-height: 640px;
-  overflow: hidden;
-  background: var(--white);
-}
-
-.figureLayer {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  opacity: calc(1 - var(--exit, 0) * 0.7);
-  transform: translateY(calc(var(--exit, 0) * -6%));
-}
-
-.vig {
-  position: absolute;
-  inset: 0;
-  z-index: 6;
-  pointer-events: none;
-  background: radial-gradient(130% 100% at 55% 45%, transparent 62%, rgba(24, 22, 20, 0.06) 100%);
-}
-
-.ui {
-  position: absolute;
-  inset: 0;
-  z-index: 10;
-  pointer-events: none;
-  padding: var(--pad-y) var(--pad-x);
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: clamp(1rem, 3vw, 3rem);
-}
-
+/*
+ * Hero - the name, the portrait printed into it, and Ask Younes.
+ *
+ * Every scroll motion derives from one number, --p (0 -> 1 as the hero
+ * leaves the viewport, written by useScrollProgress). Phases:
+ *   --p1  phase 1: the letters loosen and start to drift
+ *   --p2  phase 2: the portrait rises slower than the page, scaling a touch
+ *   --q   phase 3: the word collapses up-left into the nav's logo position
+ *   phase 4 is just the next section arriving underneath as the hero fades.
+ * --p1 and --q are smoothstepped so each phase eases in and out rather than
+ * starting and stopping at hard scroll positions.
+ * With reduced motion the hook never writes --p, so everything stays at 0.
+ *
+ * Where the browser has scroll-driven animations, every layer that moves
+ * with the scroll gets its own scroll-driven transform / opacity animation
+ * reproducing these formulas ("the scroll, on the compositor", below): the
+ * compositor runs them in step with the scroll offset it paints, so the
+ * counter-scrolled word and the portrait never lag a wheel step behind and
+ * snap back. --p (from the JS listener) then only remains as the fallback
+ * for browsers without scroll timelines; see Hero.tsx.
+ *
+ * Breathing: portrait, type and construction marks share one 8s cycle so
+ * the page reads as a single living composition (portrait sinks while the
+ * word lifts). Amplitudes are a few px - felt, not seen.
+ */
 .hero {
-  max-width: min(46ch, 52vw);
-  pointer-events: none;
-}
-h1 {
-  font-family: var(--serif);
-  font-weight: 400;
-  font-size: var(--h1);
-  line-height: 0.94;
-  letter-spacing: -0.015em;
-  margin: 0 0 clamp(0.9rem, 2vh, 1.6rem);
-}
-h1 em {
-  font-style: italic;
-}
-h1 b {
-  font-weight: 700;
-  color: var(--crimson);
-}
-.sub {
-  font-size: var(--body);
-  line-height: 1.7;
-  color: #4a4740;
-  max-width: 34ch;
-  margin: 0;
+  --p: 0;
+  --p1l: clamp(0, calc(var(--p) / 0.35), 1);
+  --p1: calc(var(--p1l) * var(--p1l) * (3 - 2 * var(--p1l)));
+  --p2: clamp(0, calc((var(--p) - 0.08) / 0.55), 1);
+  --ql: clamp(0, calc((var(--p) - 0.18) / 0.47), 1);
+  --q: calc(var(--ql) * var(--ql) * (3 - 2 * var(--ql)));
+  --breath: 8s;
+
+  /* composition: the artist on the true centre line, the name built around him */
+  --sh: max(100svh, 600px);
+  --ph: min(calc(var(--sh) * 0.98), 128vw);
+  --pw: calc(var(--ph) * 0.6357);
+  --pcx: 50%;
+  --pl: calc(var(--pcx) - var(--pw) / 2);
+  --ptop: calc(var(--sh) - var(--ph));
+  /* YOUNES in Bodoni Moda runs ~3.83em wide: margin to margin, but capped
+     against the portrait's height so on wide screens the word never
+     outweighs the man */
+  --fs: min(calc((100vw - var(--spacing-page-x) * 2) / 3.86), calc(var(--ph) * 0.38));
+  /* cap-top sits just under the beard: the face stays completely clear */
+  --type-top: calc(var(--ptop) + var(--ph) * 0.37);
+  /* how far the word lifts as it collapses into the masthead (phase 3) */
+  --hero-lift: calc(var(--type-top) - var(--spacing-page-y) * 1.05);
+  /* the burgundy token, deepened toward ink at display size so two giant
+     accent letters anchor the portrait without outshouting his face */
+  --accent-type: var(--color-burgundy-deep);
+
+  position: relative;
+  height: var(--sh);
+  overflow: hidden;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  isolation: isolate;
 }
 
-.heroZone {
-  text-align: right;
+/* ---------- the scroll, on the compositor ----------
+   Every layer that moves with the scroll is ALSO given its own scroll-driven
+   animation of transform / opacity - keyframes that reproduce the calc()
+   rules (generated from the same formulas; the eased collapse --q is
+   sampled every ~2.4% of its range). The browser runs these on the
+   compositor, in step with the scroll offset it paints, so the word and the
+   portrait follow the page exactly even while the main thread is busy -
+   where a main-thread --p always let the scroll paint first and the word
+   lurch with it, then snap back. The calc() rules stay as the fallback (no
+   scroll timelines) and for reduced motion (--p stays 0). */
+@keyframes heroScrollWord {
+  0% {
+    transform: translate3d(0, calc(0 * var(--sh) - 0 * var(--hero-lift)), 0) scale(1);
+    opacity: 1;
+  }
+  18% {
+    transform: translate3d(0, calc(0.18 * var(--sh) - 0 * var(--hero-lift)), 0) scale(1);
+    opacity: 1;
+  }
+  20.35% {
+    transform: translate3d(0, calc(0.2035 * var(--sh) - 0.0072 * var(--hero-lift)), 0) scale(0.9936);
+    opacity: 1;
+  }
+  22.7% {
+    transform: translate3d(0, calc(0.227 * var(--sh) - 0.028 * var(--hero-lift)), 0) scale(0.9754);
+    opacity: 1;
+  }
+  25.05% {
+    transform: translate3d(0, calc(0.2505 * var(--sh) - 0.0608 * var(--hero-lift)), 0) scale(0.9465);
+    opacity: 1;
+  }
+  27.4% {
+    transform: translate3d(0, calc(0.274 * var(--sh) - 0.104 * var(--hero-lift)), 0) scale(0.9085);
+    opacity: 1;
+  }
+  29.75% {
+    transform: translate3d(0, calc(0.2975 * var(--sh) - 0.1562 * var(--hero-lift)), 0) scale(0.8625);
+    opacity: 1;
+  }
+  32.1% {
+    transform: translate3d(0, calc(0.321 * var(--sh) - 0.216 * var(--hero-lift)), 0) scale(0.8099);
+    opacity: 1;
+  }
+  34.45% {
+    transform: translate3d(0, calc(0.3445 * var(--sh) - 0.2818 * var(--hero-lift)), 0) scale(0.7521);
+    opacity: 1;
+  }
+  36.8% {
+    transform: translate3d(0, calc(0.368 * var(--sh) - 0.352 * var(--hero-lift)), 0) scale(0.6902);
+    opacity: 1;
+  }
+  39.15% {
+    transform: translate3d(0, calc(0.3915 * var(--sh) - 0.4252 * var(--hero-lift)), 0) scale(0.6258);
+    opacity: 1;
+  }
+  41.5% {
+    transform: translate3d(0, calc(0.415 * var(--sh) - 0.5 * var(--hero-lift)), 0) scale(0.56);
+    opacity: 0.8889;
+  }
+  43.85% {
+    transform: translate3d(0, calc(0.4385 * var(--sh) - 0.5748 * var(--hero-lift)), 0) scale(0.4942);
+    opacity: 0.7228;
+  }
+  46.2% {
+    transform: translate3d(0, calc(0.462 * var(--sh) - 0.648 * var(--hero-lift)), 0) scale(0.4298);
+    opacity: 0.56;
+  }
+  48.55% {
+    transform: translate3d(0, calc(0.4855 * var(--sh) - 0.7183 * var(--hero-lift)), 0) scale(0.3679);
+    opacity: 0.4039;
+  }
+  50.9% {
+    transform: translate3d(0, calc(0.509 * var(--sh) - 0.784 * var(--hero-lift)), 0) scale(0.3101);
+    opacity: 0.2578;
+  }
+  53.25% {
+    transform: translate3d(0, calc(0.5325 * var(--sh) - 0.8438 * var(--hero-lift)), 0) scale(0.2575);
+    opacity: 0.125;
+  }
+  55.6% {
+    transform: translate3d(0, calc(0.556 * var(--sh) - 0.896 * var(--hero-lift)), 0) scale(0.2115);
+    opacity: 0.0089;
+  }
+  57.95% {
+    transform: translate3d(0, calc(0.5795 * var(--sh) - 0.9392 * var(--hero-lift)), 0) scale(0.1735);
+    opacity: 0;
+  }
+  60.3% {
+    transform: translate3d(0, calc(0.603 * var(--sh) - 0.972 * var(--hero-lift)), 0) scale(0.1446);
+    opacity: 0;
+  }
+  62.65% {
+    transform: translate3d(0, calc(0.6265 * var(--sh) - 0.9928 * var(--hero-lift)), 0) scale(0.1264);
+    opacity: 0;
+  }
+  65% {
+    transform: translate3d(0, calc(0.65 * var(--sh) - 1 * var(--hero-lift)), 0) scale(0.12);
+    opacity: 0;
+  }
+  100% {
+    transform: translate3d(0, calc(1 * var(--sh) - 1 * var(--hero-lift)), 0) scale(0.12);
+    opacity: 0;
+  }
 }
-.legend {
-  font-size: var(--micro);
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--stone);
-  margin-top: 1.2rem;
+@keyframes heroScrollPortrait {
+  0% {
+    transform: translate3d(0, calc(0 * var(--sh)), 0) scale(1);
+    opacity: 1;
+  }
+  8% {
+    transform: translate3d(0, calc(0.024 * var(--sh)), 0) scale(1);
+    opacity: 1;
+  }
+  55% {
+    transform: translate3d(0, calc(0.165 * var(--sh)), 0) scale(1.0513);
+    opacity: 1;
+  }
+  63% {
+    transform: translate3d(0, calc(0.189 * var(--sh)), 0) scale(1.06);
+    opacity: 0.8;
+  }
+  95% {
+    transform: translate3d(0, calc(0.285 * var(--sh)), 0) scale(1.06);
+    opacity: 0;
+  }
+  100% {
+    transform: translate3d(0, calc(0.3 * var(--sh)), 0) scale(1.06);
+    opacity: 0;
+  }
 }
-.zone {
-  font-family: var(--serif);
-  font-style: italic;
-  font-size: clamp(0.95rem, 1.1vw + 0.6rem, 1.5rem);
-  color: var(--ink);
-  min-height: 1.5em;
-  text-align: right;
+@keyframes heroScrollMarks {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(0, calc(0.12 * var(--sh)), 0);
+  }
 }
-.zone small {
-  display: block;
-  font-family: var(--mono);
-  font-style: normal;
-  font-size: var(--micro);
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--stone);
-  margin-top: 0.35rem;
+@keyframes heroScrollInkDrops {
+  0% {
+    transform: translate3d(0, calc(0 * var(--sh)), 0);
+    opacity: 1;
+  }
+  30% {
+    transform: translate3d(0, calc(0.03 * var(--sh)), 0);
+    opacity: 1;
+  }
+  70% {
+    transform: translate3d(0, calc(0.07 * var(--sh)), 0);
+    opacity: 0;
+  }
+  100% {
+    transform: translate3d(0, calc(0.1 * var(--sh)), 0);
+    opacity: 0;
+  }
 }
-
-@media (pointer: coarse) {
-  .hero {
-    max-width: 80vw;
+@keyframes heroScrollInkField {
+  0% {
+    transform: translate3d(0, calc(0 * var(--sh)), 0);
+    opacity: 1;
+  }
+  25% {
+    transform: translate3d(0, calc(0.035 * var(--sh)), 0);
+    opacity: 1;
+  }
+  70% {
+    transform: translate3d(0, calc(0.098 * var(--sh)), 0);
+    opacity: 0;
+  }
+  100% {
+    transform: translate3d(0, calc(0.14 * var(--sh)), 0);
+    opacity: 0;
+  }
+}
+@keyframes heroScrollLetter {
+  0% {
+    transform: translate3d(calc((var(--i) - 2.5) * 0 * 1.1vw), calc(var(--dy) * 0 * 2.2vh), 0);
+  }
+  2.5% {
+    transform: translate3d(calc((var(--i) - 2.5) * 0.0146 * 1.1vw), calc(var(--dy) * 0.0146 * 2.2vh), 0);
+  }
+  5% {
+    transform: translate3d(calc((var(--i) - 2.5) * 0.0554 * 1.1vw), calc(var(--dy) * 0.0554 * 2.2vh), 0);
+  }
+  7.5% {
+    transform: translate3d(calc((var(--i) - 2.5) * 0.1181 * 1.1vw), calc(var(--dy) * 0.1181 * 2.2vh), 0);
+  }
+  10% {
+    transform: translate3d(calc((var(--i) - 2.5) * 0.1983 * 1.1vw), calc(var(--dy) * 0.1983 * 2.2vh), 0);
+  }
+  12.5% {
+    transform: translate3d(calc((var(--i) - 2.5) * 0.2915 * 1.1vw), calc(var(--dy) * 0.2915 * 2.2vh), 0);
+  }
+  15% {
+    transform: translate3d(calc((var(--i) - 2.5) * 0.3936 * 1.1vw), calc(var(--dy) * 0.3936 * 2.2vh), 0);
+  }
+  17.5% {
+    transform: translate3d(calc((var(--i) - 2.5) * 0.5 * 1.1vw), calc(var(--dy) * 0.5 * 2.2vh), 0);
+  }
+  20% {
+    transform: translate3d(calc((var(--i) - 2.5) * 0.6064 * 1.1vw), calc(var(--dy) * 0.6064 * 2.2vh), 0);
+  }
+  22.5% {
+    transform: translate3d(calc((var(--i) - 2.5) * 0.7085 * 1.1vw), calc(var(--dy) * 0.7085 * 2.2vh), 0);
+  }
+  25% {
+    transform: translate3d(calc((var(--i) - 2.5) * 0.8017 * 1.1vw), calc(var(--dy) * 0.8017 * 2.2vh), 0);
+  }
+  27.5% {
+    transform: translate3d(calc((var(--i) - 2.5) * 0.8819 * 1.1vw), calc(var(--dy) * 0.8819 * 2.2vh), 0);
+  }
+  30% {
+    transform: translate3d(calc((var(--i) - 2.5) * 0.9446 * 1.1vw), calc(var(--dy) * 0.9446 * 2.2vh), 0);
+  }
+  32.5% {
+    transform: translate3d(calc((var(--i) - 2.5) * 0.9854 * 1.1vw), calc(var(--dy) * 0.9854 * 2.2vh), 0);
+  }
+  35% {
+    transform: translate3d(calc((var(--i) - 2.5) * 1 * 1.1vw), calc(var(--dy) * 1 * 2.2vh), 0);
+  }
+  100% {
+    transform: translate3d(calc((var(--i) - 2.5) * 1 * 1.1vw), calc(var(--dy) * 1 * 2.2vh), 0);
+  }
+}
+@keyframes heroScrollUi {
+  0% {
+    opacity: 1;
+  }
+  10%,
+  100% {
+    opacity: 0;
+  }
+}
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .heroType__scroll,
+    .heroPortrait__scroll,
+    .heroMarks__circle,
+    .inkDrops__scroll,
+    .inkField__scroll,
+    .heroUi {
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: scroll(root block);
+      animation-range: 0px var(--sh);
+    }
+    .heroType__scroll {
+      animation-name: heroScrollWord;
+    }
+    .heroPortrait__scroll {
+      animation-name: heroScrollPortrait;
+    }
+    .heroMarks__circle {
+      animation-name: heroScrollMarks;
+    }
+    .inkDrops__scroll {
+      animation-name: heroScrollInkDrops;
+    }
+    .inkField__scroll {
+      animation-name: heroScrollInkField;
+    }
+    .heroUi {
+      animation-name: heroScrollUi;
+    }
+    /* each letter: its entrance as before, plus its loosening drift on the scroll */
+    .hero .heroWord span {
+      animation-name: heroLetterIn, heroScrollLetter;
+      animation-duration: 1.6s, auto;
+      animation-timing-function: var(--ease-editorial), linear;
+      animation-delay: calc(0.25s + var(--i) * 0.07s), 0s;
+      animation-fill-mode: backwards, both;
+      animation-timeline: auto, scroll(root block);
+      animation-range: normal, 0px var(--sh);
+    }
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .figureLayer {
+/* ---------- background ---------- */
+
+.heroGrain {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  pointer-events: none;
+  opacity: 0.075;
+  mix-blend-mode: multiply;
+  background-image: var(--texture-grain);
+}
+
+.heroMarks {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  will-change: transform;
+  animation: heroBreatheMarks var(--breath) ease-in-out infinite;
+}
+.heroMarks__circle {
+  position: absolute;
+  width: calc(var(--ph) * 0.82);
+  aspect-ratio: 1;
+  left: calc(var(--pcx) - var(--ph) * 0.41);
+  top: calc(var(--ptop) + var(--ph) * 0.02);
+  overflow: visible;
+  fill: none;
+  stroke: var(--color-ink);
+  stroke-width: 0.12;
+  opacity: 0.16;
+  transform: translate3d(0, calc(var(--p) * var(--sh) * 0.12), 0);
+}
+.heroMarks__circle path {
+  stroke-width: 0.16;
+}
+.heroMarks__cross {
+  position: absolute;
+  left: calc(var(--pcx) + var(--ph) * 0.3);
+  top: calc(var(--ptop) + var(--ph) * 0.12);
+  width: 18px;
+  height: 18px;
+  opacity: 0.35;
+}
+.heroMarks__cross::before,
+.heroMarks__cross::after {
+  content: '';
+  position: absolute;
+  background: var(--color-ink);
+}
+.heroMarks__cross::before {
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+}
+.heroMarks__cross::after {
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+}
+.heroMarks__rule {
+  position: absolute;
+  left: calc(var(--spacing-page-x) * 0.52);
+  top: calc(var(--sh) * 0.24);
+  height: calc(var(--sh) * 0.46);
+  width: 1px;
+  background: var(--color-ink);
+  opacity: 0.22;
+}
+.heroMarks__rule b {
+  position: absolute;
+  top: -2.4em;
+  left: 50%;
+  translate: -50% 0;
+  rotate: -90deg;
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: var(--text-micro);
+  letter-spacing: 0.1em;
+}
+
+/* ---------- typography planes ---------- */
+
+.heroType {
+  position: absolute;
+  left: 0;
+  right: 0;
+  padding: 0 var(--spacing-page-x);
+  top: var(--type-top);
+  text-align: center;
+  pointer-events: none;
+  will-change: transform;
+}
+.heroType--back {
+  z-index: 2;
+}
+.heroType--knock {
+  z-index: 4;
+}
+.heroType--ink {
+  z-index: 5;
+  /* multiplied onto the photograph: burgundy that crosses skin reads as ink
+     in the skin, and sinks away into the black shirt */
+  mix-blend-mode: multiply;
+}
+
+/* phase 1 + 3: counter the page scroll so the word stays in view, then
+   shrink it up into the logo slot at top-left */
+.heroType__scroll {
+  transform-origin: var(--spacing-page-x) 0;
+  transform: translate3d(
+      0,
+      calc(var(--p) * var(--sh) - var(--q) * var(--hero-lift)),
+      0
+    )
+    scale(calc(1 - var(--q) * 0.88));
+  opacity: calc(1 - clamp(0, calc((var(--q) - 0.45) / 0.45), 1));
+}
+
+.heroWord {
+  font-family: var(--font-serif);
+  font-variation-settings: 'opsz' 96;
+  font-weight: 500;
+  font-size: var(--fs);
+  line-height: 0.74;
+  letter-spacing: -0.035em;
+  white-space: nowrap;
+  color: var(--color-ink);
+  user-select: none;
+  /* counter-breath: lifts as the portrait settles */
+  animation: heroBreatheType var(--breath) ease-in-out infinite;
+}
+.heroWord span {
+  display: inline-block;
+  transform: translate3d(
+    calc((var(--i) - 2.5) * var(--p1) * 1.1vw),
+    calc(var(--dy) * var(--p1) * 2.2vh),
+    0
+  );
+  animation: heroLetterIn 1.6s var(--ease-editorial) backwards;
+  animation-delay: calc(0.25s + var(--i) * 0.07s);
+}
+.heroWord .is-accent {
+  color: var(--accent-type);
+}
+
+/* the knockout planes: visible only inside the portrait's silhouette (mask
+   registered each frame by useRegisteredMask) */
+.heroType--knock .heroWord,
+.heroType--ink .heroWord {
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: var(--mask-pos, -9999px -9999px);
+  mask-position: var(--mask-pos, -9999px -9999px);
+  -webkit-mask-size: var(--mask-size, 0 0);
+  mask-size: var(--mask-size, 0 0);
+}
+/* paper veil for the black letters: enough of the body shows through that
+   the letters clearly wrap him rather than sit on him */
+.heroType--knock .heroWord {
+  color: var(--color-paper);
+  opacity: 0.7;
+}
+.heroType--ink .heroWord {
+  opacity: 0.8;
+}
+.heroType--knock .is-accent,
+.heroType--ink span:not(.is-accent) {
+  visibility: hidden;
+}
+
+@keyframes heroLetterIn {
+  from {
+    opacity: 0;
+    translate: 0 0.12em;
+  }
+  to {
     opacity: 1;
-    transform: none;
+    translate: 0 0;
+  }
+}
+
+/* ---------- portrait ---------- */
+
+.heroPortrait {
+  position: absolute;
+  z-index: 3;
+  left: var(--pl);
+  top: var(--ptop);
+  width: var(--pw);
+  height: var(--ph);
+  pointer-events: none;
+  will-change: transform;
+}
+.heroPortrait__scroll {
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 100%;
+  transform: translate3d(0, calc(var(--p) * var(--sh) * 0.3), 0) scale(calc(1 + var(--p2) * 0.06));
+  opacity: calc(1 - clamp(0, calc((var(--p) - 0.55) / 0.4), 1));
+}
+.heroPortrait--reveal {
+  /* above every type plane: the spotlight cuts through the print, letters
+     included, to the photograph beneath */
+  z-index: 6;
+}
+.heroPortrait__breathe {
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 100%;
+  animation: heroBreathe var(--breath) ease-in-out infinite;
+}
+.heroPortrait__plate {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.heroPortrait--rest .heroPortrait__plate {
+  animation: heroPortraitIn 1.8s var(--ease-editorial) 0.1s backwards;
+}
+.heroPortrait__plate img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  user-select: none;
+}
+
+/*
+ * The reveal: a small feathered loupe. Inside it the sharper, closer plate
+ * (clarity, micro-detail, deeper blacks) replaces the soft print, magnified
+ * a hair around the cursor so it feels nearer rather than just brighter.
+ * The long feather is what keeps it from reading as a torch beam.
+ */
+.heroPortrait--reveal .heroPortrait__plate {
+  --mx: 50%;
+  --my: 45%;
+  --r: 52px;
+  --spot: radial-gradient(
+    circle var(--r) at var(--mx) var(--my),
+    #000 0%,
+    rgba(0, 0, 0, 0.96) 22%,
+    rgba(0, 0, 0, 0.78) 42%,
+    rgba(0, 0, 0, 0.46) 62%,
+    rgba(0, 0, 0, 0.18) 80%,
+    rgba(0, 0, 0, 0.04) 93%,
+    transparent 100%
+  );
+  -webkit-mask-image: var(--spot);
+  mask-image: var(--spot);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  opacity: 0;
+  transition: opacity 0.9s var(--ease-editorial);
+}
+.hero[data-reveal='on'] .heroPortrait--reveal .heroPortrait__plate {
+  opacity: 1;
+}
+.heroPortrait__loupe {
+  position: absolute;
+  inset: 0;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  transform-origin: var(--mx) var(--my);
+  scale: 1.06;
+}
+
+@keyframes heroPortraitIn {
+  from {
+    opacity: 0;
+    translate: 0 18px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+@keyframes heroBreathe {
+  0%,
+  100% {
+    translate: 0 -4px;
+    scale: 1;
+  }
+  50% {
+    translate: 0 4px;
+    scale: 1.008;
+  }
+}
+@keyframes heroBreatheType {
+  0%,
+  100% {
+    translate: 0 2px;
+  }
+  50% {
+    translate: 0 -2px;
+  }
+}
+@keyframes heroBreatheMarks {
+  0%,
+  100% {
+    translate: 0 -1px;
+  }
+  50% {
+    translate: 0 1px;
+  }
+}
+
+
+/* soft hand-off into the Work section, which continues on the same paper */
+.heroFade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 24%;
+  z-index: 7;
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent, var(--color-paper) 78%);
+}
+
+/* ---------- UI copy ---------- */
+
+.heroUi {
+  position: absolute;
+  inset: 0;
+  z-index: 9;
+  pointer-events: none;
+  padding: var(--spacing-page-y) var(--spacing-page-x);
+  opacity: calc(1 - clamp(0, calc(var(--p) / 0.1), 1));
+}
+
+/* quiet technical metadata, hung under the masthead - not a headline */
+.heroTitle {
+  position: absolute;
+  left: var(--spacing-page-x);
+  top: calc(var(--spacing-page-y) + clamp(2.6rem, 4.4vh, 3.6rem));
+  margin: 0;
+  font: inherit;
+}
+.heroMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55em;
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+  animation: heroFadeIn 1.4s var(--ease-editorial) 0.7s backwards;
+}
+.heroMeta__sep {
+  display: none;
+}
+
+/* supporting line, down in the lower-left information block */
+.heroLine {
+  position: absolute;
+  left: var(--spacing-page-x);
+  bottom: calc(var(--spacing-page-y) * 1.3);
+  margin: 0;
+  max-width: 22ch;
+  font-family: var(--font-serif);
+  font-size: clamp(1rem, 0.45vw + 0.8rem, 1.3rem);
+  line-height: 1.3;
+  color: var(--color-ink);
+  animation: heroFadeIn 1.4s var(--ease-editorial) 0.9s backwards;
+}
+/* "you." shares the burgundy of the O and E in the name */
+.heroLine em {
+  font-style: italic;
+  color: var(--color-burgundy);
+}
+
+/* Ask Younes: on the centre line under the artist, a dial printed on the
+   page. The fade beneath it keeps it on paper rather than on his shirt. */
+.heroVoice {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--spacing-page-y) * 1.05);
+  translate: -50% 0;
+  pointer-events: auto;
+  animation: heroFadeIn 1.4s var(--ease-editorial) 1.2s backwards;
+}
+
+/* the quiet way down into the work - navigation, not an instruction */
+.heroNext {
+  position: absolute;
+  right: var(--spacing-page-x);
+  bottom: calc(var(--spacing-page-y) * 1.3);
+  display: flex;
+  align-items: center;
+  gap: 0.9em;
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--color-ink);
+  text-decoration: none;
+  opacity: 0.66;
+  pointer-events: auto;
+  transition: opacity var(--duration-normal) var(--ease-editorial);
+  animation: heroFadeIn 1.4s var(--ease-editorial) 1.1s backwards;
+}
+.heroNext__num {
+  color: var(--color-burgundy);
+}
+.heroNext::after {
+  content: '';
+  width: 1px;
+  height: 2.4em;
+  background: currentColor;
+  opacity: 0.5;
+  transform-origin: 50% 0;
+  transition: scale var(--duration-slow) var(--ease-editorial);
+}
+.heroNext:hover,
+.heroNext:focus-visible {
+  opacity: 1;
+}
+.heroNext:hover::after,
+.heroNext:focus-visible::after {
+  scale: 1 1.35;
+}
+
+@keyframes heroFadeIn {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ---------- voice trigger ---------- */
+
+.voice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8rem;
+  color: var(--color-ink);
+}
+.voice__dial {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: var(--color-paper);
+  transition: scale var(--duration-normal) var(--ease-editorial);
+}
+/* one soft burgundy echo leaving the dial while it's "listening" */
+.voice__echo {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid var(--color-burgundy);
+  opacity: 0;
+}
+.voice__ring {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  fill: none;
+  rotate: -90deg;
+}
+.voice__track {
+  stroke: var(--color-ink);
+  stroke-width: 1;
+  opacity: 0.3;
+}
+.voice__trace {
+  stroke: var(--color-burgundy);
+  stroke-width: 1.2;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  transition: stroke-dashoffset 1.1s var(--ease-editorial);
+}
+.voice__tick {
+  stroke: var(--color-burgundy);
+  stroke-width: 1.2;
+  rotate: 90deg;
+  transform-origin: 33px 33px;
+}
+.voice__mic {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.3;
+  stroke-linecap: round;
+  transition: translate var(--duration-normal) var(--ease-editorial);
+}
+.voice__capsule {
+  transition: fill var(--duration-normal) var(--ease-editorial);
+}
+
+.voice__label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+}
+.voice__row {
+  display: flex;
+  align-items: center;
+  gap: 0.9em;
+}
+.voice__name {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: 0.26em;
+  /* optically centre the tracked caps between the two waves */
+  margin-right: -0.26em;
+  text-transform: uppercase;
+  transition:
+    letter-spacing var(--duration-slow) var(--ease-editorial),
+    margin var(--duration-slow) var(--ease-editorial);
+}
+
+/* silence at rest (a dotted hairline), a few bars of voice on hover */
+.voice__wave {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 12px;
+}
+.voice__wave i {
+  width: 1px;
+  height: 100%;
+  background: currentColor;
+  opacity: 0.45;
+  scale: 1 0.1;
+  transition:
+    scale var(--duration-normal) var(--ease-editorial),
+    opacity var(--duration-normal) var(--ease-editorial),
+    background-color var(--duration-normal) var(--ease-editorial);
+}
+
+.voice__meta {
+  position: relative;
+  display: grid;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: calc(var(--text-micro) * 1.15);
+  color: var(--color-ink-muted);
+}
+.voice__meta span {
+  grid-area: 1 / 1;
+  text-align: center;
+  transition:
+    opacity var(--duration-normal) var(--ease-editorial),
+    translate var(--duration-normal) var(--ease-editorial);
+}
+.voice__meta span + span {
+  opacity: 0;
+  translate: 0 4px;
+  color: var(--color-burgundy);
+}
+
+.voice:hover .voice__dial,
+.voice:focus-visible .voice__dial {
+  scale: 1.05;
+}
+.voice:hover .voice__trace,
+.voice:focus-visible .voice__trace {
+  stroke-dashoffset: 0;
+}
+.voice:hover .voice__echo,
+.voice:focus-visible .voice__echo {
+  animation: voiceEcho 2.6s var(--ease-editorial) 0.4s infinite;
+}
+.voice:hover .voice__mic,
+.voice:focus-visible .voice__mic {
+  translate: 0 -1px;
+}
+.voice:hover .voice__capsule,
+.voice:focus-visible .voice__capsule {
+  fill: var(--color-ink);
+}
+.voice:hover .voice__wave i,
+.voice:focus-visible .voice__wave i {
+  opacity: 1;
+  background-color: var(--color-burgundy);
+  scale: 1 var(--h);
+  animation: voiceBar 1.2s ease-in-out infinite alternate;
+  animation-delay: calc(var(--i) * -0.23s);
+}
+.voice:hover .voice__name,
+.voice:focus-visible .voice__name {
+  letter-spacing: 0.3em;
+  margin-right: -0.3em;
+}
+.voice:hover .voice__meta span:first-child,
+.voice:focus-visible .voice__meta span:first-child {
+  opacity: 0;
+  translate: 0 -4px;
+}
+.voice:hover .voice__meta span + span,
+.voice:focus-visible .voice__meta span + span {
+  opacity: 1;
+  translate: 0 0;
+}
+.voice:focus-visible {
+  outline-offset: 6px;
+}
+
+@keyframes voiceEcho {
+  from {
+    opacity: 0.55;
+    scale: 1;
+  }
+  to {
+    opacity: 0;
+    scale: 1.45;
+  }
+}
+@keyframes voiceBar {
+  from {
+    scale: 1 calc(var(--h) * 0.35);
+  }
+  to {
+    scale: 1 var(--h);
+  }
+}
+
+/* ---------- tablet ---------- */
+
+@media (max-width: 1099px) {
+  .hero {
+    --ph: min(calc(var(--sh) * 0.92), 118vw);
+    --type-top: calc(var(--ptop) + var(--ph) * 0.37);
+  }
+}
+
+/* ---------- mobile: its own composition, not a shrunk desktop ---------- */
+
+@media (max-width: 699px) {
+  .hero {
+    --sh: max(100svh, 560px);
+    --ph: min(calc(var(--sh) * 0.8), 172vw);
+    --pcx: 50%;
+    --fs: calc((100vw - var(--spacing-page-x) * 2) / 3.86);
+    --breath: 9s;
+    /* the name runs across the top as a masthead; the head rises in front
+       of the lower half of the letters */
+    --type-top: calc(var(--ptop) + var(--ph) * 0.1 - var(--fs) * 0.55);
+  }
+
+  .heroType__scroll {
+    transform-origin: 50% 0;
+  }
+  .heroType--knock,
+  .heroType--ink {
+    display: none;
+  }
+
+  .heroMarks__rule,
+  .heroMarks__cross {
+    display: none;
+  }
+  .heroMarks__circle {
+    width: calc(var(--pw) * 1.02);
+    left: calc(var(--pcx) - var(--pw) * 0.51);
+    top: calc(var(--ptop) + var(--ph) * 0.12);
+  }
+
+  .heroTitle {
+    top: calc(var(--spacing-page-y) + 2.2rem);
+  }
+
+  /* the line moves up to sit above the dial; the dial owns the bottom */
+  .heroLine {
+    bottom: calc(var(--spacing-page-y) + 8.6rem);
+    max-width: 14ch;
+    font-size: 1.15rem;
+  }
+  .heroVoice {
+    bottom: calc(var(--spacing-page-y) + 0.6rem);
+  }
+  .heroNext {
+    display: none;
+  }
+  .voice {
+    gap: 0.65rem;
+  }
+  .voice__dial {
+    width: 60px;
+    height: 60px;
+  }
+  .heroFade {
+    height: 36%;
+    background: linear-gradient(to bottom, transparent, var(--color-paper) 62%);
+  }
+}
+
+/* ---------- reduced motion ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .heroWord,
+  .heroWord span,
+  .heroMarks,
+  .heroPortrait__breathe,
+  .heroPortrait--rest .heroPortrait__plate,
+  .voice:hover .voice__wave i,
+  .voice:focus-visible .voice__wave i,
+  .voice:hover .voice__echo,
+  .voice:focus-visible .voice__echo,
+  .heroMeta,
+  .heroLine,
+  .heroNext,
+  .heroVoice {
+    animation: none;
+  }
+  .voice__dial,
+  .voice__trace,
+  .voice__name,
+  .voice__mic,
+  .voice__meta span,
+  .voice__wave i,
+  .heroNext,
+  .heroNext::after,
+  .heroPortrait--reveal .heroPortrait__plate {
+    transition-duration: 0.01s;
   }
 }

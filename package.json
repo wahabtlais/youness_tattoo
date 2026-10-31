@@ -3,22 +3,50 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "workspaces": [
+    "packages/*",
+    "server"
+  ],
   "scripts": {
     "dev": "vite",
+    "dev:api": "npm run dev --workspace server",
     "build": "tsc -b && vite build",
+    "build:api": "npm run build --workspace server",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "typecheck": "tsc -b && npm run typecheck --workspace server && npm run typecheck --workspace @younes/contracts",
+    "preview": "vite preview",
+    "setup": "npm run setup --workspace server",
+    "db:up": "docker compose -f docker/compose.yaml up -d --wait",
+    "db:down": "docker compose -f docker/compose.yaml down",
+    "db:migrate": "npm run db:migrate --workspace server",
+    "db:rollback": "npm run db:rollback --workspace server",
+    "db:seed": "npm run db:seed --workspace server",
+    "db:seed:demo": "npm run db:seed:demo --workspace server",
+    "db:reset": "npm run db:reset --workspace server",
+    "owner:create": "npm run owner:create --workspace server",
+    "test": "npm run test --workspace @younes/contracts && npm run test --workspace server",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@xyflow/react": "12.12.0",
+    "@younes/contracts": "*",
+    "gsap": "^3.15.0",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "react-router": "^8.4.0",
+    "simple-icons": "16.35.0",
+    "three": "^0.186.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
+    "@types/three": "^0.186.0",
     "@vitejs/plugin-react": "^6.1.0",
     "oxlint": "^1.79.0",
+    "tailwindcss": "^4.3.3",
     "typescript": "~6.0.2",
     "vite": "^8.2.2"
   }

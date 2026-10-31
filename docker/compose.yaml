@@ -1,0 +1,41 @@
+# Local development services for Younes Tattoo (see server/README.md).
+#
+#   npm run db:up      start (and wait until healthy)
+#   npm run db:down    stop - the data stays in the named volume
+#
+# Ports are bound to 127.0.0.1 only: nothing here is reachable from the
+# network. Passwords come from docker/.env, written by `npm run setup`.
+name: younes-tattoo
+
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD:?run npm run setup first}
+      YOUNES_MIGRATOR_PASSWORD: ${YOUNES_MIGRATOR_PASSWORD:?run npm run setup first}
+      YOUNES_APP_PASSWORD: ${YOUNES_APP_PASSWORD:?run npm run setup first}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-55432}:5432"
+    volumes:
+      # data lives in the named volume, never in the container's own layer
+      - pgdata:/var/lib/postgresql/data
+      # runs once, on an empty volume: roles, databases, extensions, grants
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d younes_dev"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+  mailpit:
+    # catches every email locally - nothing is ever delivered
+    image: axllent/mailpit:latest
+    ports:
+      - "127.0.0.1:${MAILPIT_SMTP_PORT:-51025}:1025"
+      - "127.0.0.1:${MAILPIT_UI_PORT:-58025}:8025"
+    restart: unless-stopped
+
+volumes:
+  pgdata:

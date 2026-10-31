@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# environment - only the documented template is tracked
+.env
+.env.*
+!.env.example
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -22,3 +27,29 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# licensed source footage for the ink drops (re-downloadable, see docs/INK_ASSETS.md)
+assets-src/ink/*.mp4
+assets-src/ink/*.jpg
+# visual references of unknown licence - never shipped
+assets-src/reference/
+# the original studio photograph (source of src/assets/hero/*) stays local
+assets-src/artist.png
+assets-src/artist-section.png
+# source 3D models and the prepared arm package (CC BY 4.0, see
+# docs/THIRD_PARTY_ASSETS.md); the site ships the optimised copy in
+# src/assets/work/glb/
+assets-src/arm/
+
+# python
+__pycache__/
+
+# backend: uploaded and imported media, server build output, test artifacts
+storage/
+server/dist/
+test-results/
+playwright-report/
+
+# production settings live only on the server
+docker/production/production.env
+docker/production/backups/

@@ -1,0 +1,90 @@
+/*
+ * The very large ink field (see InkField.tsx).
+ *
+ * The asset is the top-left of the source shot, where the pool enters the
+ * frame. It always runs off the browser's top-left corner, so the ink
+ * comes in from outside the screen, and its spreading front reaches in
+ * behind the artist's head and shoulders.
+ */
+
+.inkField {
+  position: absolute;
+  inset: 0;
+  /* the paper's lowest layer: under the drops, marks, name and portrait */
+  z-index: 0;
+  pointer-events: none;
+  will-change: transform;
+}
+.inkField__scroll {
+  position: absolute;
+  inset: 0;
+  transform: translate3d(0, calc(var(--p) * var(--sh) * 0.14), 0);
+  opacity: calc(1 - clamp(0, calc((var(--p) - 0.25) / 0.45), 1));
+}
+
+.inkField__body {
+  --o: 0.1;
+  /* where the field sits relative to the artist (from the portrait's
+     geometry) - its right and bottom edges, where the ink thins out */
+  --fl: calc(var(--pcx) - var(--ph) * 1.02);
+  --ft: calc(var(--ptop) - var(--ph) * 0.2);
+  --fw: calc(var(--ph) * 1.65);
+  --fh: calc(var(--fw) * 440 / 720);
+  position: absolute;
+  /* The top-left of the asset is where the pool enters the shot and is
+     dense; it must never land inside the screen. On wide screens the
+     portrait-relative position would leave it a few px in - a hard edge -
+     so it is pinned past the browser's top-left (the hero is the full
+     viewport width and starts at the top of the page) and the field
+     stretches to keep its right/bottom edges where they were. */
+  left: min(var(--fl), -2%);
+  top: min(var(--ft), -3%);
+  width: calc(var(--fl) + var(--fw) - min(var(--fl), -2%));
+  height: calc(var(--ft) + var(--fh) - min(var(--ft), -3%));
+  opacity: var(--o);
+}
+.inkField__grow {
+  position: absolute;
+  inset: 0;
+  transform-origin: 0 0;
+}
+.inkField__state {
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat;
+  /* hidden until the animation (or the static state below) takes over */
+  opacity: 0;
+}
+
+/* ---------- portrait tablets: a little smaller, still from the corner ---------- */
+
+@media (min-width: 700px) and (max-width: 1099px) and (orientation: portrait) {
+  .inkField__body {
+    --o: 0.09;
+    --fl: calc(var(--pcx) - var(--ph) * 0.9);
+    --ft: calc(var(--ptop) - var(--ph) * 0.12);
+    --fw: calc(var(--ph) * 1.35);
+  }
+}
+
+/* ---------- mobile: aggressively cropped - only its spreading edge enters ---------- */
+
+@media (max-width: 699px) {
+  .inkField__body {
+    --o: 0.08;
+    --fl: calc(var(--pcx) - var(--ph) * 0.98);
+    --ft: calc(var(--type-top) - var(--fs) * 1.6);
+    --fw: calc(var(--ph) * 1.2);
+  }
+}
+
+/* ---------- reduced motion: the grown field, still, a touch quieter ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .inkField__body {
+    opacity: calc(var(--o) * 0.8);
+  }
+  .inkField__state--grown {
+    opacity: 1;
+  }
+}

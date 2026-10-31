@@ -1,0 +1,135 @@
+/*
+ * The portfolio's hanging archive (RopeGallery): vertical ropes from a rail,
+ * prints hung on them. Only what Tailwind isn't the tool for: the rope's
+ * material, the one-off arrival choreography and the print's resting angle.
+ * The print's paper reuses the home archive's material (physicalArchive.css:
+ * .pa-print); no clips or other hardware.
+ */
+
+/* ---------- the rail and the ropes ---------- */
+
+.rg-rail {
+  transform-origin: 0 50%;
+}
+.rg-rope {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 9px;
+  translate: -50% 0;
+  background: url('../../../assets/work/rope-vertical.webp') center top / 9px auto repeat-y;
+  /* the cord runs out softly below the last print */
+  mask-image: linear-gradient(180deg, #000 calc(100% - 90px), transparent);
+  transform-origin: 50% 0;
+  pointer-events: none;
+}
+/* where a rope is tied to the rail */
+.rg-knot {
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  width: 15px;
+  height: 11px;
+  translate: -50% 0;
+  border-radius: 45% 45% 50% 50%;
+  background: radial-gradient(circle at 40% 35%, #c9a77a, #8a6a43 70%);
+  box-shadow: 0 2px 3px -1px rgb(20 19 26 / 0.35);
+  pointer-events: none;
+}
+
+/* ---------- a print on the rope ---------- */
+
+.rg-print {
+  /* set per print by RopeGallery: --w (share of the rope's lane), --x (sideways
+     shift), --r (resting angle) */
+  position: relative;
+  display: block;
+  width: var(--w);
+  margin-inline: auto;
+  translate: var(--x) 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+.rg-print__hang {
+  position: relative;
+  display: block;
+  rotate: var(--r);
+  transform-origin: 50% 0;
+  transition: rotate 0.7s var(--ease-material), translate 0.7s var(--ease-material);
+}
+/* a touch, or keyboard focus: the print straightens on its rope and lifts a hair */
+.rg-print:hover .rg-print__hang,
+.rg-print:focus-visible .rg-print__hang {
+  rotate: 0deg;
+  translate: 0 -3px;
+}
+.rg-print .pa-print {
+  position: relative;
+  inset: auto;
+}
+.rg-print:focus-visible {
+  outline: none;
+}
+.rg-print:focus-visible .pa-print {
+  outline-color: var(--color-focus);
+}
+
+/* ---------- arriving (once per page of prints) ----------
+   Filled backwards only: each animation ends on the resting values the rules
+   above already give, so once done it lets go - and a hover can straighten
+   the print (a held end state would outrank it). */
+
+@media (prefers-reduced-motion: no-preference) {
+  .rg-arrive .rg-rail {
+    animation: rgRail 0.7s var(--ease-editorial) backwards;
+  }
+  .rg-arrive .rg-rope {
+    animation: rgRope 0.8s var(--ease-editorial) backwards;
+    animation-delay: calc(0.12s + var(--lane) * 0.08s);
+  }
+  .rg-arrive .rg-print__hang {
+    animation: rgSettle 0.75s var(--ease-material) backwards;
+    animation-delay: calc(0.28s + var(--order) * 0.06s);
+  }
+}
+@keyframes rgRail {
+  from {
+    scale: 0 1;
+  }
+}
+@keyframes rgRope {
+  from {
+    scale: 1 0;
+  }
+}
+/* hung on the rope: comes down a little, swings past its angle, settles */
+@keyframes rgSettle {
+  0% {
+    opacity: 0;
+    translate: 0 -14px;
+    rotate: calc(var(--r) * -2.2);
+  }
+  55% {
+    opacity: 1;
+    rotate: calc(var(--r) * 1.4);
+  }
+  100% {
+    opacity: 1;
+    translate: 0 0;
+    rotate: var(--r);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rg-print__hang {
+    transition: none;
+  }
+  .rg-print:hover .rg-print__hang,
+  .rg-print:focus-visible .rg-print__hang {
+    translate: none;
+  }
+}

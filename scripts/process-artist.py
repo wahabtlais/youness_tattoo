@@ -1,10 +1,14 @@
-"""Hero V2 portrait pipeline (offline, not part of the app build).
+"""Hero portrait pipeline (offline, not part of the app build).
 
-usage: python scripts/process-artist.py public/artist.png src/assets/hero-v2
-(needs `pip install "rembg[cpu]" pillow numpy`; also writes a preview.jpg next to the output dir)
+usage: python scripts/process-artist.py assets-src/artist.png src/assets/hero
+(needs `pip install "rembg[cpu]" pillow numpy`; the birefnet-portrait model is
+a one-off ~1 GB download. Also writes a preview.jpg next to the output dir)
 
-artist.png (RGB, dark studio backdrop, blue/orange grade)
-  -> cutout via rembg (isnet-general-use)
+assets-src/artist.png is the original studio photograph (RGB, dark backdrop,
+blue/orange grade). Keep it out of public/ - it isn't served.
+  -> cutout via rembg (birefnet-portrait). isnet-general-use, used before,
+     dropped the shirt below his left elbow and along the lower torso where
+     black fabric meets the dark backdrop.
   -> neutral monochrome, gentle contrast curve
   -> two layers with identical alpha:
        artist-print.webp    rest plate: soft, lower local contrast, still deep blacks
@@ -22,13 +26,16 @@ out = Path(sys.argv[2])
 out.mkdir(parents=True, exist_ok=True)
 
 img = Image.open(src).convert("RGB")
-session = new_session("isnet-general-use")
-cut = remove(img, session=session, post_process_mask=True)
-alpha = np.asarray(cut.split()[-1]).astype(np.float32) / 255.0
+session = new_session("birefnet-portrait")
+mask = remove(img, session=session, only_mask=True)
+alpha = np.asarray(mask).astype(np.float32) / 255.0
 
-# soften the matte edge a touch so hair doesn't read as a sticker
-a_img = Image.fromarray((alpha * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(1.1))
+# soften the matte edge a touch so hair doesn't read as a sticker, then pull
+# the half-transparent rim in slightly: those pixels carry the dark backdrop
+# and would otherwise draw a grey outline on the light paper
+a_img = Image.fromarray((alpha * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(0.8))
 alpha = np.asarray(a_img).astype(np.float32) / 255.0
+alpha = np.clip((alpha - 0.06) / 0.94, 0, 1) ** 1.15
 
 # bottom fade: the torso dissolves into the page instead of a hard crop line
 h, w = alpha.shape
@@ -39,6 +46,15 @@ alpha = alpha * fade
 rgb = np.asarray(img).astype(np.float32) / 255.0
 # luminance only - drops the cinematic blue/orange entirely
 lum = rgb[..., 0] * 0.2126 + rgb[..., 1] * 0.7152 + rgb[..., 2] * 0.0722
+
+# a soft pool of light on the face, found from the matte rather than
+# hard-coded: centred on the head's columns, a little below its top
+cols = np.where(alpha[: h // 3].max(axis=0) > 0.5)[0]
+rows = np.where(alpha.max(axis=1) > 0.5)[0]
+fx = (cols.min() + cols.max()) / 2 if cols.size else w / 2
+fy = (rows.min() if rows.size else 0) + h * 0.12
+xx = np.arange(w)[None, :]
+face_light = np.exp(-(((xx - fx) / (w * 0.16)) ** 2 + ((np.arange(h)[:, None] - fy) / (h * 0.1)) ** 2))
 
 
 def curve(x, black, white, gamma):
@@ -72,6 +88,8 @@ base = curve(lum, 0.01, 0.86, 0.9)
 soft = base * 0.4 + blur(base, 1.3) * 0.6
 flat = soft * 0.76 + blur(soft, 24) * 0.24
 prt = 0.075 + smooth_s(flat, 0.06) * 0.83
+# lift the face's midtones a touch (not the beard's blacks, not the highlights)
+prt = prt + 0.045 * face_light * np.clip(prt * (1 - prt) * 4, 0, 1)
 
 # reveal ("develop"): the same photograph brought closer - local contrast
 # (clarity), fine unsharp mask for skin / beard / fabric micro-detail,
