@@ -60,3 +60,41 @@ test('settings: the studio settings save, and devices are listed', async ({ page
   await expect(page.getByLabel(/Keep closed clients for/)).toHaveValue('18');
   await expect(page.getByText('This device')).toBeVisible();
 });
+
+test('overview: "Include sample data" is off by default, and switches every figure without a reload', async ({ page }) => {
+  await page.goto('/studio');
+  const samples = await page.evaluate(() =>
+    fetch('/api/studio/overview')
+      .then((r) => r.json() as Promise<{ inquiries: { demo?: boolean }[] }>)
+      .then((o) => o.inquiries.filter((q) => q.demo).length),
+  );
+  expect(samples).toBeGreaterThan(0);
+
+  const toggle = page.getByRole('switch', { name: 'Include sample data' });
+  const status = page.getByRole('status').filter({ hasText: /Sample/ });
+  const attentionPanel = page.getByRole('region', { name: 'Needs your attention' });
+  // the conversion card says "booked of received": received is every inquiry the figures count
+  const received = async () => Number((await page.getByText(/ of \d+ reached a booking/).textContent())!.match(/of (\d+)/)![1]);
+
+  await expect(toggle).toHaveAttribute('aria-checked', 'false');
+  await expect(status).toHaveText('Sample records are listed, not counted in these figures');
+  await expect(attentionPanel.getByText('· Sample')).toHaveCount(0);
+  const real = await received();
+
+  await page.evaluate(() => ((globalThis as unknown as { stillHere: boolean }).stillHere = true));
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-checked', 'true');
+  await expect(status).toHaveText('Sample data included — these figures aren’t real business');
+  await expect.poll(received).toBe(real + samples);
+  await expect(page.getByRole('heading', { name: 'Key figures, including sample data' })).toBeAttached();
+  await expect(attentionPanel.getByText('· Sample').first()).toBeVisible();
+  // the same page: nothing reloaded
+  expect(await page.evaluate(() => (globalThis as unknown as { stillHere?: boolean }).stillHere)).toBe(true);
+
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-checked', 'false');
+  await expect.poll(received).toBe(real);
+  // and a fresh visit starts with it off again
+  await page.reload();
+  await expect(page.getByRole('switch', { name: 'Include sample data' })).toHaveAttribute('aria-checked', 'false');
+});

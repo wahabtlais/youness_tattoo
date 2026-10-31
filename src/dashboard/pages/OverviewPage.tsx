@@ -3,7 +3,7 @@ import { Link } from 'react-router';
 import { StateMessage } from '../../components/ui/StateMessage';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { today } from '../../lib/date';
-import { kpis, realRecords, workload } from '../analytics';
+import { kpis, overviewRecords, workload } from '../analytics';
 import { DashIcon } from '../DashIcon';
 import type { DashIconName } from '../dashIcons';
 import { dayTitle, greeting, plural } from '../format';
@@ -23,23 +23,26 @@ import { useOverview } from '../useOverview';
  * activity under it. The assistant is a page of its own, opened from the
  * top bar. In a narrower
  * workspace the panels stack in that order. Every figure is counted from
- * the same records (analytics.ts) - the real ones: sample records are left
- * out of every figure and chart, and listed (labelled) only in what needs
- * attention and on the pages they belong to.
+ * the same records (analytics.overviewRecords) - the real ones: sample
+ * records are left out of every figure, chart and the attention queue,
+ * unless "Include sample data" is switched on (for trying the studio out;
+ * off on every visit, and said plainly while on). The samples stay listed,
+ * labelled, on the pages they belong to.
  */
 export function OverviewPage() {
   useDocumentTitle('Studio overview');
   // one "now" for the visit, so every relative time on the page agrees
   const [now] = useState(() => new Date());
   const overview = useOverview(now);
+  const [withSamples, setWithSamples] = useState(false);
 
   if (overview.status !== 'success') {
     return <StateMessage kind={overview.status === 'loading' ? 'loading' : 'error'} title="The overview couldn’t be loaded." />;
   }
   const o = overview.data;
-  const live = realRecords(o);
-  const k = kpis(live, now);
-  const todayCount = workload(live, now)[0].appointments.length;
+  const shown = overviewRecords(o, withSamples);
+  const k = kpis(shown, now);
+  const todayCount = workload(shown, now)[0].appointments.length;
   const chips = [
     { tone: k.newInquiries ? 'attention' : 'neutral', icon: 'inquiries', text: k.newInquiries ? `${plural(k.newInquiries, 'new inquiry', 'new inquiries')} to review` : 'No new inquiries', to: '/studio/inquiries/new' },
     { status: 'booking', icon: 'calendar', text: todayCount ? `${plural(todayCount, 'appointment')} today` : 'Nothing booked today' },
@@ -80,21 +83,39 @@ export function OverviewPage() {
           </ul>
         </div>
         {o.demo && (
-          <p data-tone="brand" className="inline-flex h-8 items-center gap-2 rounded-full border border-dashed border-(--st-line) px-3 text-[0.8125rem] font-semibold text-(--st-fg)">
-            <span aria-hidden="true" className="size-1.5 rounded-full bg-(--st-solid)" />
-            Sample records are listed, not counted in these figures
-          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p
+              role="status"
+              data-tone={withSamples ? 'attention' : 'brand'}
+              className={`inline-flex min-h-8 items-center gap-2 rounded-full border px-3 text-[0.8125rem] font-semibold text-(--st-fg) ${withSamples ? 'border-(--st-line) bg-(--st-bg)' : 'border-dashed border-(--st-line)'}`}
+            >
+              <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-(--st-solid)" />
+              {withSamples ? 'Sample data included — these figures aren’t real business' : 'Sample records are listed, not counted in these figures'}
+            </p>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={withSamples}
+              onClick={() => setWithSamples((v) => !v)}
+              className="group inline-flex min-h-8 items-center gap-2 rounded-full border border-(--studio-line-strong) px-3 text-[0.8125rem] font-semibold text-ink-soft transition-colors hover:border-ink-muted hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus focus-visible:outline-solid motion-reduce:transition-none"
+            >
+              <span aria-hidden="true" className="relative h-4 w-7 shrink-0 rounded-full bg-(--studio-line-strong) transition-colors group-aria-checked:bg-burgundy motion-reduce:transition-none">
+                <span className="absolute top-0.5 left-0.5 size-3 rounded-full bg-(--studio-panel) shadow-(--studio-shadow) transition-transform group-aria-checked:translate-x-3 motion-reduce:transition-none" />
+              </span>
+              Include sample data
+            </button>
+          </div>
         )}
       </header>
 
-      <KpiCards k={k} now={now} />
+      <KpiCards k={k} now={now} withSamples={withSamples} />
 
       <div className="grid gap-5 @min-[56rem]:grid-cols-12">
-        <InquiryActivity o={live} now={now} className="@min-[56rem]:col-span-8" />
-        <AttentionQueue o={o} now={now} className="@min-[56rem]:col-span-4" />
+        <InquiryActivity o={shown} now={now} className="@min-[56rem]:col-span-8" />
+        <AttentionQueue o={shown} now={now} className="@min-[56rem]:col-span-4" />
         {/* the workload spans two rows beside the pipeline and recent activity, stacked */}
-        <WorkloadPanel o={live} now={now} className="@min-[56rem]:col-span-8 @min-[56rem]:row-span-2" />
-        <PipelinePanel o={live} className="@min-[56rem]:col-span-4" />
+        <WorkloadPanel o={shown} now={now} className="@min-[56rem]:col-span-8 @min-[56rem]:row-span-2" />
+        <PipelinePanel o={shown} className="@min-[56rem]:col-span-4" />
         <RecentActivity o={o} now={now} className="@min-[56rem]:col-span-4" />
       </div>
     </div>

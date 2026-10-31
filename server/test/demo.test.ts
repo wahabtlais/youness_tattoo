@@ -3,7 +3,7 @@ import path from 'node:path';
 import { promisify } from 'node:util';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { attention, inquirySeries, kpis, pipeline, realRecords, seriesStats, workload } from '../../src/dashboard/analytics.ts';
+import { attention, inquirySeries, kpis, overviewRecords, pipeline, realRecords, seriesStats, workload } from '../../src/dashboard/analytics.ts';
 import { demoOverview } from '../../src/dashboard/data/demoOverview.ts';
 import type { Overview } from '../../src/dashboard/types.ts';
 import { SERVER_ROOT } from '../src/config.ts';
@@ -212,5 +212,39 @@ describe('the dashboard’s figures leave the samples out', () => {
     const items = attention(o, now);
     expect(items.some((i) => i.demo)).toBe(true);
     expect(attention(live, now).every((i) => !i.demo)).toBe(true);
+  });
+
+  it('the Overview switch: off counts real records only, on counts samples too - every figure from the same records', async () => {
+    const now = new Date();
+    await addDemo(ctx.db, { now });
+    expect((await submit(consultation())).statusCode).toBe(201);
+    const o = (await call('GET', '/api/studio/overview')).json() as Overview;
+    const samples = { inquiries: o.inquiries.filter((q) => q.demo), appointments: o.appointments.filter((a) => a.demo), followUps: o.followUps.filter((f) => f.demo) };
+    expect(samples.inquiries).toHaveLength(sample.inquiries.length);
+
+    // off - the default, with no argument at all - is exactly the real records
+    expect(overviewRecords(o)).toEqual(realRecords(o));
+    const off = overviewRecords(o, false);
+    expect(kpis(off, now)).toMatchObject({ received: 1, newInquiries: 1, followUps: 0, upcoming: 0 });
+    expect(pipeline(off).total).toBe(1);
+    expect(attention(off, now).some((i) => i.demo)).toBe(false);
+
+    // on: real and sample together, in every figure - and the real one still counted
+    const on = overviewRecords(o, true);
+    const k = kpis(on, now);
+    expect(k.received).toBe(1 + samples.inquiries.length);
+    expect(k.newInquiries).toBe(1 + samples.inquiries.filter((q) => q.status === 'submitted').length);
+    expect(k.booked).toBe(samples.inquiries.filter((q) => q.status === 'booking' || q.status === 'completed').length);
+    expect(k.followUps).toBe(samples.followUps.length);
+    expect(k.upcoming).toBeGreaterThan(0);
+    expect(k.upcomingHours).toBeGreaterThan(0);
+    expect(pipeline(on).total).toBe(1 + samples.inquiries.length);
+    expect(seriesStats(inquirySeries(on, now, 'weeks')).total).toBe(1 + samples.inquiries.length);
+    expect(workload(on, now).flatMap((d) => d.appointments).some((a) => a.demo)).toBe(true);
+    expect(attention(on, now).some((i) => i.demo)).toBe(true);
+    // the real inquiry is in both
+    const realId = o.inquiries.find((q) => !q.demo)!.id;
+    expect(off.inquiries.map((q) => q.id)).toEqual([realId]);
+    expect(on.inquiries.map((q) => q.id)).toContain(realId);
   });
 });

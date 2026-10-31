@@ -34,7 +34,7 @@ interface Card {
  * conversion in the accent with a meter - a large number with what it
  * counts, a line of context, and its period or comparison at the foot.
  */
-export function KpiCards({ k, now }: { k: Kpis; now: Date }) {
+export function KpiCards({ k, now, withSamples = false }: { k: Kpis; now: Date; withSamples?: boolean }) {
   const delta = k.receivedThisWeek - k.receivedWeekBefore;
   const cards: Card[] = [
     {
@@ -81,7 +81,7 @@ export function KpiCards({ k, now }: { k: Kpis; now: Date }) {
   return (
     <section aria-labelledby="studioKpis">
       <h2 id="studioKpis" className="sr-only">
-        Key figures
+        {withSamples ? 'Key figures, including sample data' : 'Key figures'}
       </h2>
       <ul className="grid gap-3 @min-[34rem]:grid-cols-2 @min-[62rem]:grid-cols-4">
         {cards.map((c) => (

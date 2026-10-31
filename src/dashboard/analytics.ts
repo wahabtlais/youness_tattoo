@@ -22,6 +22,13 @@ export const realRecords = (o: Overview): Overview => ({
   followUps: o.followUps.filter((f) => !f.demo),
 });
 
+/**
+ * What the Overview counts - one switch for every figure, chart and the
+ * attention queue on it: the real records (the default), or, to try the
+ * studio out, the samples with them. Nothing else uses the samples' numbers.
+ */
+export const overviewRecords = (o: Overview, includeSamples = false): Overview => (includeSamples ? o : realRecords(o));
+
 const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 /** the calendar day `n` days after the date's (by the calendar, not 24-hour steps: a clock change can't shift it) */
 const plusDays = (d: Date, n: number) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
