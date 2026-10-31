@@ -81,7 +81,7 @@ export function KpiCards({ k, now }: { k: Kpis; now: Date }) {
   return (
     <section aria-labelledby="studioKpis">
       <h2 id="studioKpis" className="sr-only">
-        Key figures (sample data)
+        Key figures
       </h2>
       <ul className="grid gap-3 @min-[34rem]:grid-cols-2 @min-[62rem]:grid-cols-4">
         {cards.map((c) => (

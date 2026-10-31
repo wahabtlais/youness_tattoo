@@ -3,7 +3,7 @@ import { Link } from 'react-router';
 import { StateMessage } from '../../components/ui/StateMessage';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { today } from '../../lib/date';
-import { kpis, workload } from '../analytics';
+import { kpis, realRecords, workload } from '../analytics';
 import { DashIcon } from '../DashIcon';
 import type { DashIconName } from '../dashIcons';
 import { dayTitle, greeting, plural } from '../format';
@@ -23,7 +23,9 @@ import { useOverview } from '../useOverview';
  * activity under it. The assistant is a page of its own, opened from the
  * top bar. In a narrower
  * workspace the panels stack in that order. Every figure is counted from
- * the same demo records (analytics.ts).
+ * the same records (analytics.ts) - the real ones: sample records are left
+ * out of every figure and chart, and listed (labelled) only in what needs
+ * attention and on the pages they belong to.
  */
 export function OverviewPage() {
   useDocumentTitle('Studio overview');
@@ -35,8 +37,9 @@ export function OverviewPage() {
     return <StateMessage kind={overview.status === 'loading' ? 'loading' : 'error'} title="The overview couldn’t be loaded." />;
   }
   const o = overview.data;
-  const k = kpis(o, now);
-  const todayCount = workload(o, now)[0].appointments.length;
+  const live = realRecords(o);
+  const k = kpis(live, now);
+  const todayCount = workload(live, now)[0].appointments.length;
   const chips = [
     { tone: k.newInquiries ? 'attention' : 'neutral', icon: 'inquiries', text: k.newInquiries ? `${plural(k.newInquiries, 'new inquiry', 'new inquiries')} to review` : 'No new inquiries', to: '/studio/inquiries/new' },
     { status: 'booking', icon: 'calendar', text: todayCount ? `${plural(todayCount, 'appointment')} today` : 'Nothing booked today' },
@@ -79,7 +82,7 @@ export function OverviewPage() {
         {o.demo && (
           <p data-tone="brand" className="inline-flex h-8 items-center gap-2 rounded-full border border-dashed border-(--st-line) px-3 text-[0.8125rem] font-semibold text-(--st-fg)">
             <span aria-hidden="true" className="size-1.5 rounded-full bg-(--st-solid)" />
-            Sample data — nothing here is live
+            Sample records are listed, not counted in these figures
           </p>
         )}
       </header>
@@ -87,11 +90,11 @@ export function OverviewPage() {
       <KpiCards k={k} now={now} />
 
       <div className="grid gap-5 @min-[56rem]:grid-cols-12">
-        <InquiryActivity o={o} now={now} className="@min-[56rem]:col-span-8" />
+        <InquiryActivity o={live} now={now} className="@min-[56rem]:col-span-8" />
         <AttentionQueue o={o} now={now} className="@min-[56rem]:col-span-4" />
         {/* the workload spans two rows beside the pipeline and recent activity, stacked */}
-        <WorkloadPanel o={o} now={now} className="@min-[56rem]:col-span-8 @min-[56rem]:row-span-2" />
-        <PipelinePanel o={o} className="@min-[56rem]:col-span-4" />
+        <WorkloadPanel o={live} now={now} className="@min-[56rem]:col-span-8 @min-[56rem]:row-span-2" />
+        <PipelinePanel o={live} className="@min-[56rem]:col-span-4" />
         <RecentActivity o={o} now={now} className="@min-[56rem]:col-span-4" />
       </div>
     </div>

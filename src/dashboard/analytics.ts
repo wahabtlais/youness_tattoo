@@ -9,6 +9,19 @@ import type { Appointment, AppointmentKind, Overview } from './types';
  * and with the lists. Nothing here is typed in by hand.
  */
 
+/**
+ * The records the studio's figures count: sample records (demo) left out,
+ * so the KPI cards, the charts, the pipeline and the workload only ever
+ * describe real business. The lists worked from - what needs attention,
+ * the inquiries, clients and calendar - still show the samples, labelled.
+ */
+export const realRecords = (o: Overview): Overview => ({
+  ...o,
+  inquiries: o.inquiries.filter((q) => !q.demo),
+  appointments: o.appointments.filter((a) => !a.demo),
+  followUps: o.followUps.filter((f) => !f.demo),
+});
+
 const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 /** the calendar day `n` days after the date's (by the calendar, not 24-hour steps: a clock change can't shift it) */
 const plusDays = (d: Date, n: number) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
@@ -159,6 +172,8 @@ export interface AttentionItem {
   rank: number;
   /** where to deal with it: the inquiry itself, or the part of the studio it belongs to */
   to: string;
+  /** about a sample record: shown, and labelled */
+  demo?: boolean;
 }
 
 /**
@@ -170,21 +185,32 @@ export function attention(o: Overview, now: Date): AttentionItem[] {
   const items: AttentionItem[] = [];
   for (const f of o.followUps) {
     const d = daysFrom(now, f.dueAt);
-    if (d < 0) items.push({ id: f.id, urgency: 'overdue', title: f.reason, detail: f.clientName, when: `${-d} day${d === -1 ? '' : 's'} overdue`, rank: 0 + d / 100, to: clientPath(f) });
-    else if (d === 0) items.push({ id: f.id, urgency: 'today', title: f.reason, detail: f.clientName, when: 'Due today', rank: 1, to: clientPath(f) });
+    if (d < 0) items.push({ id: f.id, urgency: 'overdue', title: f.reason, detail: f.clientName, when: `${-d} day${d === -1 ? '' : 's'} overdue`, rank: 0 + d / 100, to: clientPath(f), demo: f.demo });
+    else if (d === 0) items.push({ id: f.id, urgency: 'today', title: f.reason, detail: f.clientName, when: 'Due today', rank: 1, to: clientPath(f), demo: f.demo });
   }
   const fresh = o.inquiries.filter((q) => q.status === 'submitted');
   for (const q of fresh.filter((q) => daysSince(now, q.receivedAt) >= 3)) {
     const d = daysSince(now, q.receivedAt);
-    items.push({ id: q.id, urgency: 'waiting', title: 'New inquiry waiting for review', detail: `${q.clientName} · ${q.summary.concept ?? 'No idea described'}`, when: `Waiting ${d} days`, rank: 2 - d / 100, to: `/studio/inquiries/new/${q.id}` });
+    items.push({ id: q.id, urgency: 'waiting', title: 'New inquiry waiting for review', detail: `${q.clientName} · ${q.summary.concept ?? 'No idea described'}`, when: `Waiting ${d} days`, rank: 2 - d / 100, to: `/studio/inquiries/new/${q.id}`, demo: q.demo });
   }
   for (const a of upcoming(o, now, Infinity)) {
     const d = daysFrom(now, a.startsAt);
-    if (a.prep && d <= 2) items.push({ id: `${a.id}-prep`, urgency: 'prepare', title: a.prep, detail: `${a.clientName} · ${a.title}`, when: d === 0 ? 'Today' : d === 1 ? 'Tomorrow' : 'In 2 days', rank: 3 + d / 10, to: calendarPath(a.startsAt) });
-    if (a.status === 'proposed') items.push({ id: `${a.id}-confirm`, urgency: 'confirm', title: `Confirm the ${a.kind}`, detail: `${a.clientName} · ${a.title}`, when: `In ${d} day${d === 1 ? '' : 's'}`, rank: 4 + d / 10, to: calendarPath(a.startsAt) });
+    if (a.prep && d <= 2) items.push({ id: `${a.id}-prep`, urgency: 'prepare', title: a.prep, detail: `${a.clientName} · ${a.title}`, when: d === 0 ? 'Today' : d === 1 ? 'Tomorrow' : 'In 2 days', rank: 3 + d / 10, to: calendarPath(a.startsAt), demo: a.demo });
+    if (a.status === 'proposed') items.push({ id: `${a.id}-confirm`, urgency: 'confirm', title: `Confirm the ${a.kind}`, detail: `${a.clientName} · ${a.title}`, when: `In ${d} day${d === 1 ? '' : 's'}`, rank: 4 + d / 10, to: calendarPath(a.startsAt), demo: a.demo });
   }
-  const recent = fresh.filter((q) => daysSince(now, q.receivedAt) < 3).length;
-  if (recent) items.push({ id: 'new', urgency: 'new', title: `${recent} new ${recent === 1 ? 'inquiry' : 'inquiries'} to review`, detail: 'Arrived in the last 3 days', rank: 5, to: '/studio/inquiries/new' });
+  const arrived = fresh.filter((q) => daysSince(now, q.receivedAt) < 3);
+  const recent = arrived.length;
+  const samples = arrived.filter((q) => q.demo).length;
+  if (recent)
+    items.push({
+      id: 'new',
+      urgency: 'new',
+      title: `${recent} new ${recent === 1 ? 'inquiry' : 'inquiries'} to review`,
+      detail: `Arrived in the last 3 days${samples && samples < recent ? ` · ${samples} of them samples` : ''}`,
+      rank: 5,
+      to: '/studio/inquiries/new',
+      demo: samples === recent,
+    });
   return items.sort((a, b) => a.rank - b.rank);
 }
 

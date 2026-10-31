@@ -396,6 +396,37 @@ Then sign in at `https://your.domain/studio` and set up two-factor.
 **Updating:** `git pull`, then `./deploy.sh update`. It backs up first, then
 rebuilds, migrates and restarts.
 
+**Sample records for trying the studio out.** `./deploy.sh demo-add` adds the
+dashboard's fictional clients, inquiries, appointments and follow-ups;
+`./deploy.sh demo-remove` takes them out again. Each backs up first, then
+runs `npm run demo:add -- --production` (or `demo:remove`) in the `tools`
+container. The code is `server/src/db/seed/demo.ts`.
+
+- Every row is `demo = true`, shown as "Sample". The sample clients have no
+  contact details, so nothing can be emailed to them and no real
+  consultation joins one (that goes by email).
+- It never runs the public content import and never resets or deletes
+  anything real. Both commands are safe to run again: `demo-add` adds
+  nothing if samples are there, `demo-remove` removes nothing the second
+  time.
+- On production both refuse to run without `--production` (deploy.sh passes
+  it). The old `npm run db:seed:demo` still refuses production outright.
+- **The calendar.** `demo-add` skips any sample appointment whose time a real
+  one holds, and lists it. Afterwards, booking or moving a real appointment
+  onto a sample's time cancels the sample (it stays listed, cancelled), so a
+  sample never blocks a real booking.
+- **History.** Neither command writes to the activity log, which is
+  append-only. What the studio itself does to a sample record (a stage
+  change, a note) is recorded like any action and stays.
+- **What `demo-remove` keeps.** A sample client that real records now belong
+  to (a real inquiry, appointment or follow-up, or a real record pointing at
+  one of its sample inquiries) is kept with everything attached to it, and
+  listed by name. Notes written on the removed samples go with them.
+- **The figures.** The Overview's cards, charts, pipeline and workload, and
+  the assistant page's counts, leave samples out: they only ever describe
+  real business. The work lists (what needs attention, Inquiries, Clients,
+  Calendar) show the samples, labelled.
+
 **Backups:** `./deploy.sh backup` writes the database dump, the images and
 `production.env` (it holds `TOTP_ENC_KEY`) into `docker/production/backups/`.
 Run it nightly from cron and copy the folder off the server. Restore as in

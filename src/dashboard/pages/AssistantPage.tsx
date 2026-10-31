@@ -3,7 +3,7 @@ import { Link } from 'react-router';
 import { StateMessage } from '../../components/ui/StateMessage';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { useWork } from '../../hooks/useWork';
-import { attention, kpis, workload } from '../analytics';
+import { attention, kpis, realRecords, workload } from '../analytics';
 import { DashIcon } from '../DashIcon';
 import type { DashIconName } from '../dashIcons';
 import { PageHeader } from '../components/PageHeader';
@@ -53,7 +53,7 @@ interface Turn {
  * conversation isn't built, and the page says so wherever it matters: the
  * note under the composer, and a notice after every message you send.
  * Your messages stay in this tab only. Beside the conversation, what the
- * assistant would work from - real counts from the studio's demo records,
+ * assistant would work from - counts of the studio's real records (samples left out),
  * with the way to each - and what it's planned to do, and the rule it will
  * keep: nothing reaches a client or changes a booking without your
  * approval. No voice input or notifications: none exist.
@@ -80,11 +80,12 @@ export function AssistantPage() {
 
   if (overview.status !== 'success') return <StateMessage kind={overview.status === 'loading' ? 'loading' : 'error'} title="The assistant’s workspace couldn’t be loaded." />;
   const o = overview.data;
-  const k = kpis(o, now);
-  const today = workload(o, now)[0].appointments;
-  const toConfirm = o.appointments.filter((a) => a.status === 'proposed' && new Date(a.endsAt) >= now).length;
+  const live = realRecords(o);
+  const k = kpis(live, now);
+  const today = workload(live, now)[0].appointments;
+  const toConfirm = live.appointments.filter((a) => a.status === 'proposed' && new Date(a.endsAt) >= now).length;
   const unverified = work.status === 'success' ? work.data.filter((w) => w.metadataStatus !== 'verified').length : 0;
-  const waiting = attention(o, now).length;
+  const waiting = attention(live, now).length;
 
   const send = () => {
     const text = draft.trim();
@@ -250,7 +251,7 @@ export function AssistantPage() {
             <h2 id="asstContext" className="type-heading text-[1.05rem]">
               What it would work from
             </h2>
-            <p className="mt-0.5 text-[0.8125rem] text-ink-muted">Today’s sample records — counted here, not by the assistant</p>
+            <p className="mt-0.5 text-[0.8125rem] text-ink-muted">Today’s real records (samples not counted) — counted here, not by the assistant</p>
             <ul className="mt-3 grid gap-1.5">
               {[
                 { tone: 'attention', icon: 'inquiries' as const, label: 'New inquiries', value: k.newInquiries, to: `${STUDIO_ROOT}/inquiries/new` },

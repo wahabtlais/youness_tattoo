@@ -14,6 +14,8 @@
     "db:rollback": "tsx --import ./src/db/seed/register-assets.mjs src/cli.ts rollback",
     "db:seed": "tsx --import ./src/db/seed/register-assets.mjs src/cli.ts seed",
     "db:seed:demo": "tsx --import ./src/db/seed/register-assets.mjs src/cli.ts seed --demo",
+    "demo:add": "tsx --import ./src/db/seed/register-assets.mjs src/cli.ts demo:add",
+    "demo:remove": "tsx --import ./src/db/seed/register-assets.mjs src/cli.ts demo:remove",
     "db:reset": "tsx --import ./src/db/seed/register-assets.mjs src/cli.ts reset",
     "owner:create": "tsx --import ./src/db/seed/register-assets.mjs src/cli.ts owner:create",
     "test": "vitest run",

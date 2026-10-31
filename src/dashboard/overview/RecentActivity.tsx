@@ -19,7 +19,7 @@ const ACTOR: Record<ActivityActor, { name: string; icon: DashIconName; tone: str
 export function RecentActivity({ o, now, className }: { o: Overview; now: Date; className?: string }) {
   const latest = [...o.activity].sort((a, b) => (a.at < b.at ? 1 : -1)).slice(0, 3);
   return (
-    <Panel id="studioRecent" title="Recent activity" icon="clock" context="Latest first · sample" className={className}>
+    <Panel id="studioRecent" title="Recent activity" icon="clock" context="Latest first" className={className}>
       {latest.length === 0 ? (
         <p className="py-4 text-body text-ink-soft">Nothing yet. Inquiries, bookings and the assistant’s drafts will be logged here.</p>
       ) : (

@@ -91,6 +91,7 @@ export function AttentionQueue({ o, now, className }: { o: Overview; now: Date; 
                           {u.label}
                         </span>
                         {it.when && it.when !== u.label && <span className="text-[0.75rem] font-medium text-ink-muted">· {it.when}</span>}
+                        {it.demo && <span className="text-[0.75rem] font-medium text-ink-muted">· Sample</span>}
                       </span>
                       <span className="mt-0.5 block truncate text-[0.9375rem] leading-snug font-semibold text-ink" title={it.title}>
                         {it.title}

@@ -19,6 +19,10 @@ import { record, type Actor } from '../audit/service.ts';
  * on each other's constraint checks (a 500). One studio's bookings never
  * queue long enough to notice. A proposed time is a
  * suggestion to the client; confirmed is agreed - both shown distinctly.
+ *
+ * Sample appointments (demo = true) never stand in a real one's way: a real
+ * booking or move onto their time cancels them first (they stay listed, as
+ * cancelled samples) - with no history entry, since they're fictional.
  */
 
 const iso = (d: Date | string) => new Date(d).toISOString();
@@ -34,7 +38,20 @@ function translate(e: unknown): never {
 
 /** appointment writes, one at a time (see above); released at commit or rollback */
 const APPOINTMENTS_LOCK = 0x59545f41; // "YT_A"
-const lockAppointments = (tx: Executor) => sql`select pg_advisory_xact_lock(${APPOINTMENTS_LOCK})`.execute(tx);
+export const lockAppointments = (tx: Executor) => sql`select pg_advisory_xact_lock(${APPOINTMENTS_LOCK})`.execute(tx);
+
+/** the statuses that hold a slot (appointments_no_overlap) */
+export const HOLDS_SLOT: AppointmentStatus[] = ['proposed', 'confirmed'];
+/** [start, end) overlapping another range - the constraint's own test */
+export const overlaps = (start: Date | string, end: Date | string) =>
+  sql<boolean>`tstzrange(starts_at, ends_at, '[)') && tstzrange(${iso(start)}::timestamptz, ${iso(end)}::timestamptz, '[)')`;
+
+/** sample appointments holding any of [start, end) let it go (see above) */
+async function yieldSamples(tx: Executor, start: Date | string, end: Date | string, except?: string) {
+  let q = tx.updateTable('appointments').set({ status: 'cancelled', updated_at: new Date() }).where('demo', '=', true).where('status', 'in', HOLDS_SLOT).where(overlaps(start, end));
+  if (except) q = q.where('id', '!=', except);
+  await q.execute();
+}
 
 export async function list(db: Executor, from: Date, to: Date) {
   const rows = await db
@@ -70,6 +87,7 @@ export async function create(
     return await db.transaction().execute(async (tx) => {
       await lockAppointments(tx);
       if (!(await tx.selectFrom('clients').select('id').where('id', '=', input.clientId).where('anonymized_at', 'is', null).executeTakeFirst())) throw notFound('That client doesn’t exist.');
+      await yieldSamples(tx, input.startsAt, input.endsAt);
       const a = await tx
         .insertInto('appointments')
         .values({ client_id: input.clientId, inquiry_id: input.inquiryId ?? null, kind: input.kind, title: input.title, starts_at: input.startsAt, ends_at: input.endsAt, status: input.status, prep: input.prep ?? null })
@@ -87,6 +105,10 @@ export async function update(db: DB, actor: Actor & { type: 'user' }, id: string
   try {
     await db.transaction().execute(async (tx) => {
       await lockAppointments(tx);
+      const now = await tx.selectFrom('appointments').select(['starts_at', 'ends_at', 'status', 'demo']).where('id', '=', id).executeTakeFirst();
+      if (!now) throw notFound('That appointment doesn’t exist.');
+      // a real appointment that will hold its slot clears samples from it first
+      if (!now.demo && HOLDS_SLOT.includes(patch.status ?? now.status)) await yieldSamples(tx, patch.startsAt ?? now.starts_at, patch.endsAt ?? now.ends_at, id);
       const a = await tx
         .updateTable('appointments')
         .set({

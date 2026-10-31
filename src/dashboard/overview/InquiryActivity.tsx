@@ -29,7 +29,7 @@ export function InquiryActivity({ o, now, className }: { o: Overview; now: Date;
       title="Inquiry activity"
       icon="inquiries"
       tone="accent"
-      context={`${plural(stats.total, 'inquiry', 'inquiries')} received in the last ${weekly ? `${WINDOW_WEEKS} weeks` : '30 days'} · sample data`}
+      context={`${plural(stats.total, 'inquiry', 'inquiries')} received in the last ${weekly ? `${WINDOW_WEEKS} weeks` : '30 days'}`}
       className={className}
       action={
         <div role="group" aria-label="Period" className="inline-flex rounded-(--studio-r-md) bg-(--studio-sunken) p-1 ring-1 ring-(--studio-line) ring-inset">
@@ -61,7 +61,7 @@ export function InquiryActivity({ o, now, className }: { o: Overview; now: Date;
               fill
               height={190}
               unitLabel={weekly ? 'Inquiries per week' : 'Inquiries per day'}
-              label={`Inquiries received ${weekly ? 'per week, last 12 weeks' : 'per day, last 30 days'} (sample data)`}
+              label={`Inquiries received ${weekly ? 'per week, last 12 weeks' : 'per day, last 30 days'}`}
               yTicks={countTicks(Math.max(...series.map((p) => p.value)))}
               // weeks: every other date where narrow, every one where wide; days: one a week, from today back
               tickEvery={weekly ? 2 : 7}

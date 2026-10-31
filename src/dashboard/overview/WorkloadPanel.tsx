@@ -37,7 +37,7 @@ export function WorkloadPanel({ o, now, className }: { o: Overview; now: Date; c
       title="Studio workload"
       icon="calendar"
       status="booking"
-      context={`Next 7 days · ${shortDate(days[0].date)} – ${shortDate(days[6].date)} · sample`}
+      context={`Next 7 days · ${shortDate(days[0].date)} – ${shortDate(days[6].date)}`}
       link={{ to: `${STUDIO_ROOT}/calendar`, label: 'Calendar' }}
       className={className}
     >
@@ -65,7 +65,7 @@ export function WorkloadPanel({ o, now, className }: { o: Overview; now: Date; c
               fill
               unitLabel="Hours booked per day"
               noteLabel="Appts"
-              label="Hours booked per day, next 7 days (sample data)"
+              label="Hours booked per day, next 7 days"
               yTicks={countTicks(Math.max(...days.map((d) => d.hours)))}
               yFormat={(t) => `${t} h`}
               height={150}

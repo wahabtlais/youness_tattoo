@@ -16,6 +16,8 @@ import { diskStorage } from './lib/storage.ts';
  *   seed [--demo] import the site's content; --demo adds the sample dashboard records (development)
  *   reset [--demo] development only: everything down, up again, seeded
  *   owner:create  create the studio owner (once - a second owner is refused)
+ *   demo:add      add the sample dashboard records only (never the content import);
+ *   demo:remove   remove them - on production both need --production (db/seed/demo.ts)
  */
 
 /**
@@ -24,14 +26,21 @@ import { diskStorage } from './lib/storage.ts';
  * build: the built CLI (server/dist/cli.js) migrates and creates the owner.
  * The path is a variable so the bundler leaves it alone.
  */
-async function seeds(): Promise<typeof import('./db/seed/index.ts')> {
-  const where = './db/seed/index.ts';
+async function fromSource<T>(where: string): Promise<T> {
   try {
     return await import(where);
   } catch (e) {
     if (import.meta.url.endsWith('.ts')) throw e;
-    throw new Error('Seeding runs from the source checkout (npm run db:seed): it imports the site’s src/data. The built CLI only migrates, rolls back and creates the owner.');
+    throw new Error('Seeding runs from the source checkout (npm run db:seed, npm run demo:add): it imports the site’s src/. The built CLI only migrates, rolls back and creates the owner.');
   }
+}
+const seeds = () => fromSource<typeof import('./db/seed/index.ts')>('./db/seed/index.ts');
+const demo = () => fromSource<typeof import('./db/seed/demo.ts')>('./db/seed/demo.ts');
+
+function printAdded(r: import('./db/seed/demo.ts').DemoAdded) {
+  if (!r.added) return console.log('  Sample records are already there - nothing added. (demo:remove takes them out.)');
+  console.log(`  + ${r.inquiries} sample inquiries, ${r.clients} sample clients, ${r.appointments} appointments, ${r.followUps} follow-ups${r.activity ? `, ${r.activity} history entries` : ''}`);
+  for (const s of r.skipped) console.log(`  - skipped "${s.title}" (${s.startsAt}): a real appointment holds that time`);
 }
 
 const [command, ...args] = process.argv.slice(2);
@@ -114,8 +123,8 @@ async function main() {
     try {
       for (const l of await (await seeds()).seedContent(db, storage)) console.log(`  + ${l}`);
       if (flag('--demo')) {
-        if (config.isProd) throw new Error('Refusing to add sample records to a production database.');
-        for (const l of await (await seeds()).seedDemo(db)) console.log(`  + ${l}`);
+        if (config.isProd) throw new Error('Refusing to add sample records to a production database. Use demo:add --production: it adds them without the content import.');
+        printAdded(await (await demo()).addDemo(db, { activity: true }));
       }
       console.log('Seeded.');
     } finally {
@@ -140,11 +149,32 @@ async function main() {
     const db = createDb(config.DATABASE_URL, { max: 2 });
     try {
       for (const l of await (await seeds()).seedContent(db, storage)) console.log(`  + ${l}`);
-      if (flag('--demo')) for (const l of await (await seeds()).seedDemo(db)) console.log(`  + ${l}`);
+      if (flag('--demo')) printAdded(await (await demo()).addDemo(db, { activity: true }));
     } finally {
       await db.destroy();
     }
     console.log('Reset complete. Stored files were kept; the owner account must be created again (npm run owner:create).');
+    return;
+  }
+
+  if (command === 'demo:add' || command === 'demo:remove') {
+    const d = await demo();
+    // before anything touches the database
+    d.assertDemoAllowed(config.isProd, args);
+    const db = createDb(config.DATABASE_URL, { max: 2, applicationName: 'younes-demo' });
+    try {
+      if (command === 'demo:add') printAdded(await d.addDemo(db));
+      else {
+        const r = await d.removeDemo(db);
+        console.log(`  - removed ${r.clients} sample clients, ${r.inquiries} inquiries, ${r.appointments} appointments, ${r.followUps} follow-ups (and ${r.notes} notes written on them)`);
+        if (r.kept.length) {
+          console.log(`  Kept ${r.kept.length} sample client(s) that real records now belong to - nothing of theirs was touched:`);
+          for (const k of r.kept) console.log(`    ${k.name} (${k.id})`);
+        }
+      }
+    } finally {
+      await db.destroy();
+    }
     return;
   }
 
@@ -168,7 +198,7 @@ async function main() {
     return;
   }
 
-  console.log('Commands: setup | migrate | rollback | seed [--demo] | reset [--demo] | owner:create');
+  console.log('Commands: setup | migrate | rollback | seed [--demo] | reset [--demo] | owner:create | demo:add | demo:remove');
   process.exitCode = 1;
 }
 

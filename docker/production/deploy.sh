@@ -7,6 +7,8 @@
 #   ./deploy.sh owner              create the studio owner (asks for a password)
 #   ./deploy.sh update             after `git pull`: back up, rebuild, migrate, restart
 #   ./deploy.sh backup             database + images + settings into ./backups
+#   ./deploy.sh demo-add           sample dashboard records (flagged demo; backs up first)
+#   ./deploy.sh demo-remove        take the sample records out again (backs up first)
 #   ./deploy.sh status | logs      what's running / the app's log
 #
 # Secrets are generated here and written only to production.env; nothing is
@@ -83,8 +85,15 @@ case "${1:-}" in
     up
     wait_healthy
     ;;
+  demo-add | demo-remove)
+    need_env
+    backup
+    # the tools image is the source checkout: rebuilt so it matches this checkout
+    "${COMPOSE[@]}" --profile tools build tools
+    "${COMPOSE[@]}" --profile tools run --rm tools npm run "${1/-/:}" -- --production
+    ;;
   backup) backup ;;
   status) need_env; "${COMPOSE[@]}" $(profiles) ps ;;
   logs) need_env; "${COMPOSE[@]}" logs --tail 100 -f app ;;
-  *) sed -n '2,12p' "$0"; exit 1 ;;
+  *) sed -n '2,14p' "$0"; exit 1 ;;
 esac

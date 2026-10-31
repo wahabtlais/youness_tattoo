@@ -24,7 +24,7 @@ export function PipelinePanel({ o, className }: { o: Overview; className?: strin
       title="Inquiry pipeline"
       icon="funnel"
       tone="info"
-      context={`${p.total} inquiries received in the last ${WINDOW_WEEKS} weeks · sample`}
+      context={`${p.total} inquiries received in the last ${WINDOW_WEEKS} weeks`}
       link={{ to: `${STUDIO_ROOT}/inquiries`, label: 'Inquiry map' }}
       className={className}
     >
@@ -50,7 +50,7 @@ export function PipelinePanel({ o, className }: { o: Overview; className?: strin
             </p>
           </div>
           <BarList
-            label={`Inquiries by status, last ${WINDOW_WEEKS} weeks (sample data)`}
+            label={`Inquiries by status, last ${WINDOW_WEEKS} weeks`}
             rows={p.rows.map((r, i) => ({
               key: r.status,
               label: STATUS_LABEL[r.status],

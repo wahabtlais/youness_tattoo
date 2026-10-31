@@ -4,7 +4,8 @@ import { sql } from 'kysely';
 import { loadEnvFiles, REPO_ROOT } from '../src/config.ts';
 import { createDb } from '../src/db/index.ts';
 import { migrateToLatest } from '../src/db/migrate.ts';
-import { seedContent, seedDemo } from '../src/db/seed/index.ts';
+import { addDemo } from '../src/db/seed/demo.ts';
+import { seedContent } from '../src/db/seed/index.ts';
 import { diskStorage } from '../src/lib/storage.ts';
 
 /**
@@ -34,7 +35,7 @@ await admin.destroy();
 
 const db = createDb(url, { max: 2, applicationName: 'younes-e2e-seed' });
 await seedContent(db, diskStorage(storageDir));
-await seedDemo(db);
+await addDemo(db, { activity: true });
 await db.destroy();
 
 Object.assign(process.env, {

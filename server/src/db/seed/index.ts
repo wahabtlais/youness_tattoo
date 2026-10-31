@@ -1,7 +1,6 @@
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { sql } from 'kysely';
 import { REPO_ROOT } from '../../config.ts';
 import type { Storage } from '../../lib/storage.ts';
 import type { DB } from '../index.ts';
@@ -17,10 +16,8 @@ import type { ImageVariantRow } from '../types.ts';
  * canvas calls and testimonials - which are fictional demo records today
  * and stay marked `demo` in the database, exactly as on the site.
  *
- * `seedDemo` (development only) adds the dashboard's fictional sample
- * clients, inquiries, appointments and follow-ups, every row `demo = true`
- * and labelled "Sample" wherever it's shown. They have no contact details:
- * nothing about them can pass for a real client.
+ * The dashboard's sample clients, inquiries, appointments and follow-ups
+ * are in demo.ts (addDemo / removeDemo): they never run this import.
  */
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -204,67 +201,3 @@ export async function seedContent(db: DB, storage: Storage) {
 }
 
 export { publicRef } from '../../lib/crypto.ts';
-
-export async function seedDemo(db: DB, now = new Date()) {
-  const already = await db.selectFrom('inquiries').select(sql<number>`count(*)::int`.as('n')).where('demo', '=', true).executeTakeFirstOrThrow();
-  if (already.n > 0) return ['demo records already present - left as they are'];
-  const { demoOverview } = await import('../../../../src/dashboard/data/demoOverview.ts');
-  const o = demoOverview(now);
-  const log: string[] = [];
-
-  await db.transaction().execute(async (tx) => {
-    const clientOf = new Map<string, string>();
-    const client = async (name: string) => {
-      if (!clientOf.has(name)) {
-        const r = await tx.insertInto('clients').values({ name, demo: true }).returning('id').executeTakeFirstOrThrow();
-        clientOf.set(name, r.id);
-      }
-      return clientOf.get(name)!;
-    };
-    const inquiryOf = new Map<string, string>();
-    for (const [i, q] of o.inquiries.entries()) {
-      const r = await tx
-        .insertInto('inquiries')
-        .values({
-          public_ref: `DEMO-${pad(i + 1)}`,
-          client_id: await client(q.clientName),
-          status: q.status,
-          entry: JSON.stringify(q.entry) as never,
-          summary: JSON.stringify(q.summary) as never,
-          contact: JSON.stringify({ name: q.clientName }) as never,
-          demo: true,
-          submitted_at: q.receivedAt,
-        })
-        .returning('id')
-        .executeTakeFirstOrThrow();
-      inquiryOf.set(q.clientName, r.id);
-    }
-    for (const a of o.appointments)
-      await tx
-        .insertInto('appointments')
-        .values({
-          client_id: await client(a.clientName),
-          inquiry_id: inquiryOf.get(a.clientName) ?? null,
-          kind: a.kind,
-          title: a.title,
-          starts_at: a.startsAt,
-          ends_at: a.endsAt,
-          status: a.status,
-          prep: a.prep ?? null,
-          demo: true,
-        })
-        .execute();
-    for (const f of o.followUps)
-      await tx
-        .insertInto('follow_ups')
-        .values({ client_id: await client(f.clientName), inquiry_id: inquiryOf.get(f.clientName) ?? null, kind: f.kind, reason: f.reason, due_at: f.dueAt, demo: true })
-        .execute();
-    for (const a of o.activity)
-      await tx
-        .insertInto('activity_log')
-        .values({ at: a.at as never, actor_type: a.actor === 'you' ? 'user' : a.actor, action: 'demo.event', subject_type: null, subject_id: null, data: JSON.stringify({ text: a.text, demo: true }) as never })
-        .execute();
-    log.push(`${o.inquiries.length} sample inquiries, ${clientOf.size} sample clients, ${o.appointments.length} appointments, ${o.followUps.length} follow-ups`);
-  });
-  return log;
-}
