@@ -12,6 +12,7 @@ import * as auth from './service.ts';
  * are rate-limited per address on top of the per-account lockout.
  */
 export async function authRoutes(app: FastifyInstance, { db, config }: Deps) {
+  const policy = auth.sessionPolicy(config);
   const meta = (req: { ip: string; headers: Record<string, unknown>; cookies: Record<string, string | undefined> }) => ({
     ip: req.ip,
     userAgent: String(req.headers['user-agent'] ?? ''),
@@ -40,16 +41,19 @@ export async function authRoutes(app: FastifyInstance, { db, config }: Deps) {
     const ok = !!expected && body.setupToken.length === expected.length && timingSafeEqual(Buffer.from(body.setupToken), Buffer.from(expected));
     if (!ok) throw new AppError(403, 'setup_token', 'That setup token isn’t right. It’s in server/.env (OWNER_SETUP_TOKEN), or create the owner with npm run owner:create.');
     await auth.createOwner(db, body);
-    const { token, mfa } = await auth.login(db, { email: body.email, password: body.password }, meta(req));
+    const { token, mfa, userId } = await auth.login(db, { email: body.email, password: body.password }, meta(req), policy);
     setSessionCookie(reply, config, token);
+    if (mfa === 'ok') await trust(req, reply, userId);
     return { mfa };
   });
 
   app.post('/login', { config: strict }, async (req, reply) => {
     const body = parse(loginSchema, req.body);
     if (req.auth) await auth.revokeSession(db, req.auth.session.id);
-    const { token, mfa } = await auth.login(db, body, meta(req));
+    const { token, mfa, userId } = await auth.login(db, body, meta(req), policy);
     setSessionCookie(reply, config, token);
+    // with two-factor off the password is the whole sign-in: trust the browser now
+    if (mfa === 'ok') await trust(req, reply, userId);
     return { mfa };
   });
 

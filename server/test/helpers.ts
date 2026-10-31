@@ -47,6 +47,8 @@ export async function makeCtx(opts: { ai?: AiClient | null; env?: Record<string,
     SERVE_SITE: 'false',
     AI_ENABLED: 'false',
     RATE_LIMITS: 'false',
+    // the full sign-in, whatever server/.env says (two-factor-off.test.ts covers off)
+    TWO_FACTOR: 'true',
     ...opts.env,
   });
   const db = createDb(config.DATABASE_URL, { max: 8, applicationName: 'younes-test' });

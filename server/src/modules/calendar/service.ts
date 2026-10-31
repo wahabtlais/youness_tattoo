@@ -1,4 +1,5 @@
 import type { AppointmentStatus } from '@younes/contracts';
+import { sql } from 'kysely';
 import type { DB, Executor } from '../../db/index.ts';
 import { AppError, notFound } from '../../lib/errors.ts';
 import { record, type Actor } from '../audit/service.ts';
@@ -12,7 +13,11 @@ import { record, type Actor } from '../audit/service.ts';
  * A proposed or a confirmed appointment holds its slot. The database
  * refuses an overlap (appointments_no_overlap) - checked by Postgres
  * itself, so two requests racing for the same hour can't both succeed.
- * That refusal becomes a 409 with a plain message. A proposed time is a
+ * That refusal becomes a 409 with a plain message. Appointment writes
+ * also take one transaction-scoped lock, so they run one at a time:
+ * overlapping requests checked at the same instant would otherwise deadlock
+ * on each other's constraint checks (a 500). One studio's bookings never
+ * queue long enough to notice. A proposed time is a
  * suggestion to the client; confirmed is agreed - both shown distinctly.
  */
 
@@ -26,6 +31,10 @@ function translate(e: unknown): never {
   if (err.code === '23514' && err.constraint === 'appointments_ends_after_start') throw new AppError(400, 'validation', 'The end must be after the start.', { endsAt: 'Must be after the start' });
   throw e;
 }
+
+/** appointment writes, one at a time (see above); released at commit or rollback */
+const APPOINTMENTS_LOCK = 0x59545f41; // "YT_A"
+const lockAppointments = (tx: Executor) => sql`select pg_advisory_xact_lock(${APPOINTMENTS_LOCK})`.execute(tx);
 
 export async function list(db: Executor, from: Date, to: Date) {
   const rows = await db
@@ -59,6 +68,7 @@ export async function create(
 ) {
   try {
     return await db.transaction().execute(async (tx) => {
+      await lockAppointments(tx);
       if (!(await tx.selectFrom('clients').select('id').where('id', '=', input.clientId).where('anonymized_at', 'is', null).executeTakeFirst())) throw notFound('That client doesn’t exist.');
       const a = await tx
         .insertInto('appointments')
@@ -76,6 +86,7 @@ export async function create(
 export async function update(db: DB, actor: Actor & { type: 'user' }, id: string, patch: { startsAt?: string; endsAt?: string; status?: AppointmentStatus; title?: string; prep?: string | null }) {
   try {
     await db.transaction().execute(async (tx) => {
+      await lockAppointments(tx);
       const a = await tx
         .updateTable('appointments')
         .set({

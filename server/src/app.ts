@@ -5,7 +5,7 @@ import rateLimit from '@fastify/rate-limit';
 import Fastify, { type FastifyError, type FastifyInstance } from 'fastify';
 import { AppError } from './lib/errors.ts';
 import { requestOrigin, type Deps } from './lib/http.ts';
-import { sessionFromToken } from './modules/auth/service.ts';
+import { sessionFromToken, sessionPolicy } from './modules/auth/service.ts';
 import { authRoutes } from './modules/auth/routes.ts';
 import { publicRoutes } from './modules/public/routes.ts';
 import { studioRoutes } from './modules/studio/routes.ts';
@@ -85,9 +85,10 @@ export async function buildApp(deps: Deps): Promise<FastifyInstance> {
   await app.register(multipart, { limits: { fileSize: 20 * 1024 * 1024, files: 1, fields: 10, parts: 12 } });
 
   // who's asking: the session behind the cookie, if any
+  const policy = sessionPolicy(config);
   app.addHook('onRequest', async (req) => {
     if (!req.url.startsWith('/api/')) return;
-    req.auth = await sessionFromToken(deps.db, req.cookies[config.cookieName]);
+    req.auth = await sessionFromToken(deps.db, req.cookies[config.cookieName], policy);
   });
 
   // cross-site request forgery: a state-changing request must come from the site itself,

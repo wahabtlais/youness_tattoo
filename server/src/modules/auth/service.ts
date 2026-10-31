@@ -22,20 +22,35 @@ import { burnTime, hashPassword, verifyPassword } from './passwords.ts';
  * authenticator the first time, a code (or a recovery code) after that -
  * and the token is replaced at that moment, so a token seen before the
  * second step is worthless after it.
+ *
+ * With TWO_FACTOR off the password alone is enough and a session lasts a
+ * year. Those sessions are still stored with `mfa_passed = false`, so turning
+ * it back on sends each of them through the second step.
  */
 
 export const IDLE_MS = 12 * 60 * 60 * 1000;
 export const ABSOLUTE_MS = 30 * 24 * 60 * 60 * 1000;
+const YEAR_MS = 365 * 24 * 60 * 60 * 1000;
 /** last-seen is written at most this often (not on every request) */
 const TOUCH_MS = 5 * 60 * 1000;
+
+export interface SessionPolicy {
+  twoFactor: boolean;
+  idleMs: number;
+  absoluteMs: number;
+}
+export const sessionPolicy = (config: Pick<Config, 'TWO_FACTOR'>): SessionPolicy =>
+  config.TWO_FACTOR ? { twoFactor: true, idleMs: IDLE_MS, absoluteMs: ABSOLUTE_MS } : { twoFactor: false, idleMs: YEAR_MS, absoluteMs: YEAR_MS };
 
 export interface AuthContext {
   user: Pick<User, 'id' | 'name' | 'email' | 'role' | 'totp_enabled_at'>;
   session: Pick<Session, 'id' | 'mfa_passed' | 'created_at'>;
+  twoFactor: boolean;
 }
 
 export type MfaState = 'enroll' | 'verify' | 'ok';
-export const mfaState = (a: AuthContext): MfaState => (!a.user.totp_enabled_at ? 'enroll' : a.session.mfa_passed ? 'ok' : 'verify');
+export const mfaState = (a: AuthContext): MfaState =>
+  !a.twoFactor ? 'ok' : !a.user.totp_enabled_at ? 'enroll' : a.session.mfa_passed ? 'ok' : 'verify';
 
 // ---------------- owner ----------------
 
@@ -100,7 +115,7 @@ const clearFailures = (db: Executor, key: string) => db.deleteFrom('auth_attempt
 
 // ---------------- sessions ----------------
 
-async function newSession(db: Executor, userId: string, meta: { ip?: string; userAgent?: string }, mfaPassed = false) {
+async function newSession(db: Executor, userId: string, meta: { ip?: string; userAgent?: string }, policy: SessionPolicy) {
   const token = randomToken();
   const now = Date.now();
   await db
@@ -108,9 +123,9 @@ async function newSession(db: Executor, userId: string, meta: { ip?: string; use
     .values({
       user_id: userId,
       token_hash: sha256(token),
-      mfa_passed: mfaPassed,
-      idle_expires_at: new Date(now + IDLE_MS),
-      absolute_expires_at: new Date(now + ABSOLUTE_MS),
+      mfa_passed: false,
+      idle_expires_at: new Date(now + policy.idleMs),
+      absolute_expires_at: new Date(now + policy.absoluteMs),
       ip: meta.ip ?? null,
       user_agent: meta.userAgent?.slice(0, 300) ?? null,
     })
@@ -119,7 +134,7 @@ async function newSession(db: Executor, userId: string, meta: { ip?: string; use
 }
 
 /** a valid session for the token, renewing its idle expiry; null when there's none */
-export async function sessionFromToken(db: Executor, token: string | undefined): Promise<AuthContext | null> {
+export async function sessionFromToken(db: Executor, token: string | undefined, policy: SessionPolicy): Promise<AuthContext | null> {
   if (!token || token.length > 100) return null;
   const now = new Date();
   const row = await db
@@ -134,12 +149,13 @@ export async function sessionFromToken(db: Executor, token: string | undefined):
     .executeTakeFirst();
   if (!row) return null;
   if (now.getTime() - new Date(row.last_seen_at).getTime() > TOUCH_MS) {
-    const idle = new Date(Math.min(now.getTime() + IDLE_MS, new Date(row.absolute_expires_at).getTime()));
+    const idle = new Date(Math.min(now.getTime() + policy.idleMs, new Date(row.absolute_expires_at).getTime()));
     await db.updateTable('sessions').set({ last_seen_at: now, idle_expires_at: idle }).where('id', '=', row.session_id).execute();
   }
   return {
     user: { id: row.id, name: row.name, email: row.email, role: row.role, totp_enabled_at: row.totp_enabled_at },
     session: { id: row.session_id, mfa_passed: row.mfa_passed, created_at: row.created_at },
+    twoFactor: policy.twoFactor,
   };
 }
 
@@ -217,7 +233,7 @@ export const forgetDevices = (db: Executor, userId: string) => db.updateTable('t
 
 // ---------------- sign-in ----------------
 
-export async function login(db: DB, input: { email: string; password: string }, meta: { ip?: string; userAgent?: string; deviceToken?: string }) {
+export async function login(db: DB, input: { email: string; password: string }, meta: { ip?: string; userAgent?: string; deviceToken?: string }, policy: SessionPolicy) {
   const ipKey = `ip:${meta.ip ?? 'unknown'}`;
   // a trusted browser of this very account answers to its own counter, not the account's
   const device = await trustedDevice(db, meta.deviceToken);
@@ -234,9 +250,10 @@ export async function login(db: DB, input: { email: string; password: string }, 
   // the owner is in: their account's and this browser's slates are clean
   await clearFailures(db, `email:${input.email}`);
   if (accountKey !== `email:${input.email}`) await clearFailures(db, accountKey);
-  const token = await newSession(db, user.id, meta);
+  const token = await newSession(db, user.id, meta, policy);
   await record(db, { type: 'user', id: user.id }, 'auth.login', { type: 'user', id: user.id });
-  return { token, mfa: (user.totp_enabled_at ? 'verify' : 'enroll') as MfaState };
+  const mfa: MfaState = !policy.twoFactor ? 'ok' : user.totp_enabled_at ? 'verify' : 'enroll';
+  return { token, mfa, userId: user.id };
 }
 
 // ---------------- two-factor ----------------

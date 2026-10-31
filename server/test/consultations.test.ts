@@ -36,8 +36,8 @@ describe('submitting a consultation', () => {
     expect(refs.map((x) => x.work_number)).toEqual([4, 8]);
     const log = await ctx.db.selectFrom('activity_log').selectAll().execute();
     expect(log.map((l) => l.action)).toContain('inquiry.submitted');
-    // the history holds no contact details
-    expect(JSON.stringify(log)).not.toMatch(/client@example|Test Client|555/);
+    // the history holds no contact details (the full number: a random id can contain "555")
+    expect(JSON.stringify(log)).not.toMatch(/client@example|Test Client|313 555 0100/);
     const mail = await ctx.db.selectFrom('email_outbox').select(['to_address', 'template']).execute();
     expect(mail.map((m) => m.template).sort()).toEqual(['inquiry-receipt-client']);
   });

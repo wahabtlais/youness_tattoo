@@ -105,6 +105,7 @@ malformed one stops the server with its name (never its value).
 | `STORAGE_DIR` | `storage/` | Uploaded and imported images: `public/` (portfolio, served at `/media/public/…`) and `private/` (references, studio-only). |
 | `SERVE_SITE`, `SITE_DIST_DIR` | on in production, `dist/` | Serve the built site with the published content injected. |
 | `TOTP_ENC_KEY` | — | 32 random bytes, base64. Encrypts authenticator secrets at rest. **Back it up with the database.** |
+| `TWO_FACTOR` | `true` | The authenticator step at sign-in. `false`: the password alone signs in, for a year per browser (production.env.example sets `false` for now). Restart after changing it. |
 | `OWNER_SETUP_TOKEN` | — | Lets the first owner be created from the browser. If unset, only the CLI can create one. Remove it after setup. |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | Mailpit | Outgoing email. |
 | `WORKER_ENABLED` | on (off in tests) | The email and housekeeping worker. |
@@ -267,7 +268,14 @@ details and the free text of their ideas are cleared, and the counts remain.
     rotated when the second step completes.
   - Signed-in devices can be listed and signed out in Settings.
 - **Two-factor.**
-  - TOTP is required before any studio data is reachable (`403` until then).
+  - **Currently switchable, and off in production for now** (`TWO_FACTOR=false`):
+    the password alone signs in, and the session lasts a year (idle and
+    absolute), so the artist signs in once per browser. The lockout, rate
+    limits and trusted devices still apply. All the two-factor code stays in
+    place. Set `TWO_FACTOR=true` and restart to bring it back: sessions made
+    while it was off were never marked as having passed the second step, so
+    each one is sent to it (or to setting it up) on its next request.
+  - With it on, TOTP is required before any studio data is reachable (`403` until then).
     The secret is encrypted with AES-256-GCM (`TOTP_ENC_KEY`).
   - A code can't be used twice.
   - There are ten single-use recovery codes, stored hashed.

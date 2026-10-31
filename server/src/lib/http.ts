@@ -2,7 +2,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { Config } from '../config.ts';
 import type { DB } from '../db/index.ts';
 import type { AuthContext } from '../modules/auth/service.ts';
-import { mfaState } from '../modules/auth/service.ts';
+import { mfaState, sessionPolicy } from '../modules/auth/service.ts';
 import { forbidden, unauthenticated } from './errors.ts';
 import type { Storage } from './storage.ts';
 import type { Mailer } from '../modules/notify/service.ts';
@@ -37,7 +37,7 @@ export function setSessionCookie(reply: FastifyReply, config: Config, token: str
     secure: true,
     sameSite: 'lax',
     path: '/',
-    maxAge: 30 * 24 * 60 * 60,
+    maxAge: sessionPolicy(config).absoluteMs / 1000,
   });
 }
 

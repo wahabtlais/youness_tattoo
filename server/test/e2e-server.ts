@@ -46,6 +46,8 @@ Object.assign(process.env, {
   PUBLIC_ORIGIN: process.env.E2E_ORIGIN ?? 'http://localhost:5301',
   STORAGE_DIR: storageDir,
   OWNER_SETUP_TOKEN: 'e2e-setup-token-0123456789abcdef',
+  // the browser tests walk the full sign-in, whatever server/.env says
+  TWO_FACTOR: 'true',
   WORKER_ENABLED: 'false',
   SERVE_SITE: 'false',
   AI_ENABLED: 'false',

@@ -48,6 +48,12 @@ const schema = z.object({
   SERVE_SITE: bool,
   /** 32 random bytes, base64: encrypts authenticator secrets at rest */
   TOTP_ENC_KEY: z.string().refine((v) => Buffer.from(v, 'base64').length === 32, 'TOTP_ENC_KEY must be 32 bytes, base64'),
+  /**
+   * the authenticator step at sign-in. Off: the password alone signs in, and
+   * a session lasts a year. Turned back on, every session must pass the
+   * second step again (none was marked as passed while it was off).
+   */
+  TWO_FACTOR: bool.default(true),
   /** lets the first owner be created from the browser; unset = command line only */
   OWNER_SETUP_TOKEN: z.string().min(24).optional(),
   SMTP_HOST: z.string().default('127.0.0.1'),
