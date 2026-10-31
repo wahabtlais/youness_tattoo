@@ -73,7 +73,8 @@ export async function processOutbox(db: DB, mailer: Mailer, limit = 10) {
         .selectFrom('email_outbox')
         .select('id')
         .where('status', '=', 'pending')
-        .where('send_after', '<=', new Date())
+        // the database's clock: send_after defaults to its now(), and the app's clock can lag it by a millisecond or two
+        .where('send_after', '<=', sql<Date>`now()`)
         .orderBy('send_after')
         .limit(limit)
         .forUpdate()
