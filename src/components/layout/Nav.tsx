@@ -7,8 +7,18 @@ import { isHomePath, SITE_LINKS } from './siteLinks';
 import './Nav.css';
 
 /**
+ * The masthead's pages: Home first, then the site's own (shared with the
+ * footer, which has its own way home). Home goes to the top of the home page
+ * - from another page straight there, on the home page a scroll back up
+ * (ScrollManager), as the logo does - and is marked only on the home page
+ * itself (`end`), not under a piece's detail or another page.
+ */
+const HOME = { label: 'Home', to: { pathname: '/', hash: '#hero' } };
+const NAV_LINKS: { label: string; to: string | { pathname: string; hash: string } }[] = [HOME, ...SITE_LINKS];
+
+/**
  * Persistent but minimal: the studio's logo (home), the site's pages -
- * Work, Journal, Canvas Calls - and the one action the whole site leads to,
+ * Home, Work, Journal, Canvas Calls, Account - and the one action the whole site leads to,
  * starting a consultation, as a small framed button. Below 900px the links
  * and the button fold into a "Menu" sheet. The page you are on is marked.
  * (The pre-rendered hero renders this masthead without the consultation's
@@ -33,8 +43,8 @@ export function Nav() {
         <BrandLogo tone="dark" alt="" className="siteNav__logo siteNav__logo--dark" />
       </Link>
       <nav aria-label="Site" className="siteNav__links">
-        {SITE_LINKS.map((l) => (
-          <NavLink key={l.label} to={l.to}>
+        {NAV_LINKS.map((l) => (
+          <NavLink key={l.label} to={l.to} end={l === HOME}>
             {l.label}
           </NavLink>
         ))}
@@ -66,10 +76,11 @@ export function Nav() {
           </div>
           <nav aria-label="Site" className="mt-[clamp(2.5rem,10vh,5rem)] border-t border-rule">
             <ul>
-              {SITE_LINKS.map((l, i) => (
+              {NAV_LINKS.map((l, i) => (
                 <li key={l.label} className="border-b border-rule">
                   <NavLink
                     to={l.to}
+                    end={l === HOME}
                     onClick={() => setMenu(false)}
                     className="flex min-h-11 items-baseline gap-5 py-4 font-serif text-[clamp(1.9rem,8vw,2.6rem)] leading-none aria-[current=page]:text-burgundy"
                   >

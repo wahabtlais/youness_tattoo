@@ -115,7 +115,7 @@
   color: var(--color-ink);
 }
 
-/* five links don't fit beside the wordmark: a menu instead */
+/* the six items (Home to the consultation) don't fit beside the wordmark below 900px: a menu instead */
 @media (max-width: 899px) {
   .siteNav__links {
     display: none;
