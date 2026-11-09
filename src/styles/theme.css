@@ -15,26 +15,49 @@
 @theme static {
   /* ---------- colour ---------- */
   --color-*: initial;
-  /* the printed sheet every section sits on */
+  /*
+   * The site's original stocks (as committed on main), each section printed
+   * on its own - a publication of different papers, not one continuous
+   * sheet - and the deep blue-black ink for the two chapters at night:
+   *   paper        the hero and the work; every inner page
+   *   paper-deep   the Process chapter (a heavier, quieter stock)
+   *   paper-light  the Journal (the bright magazine stock)
+   *   paper-toned  Canvas Calls (the warm kraft wall the posters hang on)
+   *   ink          the Artist - the one dark chapter in the page - and the
+   *                footer that closes it
+   * Burgundy is never a ground: it marks - numbers, labels, a word, a line,
+   * the main action.
+   */
+  /* the printed sheet: the hero, the work, every inner page */
   --color-paper: #f3f1ec;
-  /* a lifted sheet: dialogs, panels - and the Journal's bright magazine stock */
+  /* the bright magazine stock (the Journal); a lifted sheet - dialogs, cards, prints */
   --color-paper-light: #faf8f5;
-  /* a heavier, quieter stock under the paper: the Process chapter, the footer */
+  /* a heavier, quieter stock: the Process chapter; a pressed-in surface */
   --color-paper-deep: #ebe7df;
-  /* a warm kraft-like insert: Canvas Calls (ink-soft holds 7:1 on it) */
+  /* a warm kraft-like wall: Canvas Calls (ink-soft holds 7:1 on it) */
   --color-paper-toned: #e6dfd2;
-  /* a cooler, stone-grey stock: the Artist chapter, so the portrait's print lifts off it */
+  /* a cooler, stone-grey stock (an object's ground, e.g. a mount) */
   --color-paper-stone: #e7e6e1;
   --color-white: #ffffff;
+  /* the deep blue-black: the Artist chapter and the footer */
   --color-ink: #14131a;
   /* running copy on paper */
   --color-ink-soft: #4a4740;
-  /* metadata, captions, secondary labels */
-  --color-ink-muted: #8a867f;
+  /* metadata, captions, secondary labels: at least 4.5:1 on every paper
+     stock (4.6-5.7:1), so small caps stay readable (it was #8a867f, 3.2:1) */
+  --color-ink-muted: #66625b;
   /* the one accent: the O and E of YOUNES, "you.", every active state */
   --color-burgundy: #7a1d25;
   /* burgundy at display size, deepened toward ink */
   --color-burgundy-deep: color-mix(in oklab, var(--color-burgundy) 82%, var(--color-ink));
+  /* ---- on the ink (the Artist, the footer) ----
+     the studio at night: black stock, paper-white type */
+  /* running copy on ink (9:1) */
+  --color-paper-soft: #c9c3b9;
+  /* metadata on ink (6:1) */
+  --color-paper-muted: #9a958c;
+  /* the accent on ink: burgundy lifted until it reads on black (5.6:1) */
+  --color-burgundy-light: #d4767e;
   /* keyboard focus ring */
   --color-focus: #8e1b23;
   /* hairlines and frames: ink at 12% */

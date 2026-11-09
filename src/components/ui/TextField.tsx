@@ -17,7 +17,7 @@ interface TextFieldProps {
   maxLength?: number;
   className?: string;
   /** a one-line field's kind: email and tel bring the right keyboard */
-  type?: 'text' | 'email' | 'tel';
+  type?: 'text' | 'email' | 'tel' | 'password';
   autoComplete?: string;
   /** says "required" beside the label (the few fields that must be filled) */
   required?: boolean;

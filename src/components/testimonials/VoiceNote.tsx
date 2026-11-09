@@ -72,7 +72,8 @@ export function VoiceNote({ audio, speaker, note, active }: VoiceNoteProps) {
       <audio
         ref={audioRef}
         src={audio.src}
-        preload="metadata"
+        // the length is known from the data: nothing is downloaded until Play
+        preload={Number.isFinite(audio.duration) ? 'none' : 'metadata'}
         onLoadedMetadata={(e) => setMeasured(e.currentTarget.duration)}
         onDurationChange={(e) => setMeasured(e.currentTarget.duration)}
         onTimeUpdate={(e) => setTime(e.currentTarget.currentTime)}

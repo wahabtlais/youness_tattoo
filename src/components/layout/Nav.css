@@ -11,15 +11,22 @@
   pointer-events: none;
 }
 /* as the hero leaves, the masthead becomes a paper strip so the work
-   scrolling beneath never collides with the brand (--hero-p from the hero;
-   without it - reduced motion - the strip is simply always there) */
+   scrolling beneath never collides with the brand (--hero-p from the hero).
+   Until the hero reports - the pre-rendered page, before any JavaScript -
+   the home page is at its top: no strip. Inner pages always have it. */
+.siteNav {
+  --strip-at-rest: 0;
+}
+.siteNav--page {
+  --strip-at-rest: 1;
+}
 .siteNav::before {
   content: '';
   position: absolute;
   inset: 0;
   z-index: -1;
   background: var(--color-paper);
-  opacity: calc(clamp(0, (var(--hero-p, 1) - 0.8) / 0.2, 1) * 0.94);
+  opacity: calc(clamp(0, (var(--hero-p, var(--strip-at-rest)) - 0.8) / 0.2, 1) * 0.94);
 }
 
 /* the masthead's brand: the studio's logo (BrandLogo), a link home. The
@@ -62,8 +69,30 @@
 
 .siteNav__links {
   display: flex;
+  align-items: center;
   gap: clamp(0.9rem, 2vw, 2.1rem);
   pointer-events: auto;
+}
+
+/* the one action: a small framed button at the end of the links */
+.siteNav__book {
+  min-height: 2.5rem;
+  padding: 0.55rem 0.95rem 0.5rem;
+  border: 1px solid var(--color-ink);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-ink);
+  background: transparent;
+  transition:
+    background-color var(--duration-fast) var(--ease-editorial),
+    color var(--duration-fast) var(--ease-editorial);
+}
+.siteNav__book:hover,
+.siteNav__book:focus-visible {
+  background: var(--color-ink);
+  color: var(--color-paper);
 }
 
 /* the page you are on: full ink, a burgundy hairline under it */
@@ -118,5 +147,61 @@
   .siteNav__menu {
     font-size: 0.62rem;
     letter-spacing: 0.16em;
+  }
+}
+
+/* ---------- over the ink chapters (Nav.tsx, useOverInk) ----------
+   the strip turns to ink, the type to paper, and the white logo fades in */
+.siteNav__brand {
+  display: grid;
+}
+.siteNav__brand > .siteNav__logo {
+  grid-area: 1 / 1;
+  transition: opacity var(--duration-normal) var(--ease-editorial);
+}
+.siteNav__logo--dark {
+  opacity: 0;
+}
+.siteNav--ink .siteNav__logo:not(.siteNav__logo--dark) {
+  opacity: 0;
+}
+.siteNav--ink .siteNav__logo--dark {
+  opacity: 1;
+}
+.siteNav::before {
+  transition: background-color var(--duration-normal) var(--ease-editorial);
+}
+.siteNav--ink::before {
+  background: var(--color-ink);
+}
+.siteNav--ink .siteNav__links a,
+.siteNav--ink .siteNav__menu {
+  color: var(--color-paper);
+}
+.siteNav--ink .siteNav__brand::after {
+  background: var(--color-paper);
+}
+.siteNav--ink .siteNav__links a[aria-current='page'] {
+  text-decoration-color: var(--color-burgundy-light);
+}
+.siteNav--ink .siteNav__book {
+  border-color: var(--color-paper);
+  color: var(--color-paper);
+}
+.siteNav--ink .siteNav__book:hover,
+.siteNav--ink .siteNav__book:focus-visible {
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+.siteNav__links a,
+.siteNav__menu,
+.siteNav__book {
+  transition-property: opacity, color, background-color, border-color;
+  transition-duration: var(--duration-fast);
+}
+@media (prefers-reduced-motion: reduce) {
+  .siteNav::before,
+  .siteNav__brand > .siteNav__logo {
+    transition: none;
   }
 }

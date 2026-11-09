@@ -1,20 +1,25 @@
 import { Link } from 'react-router';
-import { ContentPicture, StatusTag } from '../components/content/ContentParts';
+import { ContentPicture } from '../components/content/ContentParts';
 import { ButtonLink } from '../components/ui/ButtonLink';
 import { DemoNotice } from '../components/ui/DemoNotice';
-import { Reveal } from '../components/ui/Reveal';
 import type { CanvasCall } from '../domain/canvasCall';
 import { useCanvasCalls } from '../hooks/useContent';
 import { useSiteContent } from '../hooks/useSiteContent';
+import { cx } from '../lib/cx';
 import { formatDate } from '../lib/date';
 
+const two = (n: number) => String(n).padStart(2, '0');
+/** each poster hangs a little differently on the wall */
+const TILT = ['-rotate-[1.4deg]', 'rotate-[1deg]', '-rotate-[0.6deg]'];
+
 /**
- * Open Canvas Calls on the home page - opportunities, not news, so set
- * apart from the Journal: a warm kraft-like stock (paper-toned) under a
- * burgundy rule, and the calls as a ledger, one row each - status and
- * deadline first, then what the piece is, its particulars, and the way to
- * respond. Only calls open today are shown (a passed deadline closes a call
- * at the data boundary); with none open, the section isn't there.
+ * Open Canvas Calls on the home page - opportunities, not news - as posters
+ * pinned to the studio's wall (the warm kraft stock, paper-toned): each a
+ * printed open call with its number, the piece Younes wants to tattoo, its
+ * particulars and a stamped "respond by". They hang a little askew and
+ * straighten when you reach for one (pointer or keyboard focus). The whole
+ * poster is the link to the call. Only calls open today are shown; with
+ * none open, the section isn't there.
  */
 export function CanvasCallsPreview() {
   const calls = useCanvasCalls();
@@ -25,58 +30,87 @@ export function CanvasCallsPreview() {
   if (open.length === 0) return null;
 
   return (
-    <section id="canvas-calls" aria-labelledby="callsHeading" className="border-t-2 border-burgundy bg-paper-toned px-page-x py-[clamp(4rem,11vh,7rem)]">
-      <Reveal className="mx-auto grid max-w-page gap-x-[clamp(2rem,5vw,5rem)] gap-y-10 desktop:grid-cols-12">
-        <header className="desktop:col-span-4">
-          <p className="type-eyebrow text-burgundy">
-            Canvas calls · <span className="text-ink">{String(open.length).padStart(2, '0')} open</span>
-          </p>
-          <h2 id="callsHeading" className="mt-4 max-w-[14ch] type-heading text-[clamp(2rem,4.2vw,3.25rem)] leading-[1.02]">
-            {copy.heading}
-          </h2>
-          <p className="mt-5 max-w-[34ch] text-body leading-copy text-ink-soft">{copy.intro}</p>
-          {demo && <DemoNotice className="mt-5">Demo content — fictional calls. No offer or deadline here is real.</DemoNotice>}
-          {/* the way to the whole list: a framed button, full ink, so it reads at a glance */}
-          <ButtonLink to="/canvas-calls" arrow className="mt-7">
-            All canvas calls
-          </ButtonLink>
+    <section id="canvas-calls" aria-labelledby="callsHeading" className="relative bg-paper-toned px-page-x py-[clamp(4.5rem,12vh,8rem)]">
+      {/* the wall's own grain */}
+      <span aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-[0.16] mix-blend-multiply [background-image:var(--texture-grain)]" />
+      <div className="relative mx-auto max-w-page">
+        <header className="grid gap-x-[clamp(2rem,6vw,5rem)] gap-y-5 desktop:grid-cols-12 desktop:items-end">
+          <div className="desktop:col-span-7">
+            <p className="type-meta text-ink-soft">
+              <span className="text-burgundy">07</span> · Canvas calls · <span className="text-ink">{two(open.length)} open</span>
+            </p>
+            <h2 id="callsHeading" className="mt-4 max-w-[13ch] font-serif text-[clamp(2.4rem,5.4vw,4.6rem)] leading-[0.98] tracking-[-0.015em] text-balance">
+              {copy.heading}
+            </h2>
+          </div>
+          <div className="grid gap-4 desktop:col-span-5">
+            <p className="max-w-[40ch] text-body leading-copy text-ink-soft">{copy.intro}</p>
+            {demo && <DemoNotice>Demo content — fictional calls. No offer or deadline here is real.</DemoNotice>}
+          </div>
         </header>
 
-        <ul className="border-t border-ink desktop:col-span-8">
-          {open.map((c) => (
-            <li key={c.slug} className="border-b border-ink/20">
-              <CallRow call={c} />
+        {/* however many are open, they hang centred on the wall */}
+        <ul className="mt-[clamp(3rem,8vh,5rem)] flex flex-wrap justify-center gap-x-[clamp(1.5rem,3.5vw,3.25rem)] gap-y-14">
+          {open.map((c, i) => (
+            <li key={c.slug} className="w-full max-w-[23rem] tablet:w-[calc(50%-1.75rem)] desktop:w-[calc(33.333%-2.2rem)]">
+              <Poster call={c} number={i + 1} tilt={TILT[i % TILT.length]} />
             </li>
           ))}
         </ul>
-      </Reveal>
+
+        <div className="mt-[clamp(3rem,8vh,4.5rem)] flex justify-center">
+          <ButtonLink to="/canvas-calls" arrow>
+            All canvas calls
+          </ButtonLink>
+        </div>
+      </div>
     </section>
   );
 }
 
-function CallRow({ call: c }: { call: CanvasCall }) {
+function Poster({ call: c, number, tilt }: { call: CanvasCall; number: number; tilt: string }) {
   const facts = [c.placement, c.scale].filter(Boolean).join(' · ');
   return (
-    <article className="group relative grid grid-cols-[clamp(4.5rem,9vw,6.5rem)_minmax(0,1fr)] gap-x-[clamp(1rem,2.5vw,2rem)] gap-y-3 py-[clamp(1.25rem,3vh,1.75rem)] tablet:grid-cols-[clamp(4.5rem,9vw,6.5rem)_minmax(0,1fr)_auto]">
-      <ContentPicture picture={c.artwork} ratio="4 / 5" sizes="104px" demo={c.demo} className="row-span-2 [&_figcaption]:hidden tablet:row-span-1" />
-      <div>
-        <p className="flex flex-wrap items-center gap-x-4 gap-y-1">
-          <StatusTag status={c.status} />
-          <span className="type-meta text-ink">{c.deadline ? `Respond by ${formatDate(c.deadline)}` : 'No deadline'}</span>
+    <article
+      className={cx(
+        'group relative bg-paper-light p-[clamp(1rem,2vw,1.35rem)] shadow-[0_22px_40px_-28px_rgb(20_19_26/0.6)] ring-1 ring-ink/10',
+        tilt,
+        'motion-safe:transition-[rotate,translate,box-shadow] motion-safe:duration-(--duration-normal) motion-safe:ease-editorial',
+        'hover:rotate-0 hover:-translate-y-1 focus-within:rotate-0 focus-within:-translate-y-1 motion-reduce:hover:translate-y-0 motion-reduce:focus-within:translate-y-0',
+      )}
+    >
+      {/* tape holding it to the wall */}
+      <span aria-hidden="true" className="absolute -top-3 left-1/2 h-6 w-20 -translate-x-1/2 -rotate-2 bg-[rgb(232_224_205/0.85)] shadow-[0_1px_2px_rgb(20_19_26/0.15)]" />
+      <p className="flex items-baseline justify-between border-b-2 border-ink pb-2 type-meta text-ink">
+        <span>Open call</span>
+        <span aria-hidden="true">No. {two(number)}</span>
+      </p>
+      <ContentPicture picture={c.artwork} ratio="4 / 5" sizes="(min-width: 1100px) 22rem, (min-width: 700px) 42vw, 90vw" demo={c.demo} className="mt-4 [&_figcaption]:hidden" />
+      <h3 className="mt-5 font-serif text-[clamp(1.6rem,2.4vw,2.05rem)] leading-[1.06] text-balance">
+        {/* the title's link covers the whole poster */}
+        <Link to={`/canvas-calls/${c.slug}`} className="after:absolute after:inset-0 group-hover:text-burgundy">
+          {c.title}
+        </Link>
+      </h3>
+      {facts && <p className="mt-3 type-meta leading-normal text-ink-soft">{facts}</p>}
+      <div className="mt-5 flex items-end justify-between gap-4 border-t border-ink/20 pt-4">
+        {/* the stamp */}
+        <p className="-rotate-[3deg] border-2 border-burgundy px-2.5 py-1.5 type-meta leading-tight text-burgundy">
+          {c.deadline ? (
+            <>
+              Respond by
+              <br />
+              {formatDate(c.deadline)}
+            </>
+          ) : (
+            'No deadline'
+          )}
         </p>
-        <h3 className="mt-2.5 max-w-[26ch] font-serif text-[clamp(1.35rem,2vw,1.75rem)] leading-[1.12]">
-          {/* the title's link covers the whole row */}
-          <Link to={`/canvas-calls/${c.slug}`} className="after:absolute after:inset-0 group-hover:text-burgundy">
-            {c.title}
-          </Link>
-        </h3>
-        <p className="mt-2 max-w-[48ch] text-body leading-copy text-ink-soft">{c.summary}</p>
-        {facts && <p className="mt-2 type-meta leading-normal text-ink-soft">{facts}</p>}
-        {c.demo && <DemoNotice inline className="mt-2 block" />}
+        <span aria-hidden="true" className="inline-flex items-center gap-2 type-label text-ink group-hover:text-burgundy">
+          Respond <span className="transition-transform group-hover:translate-x-1 motion-reduce:transition-none">&rarr;</span>
+        </span>
       </div>
-      <span aria-hidden="true" className="col-start-2 inline-flex items-center gap-2.5 self-end type-label text-ink transition-colors group-hover:text-burgundy tablet:col-start-3 tablet:self-center">
-        Read the call and respond <span className="transition-transform group-hover:translate-x-1 motion-reduce:transition-none">&rarr;</span>
-      </span>
+      {c.demo && <DemoNotice inline className="mt-3 block" />}
     </article>
   );
 }

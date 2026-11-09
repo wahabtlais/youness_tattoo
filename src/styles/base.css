@@ -44,6 +44,11 @@
     outline: 1.5px solid var(--color-focus);
     outline-offset: 3px;
   }
+  /* an ink chapter's focus ring is the light burgundy (the deep one vanishes
+     on ink); a paper object inside one sets the deep one back */
+  [data-ink] {
+    --color-focus: var(--color-burgundy-light);
+  }
 }
 
 /* Bare button for the hand-styled controls (hero dial, work wall). Kept
