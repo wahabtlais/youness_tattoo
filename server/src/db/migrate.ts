@@ -6,6 +6,8 @@ import * as m0003 from './migrations/0003_clients_inquiries.ts';
 import * as m0004 from './migrations/0004_calendar.ts';
 import * as m0005 from './migrations/0005_outbox_ai.ts';
 import * as m0006 from './migrations/0006_trusted_devices.ts';
+import * as m0007 from './migrations/0007_client_portal.ts';
+import * as m0008 from './migrations/0008_portal_refinements.ts';
 
 /**
  * The migrations, listed in code (not read from a folder) so they survive
@@ -20,6 +22,8 @@ export const MIGRATIONS: Record<string, Migration> = {
   '0004_calendar': m0004,
   '0005_outbox_ai': m0005,
   '0006_trusted_devices': m0006,
+  '0007_client_portal': m0007,
+  '0008_portal_refinements': m0008,
 };
 
 export const migrator = (db: DB) => new Migrator({ db, provider: { getMigrations: async () => MIGRATIONS } });

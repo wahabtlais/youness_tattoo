@@ -264,6 +264,10 @@ export interface InquiriesTable {
   submitted_at: Timestamp;
   updated_at: UpdatedAt;
   anonymized_at: Timestamp | null;
+  kind: Generated<'consultation' | 'booking'>;
+  /** the client account that sent it from the portal (null: sent from the website before accounts) */
+  account_id: string | null;
+  project_id: string | null;
 }
 
 export interface InquiryReferencesTable {
@@ -312,6 +316,7 @@ export interface AppointmentsTable {
   demo: Generated<boolean>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
+  project_id: string | null;
 }
 
 export interface AvailabilityTable {
@@ -364,7 +369,169 @@ export interface AiProposalsTable {
   decided_at: Timestamp | null;
 }
 
+// ---------------- the client portal (0007) ----------------
+
+export interface ClientAccountsTable {
+  id: Generated<string>;
+  email: string;
+  name: string;
+  password_hash: string;
+  email_verified_at: Timestamp | null;
+  client_id: string | null;
+  password_changed_at: Generated<Date>;
+  created_at: CreatedAt;
+  disabled_at: Timestamp | null;
+}
+
+export interface ClientSessionsTable {
+  id: Generated<string>;
+  account_id: string;
+  token_hash: Buffer;
+  created_at: CreatedAt;
+  last_seen_at: Generated<Date>;
+  idle_expires_at: Timestamp;
+  absolute_expires_at: Timestamp;
+  revoked_at: Timestamp | null;
+  user_agent: string | null;
+}
+
+export interface ClientTokensTable {
+  id: Generated<string>;
+  account_id: string;
+  purpose: 'verify-email' | 'reset-password';
+  token_hash: Buffer;
+  expires_at: Timestamp;
+  used_at: Timestamp | null;
+  created_at: CreatedAt;
+}
+
+export type ProjectStatus = 'design' | 'ready-to-book' | 'scheduled' | 'in-progress' | 'healing' | 'complete' | 'on-hold';
+
+export interface ProjectsTable {
+  id: Generated<string>;
+  client_id: string;
+  inquiry_id: string | null;
+  title: string;
+  concept: string | null;
+  description: string | null;
+  placement: string | null;
+  size: string | null;
+  status: Generated<ProjectStatus>;
+  demo: Generated<boolean>;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export interface ProjectMediaTable {
+  id: Generated<string>;
+  project_id: string;
+  media_id: string;
+  kind: 'reference' | 'design';
+  added_by: 'client' | 'studio';
+  caption: string | null;
+  created_at: CreatedAt;
+}
+
+export interface ClientMessagesTable {
+  id: Generated<string>;
+  client_id: string;
+  inquiry_id: string | null;
+  project_id: string | null;
+  author: 'client' | 'studio';
+  author_user_id: string | null;
+  body: string;
+  created_at: CreatedAt;
+  read_by_client_at: Timestamp | null;
+  read_by_studio_at: Timestamp | null;
+}
+
+export interface AftercareGuidesTable {
+  id: Generated<string>;
+  title: string;
+  intro: string | null;
+  approved_at: Timestamp | null;
+  approved_by: string | null;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export interface AftercareStepsTable {
+  id: Generated<string>;
+  guide_id: string;
+  day_from: number;
+  day_to: number | null;
+  title: string;
+  body: string;
+  position: Generated<number>;
+}
+
+/** a step as copied into a plan */
+export interface AftercareStepRow {
+  dayFrom: number;
+  dayTo: number | null;
+  title: string;
+  body: string;
+}
+
+export interface AftercarePlansTable {
+  id: Generated<string>;
+  project_id: string;
+  guide_id: string | null;
+  title: string;
+  intro: string | null;
+  steps: Json<AftercareStepRow[]>;
+  started_on: string;
+  reminders: Generated<boolean>;
+  assigned_by: string | null;
+  /** re-given: the new moment */
+  assigned_at: UpdatedAt;
+}
+
+export interface HealingPhotosTable {
+  id: Generated<string>;
+  project_id: string;
+  media_id: string;
+  note: string | null;
+  submitted_at: CreatedAt;
+  response: string | null;
+  responded_at: Timestamp | null;
+  responded_by: string | null;
+}
+
+export interface ClientUploadsTable {
+  id: Generated<string>;
+  account_id: string;
+  media_id: string;
+  created_at: CreatedAt;
+  inquiry_id: string | null;
+  attached_at: Timestamp | null;
+}
+
+export interface ClientAccountRequestsTable {
+  id: Generated<string>;
+  account_id: string;
+  kind: 'deletion';
+  status: Generated<'pending' | 'completed' | 'cancelled'>;
+  reason: string | null;
+  requested_at: CreatedAt;
+  resolved_at: Timestamp | null;
+  resolved_by: string | null;
+  resolution: string | null;
+}
+
 export interface Database {
+  client_uploads: ClientUploadsTable;
+  client_account_requests: ClientAccountRequestsTable;
+  client_accounts: ClientAccountsTable;
+  client_sessions: ClientSessionsTable;
+  client_tokens: ClientTokensTable;
+  projects: ProjectsTable;
+  project_media: ProjectMediaTable;
+  client_messages: ClientMessagesTable;
+  aftercare_guides: AftercareGuidesTable;
+  aftercare_steps: AftercareStepsTable;
+  aftercare_plans: AftercarePlansTable;
+  healing_photos: HealingPhotosTable;
   users: UsersTable;
   sessions: SessionsTable;
   trusted_devices: TrustedDevicesTable;
