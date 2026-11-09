@@ -22,6 +22,8 @@ import './InkDrops.css';
  * paused while the hero is off screen. Cursor: drops carry data-ink-react
  * and the hero's existing pointer pass nudges a nearby drop a few px.
  *
+ * The images are attached once the portrait has loaded (see InkField).
+ *
  * Removable as a unit: delete this file, InkDrops.css, src/assets/ink,
  * scripts/build-ink.py and docs/INK_ASSETS.md, then the <InkDrops> line
  * and its ref in Hero.tsx.
@@ -84,9 +86,11 @@ interface InkDropsProps {
   /** the layer drifts on its own parallax plane, driven by the reveal engine */
   parallaxRef: RefObject<HTMLDivElement | null>;
   reducedMotion: boolean;
+  /** the portrait has loaded: the drops' images may load now */
+  loaded: boolean;
 }
 
-export function InkDrops({ parallaxRef, reducedMotion }: InkDropsProps) {
+export function InkDrops({ parallaxRef, reducedMotion, loaded }: InkDropsProps) {
   const dropRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
@@ -135,7 +139,7 @@ export function InkDrops({ parallaxRef, reducedMotion }: InkDropsProps) {
                 <div className="inkDrop__life">
                   <div
                     className="inkDrop__frames"
-                    style={{ backgroundImage: `url(${drop.src})`, backgroundSize: `${frames * 100}% 100%` }}
+                    style={{ backgroundImage: loaded ? `url(${drop.src})` : undefined, backgroundSize: `${frames * 100}% 100%` }}
                   />
                 </div>
               </div>

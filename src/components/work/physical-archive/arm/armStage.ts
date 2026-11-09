@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { whenQuiet } from '../../../../hooks/useAfterLoad';
 import armUrl from '../../../../assets/work/glb/younes_tattoo_arm_rigged.glb?url';
 import { gsap } from 'gsap';
 import { ARM } from './armConfig';
@@ -66,7 +67,6 @@ export class ArmStage {
   private occluder: THREE.Mesh<THREE.PlaneGeometry, THREE.ShadowMaterial>;
   private wall: THREE.Mesh<THREE.PlaneGeometry, THREE.ShadowMaterial>;
   private key: THREE.DirectionalLight;
-  private model: THREE.Group | null = null;
   private W = 1;
   private H = 1;
   private D = 1;
@@ -123,10 +123,49 @@ export class ArmStage {
     this.resize();
   }
 
-  /** load (once) and normalise the model: grip point at the origin, one hand length = 1 */
-  async ready(): Promise<void> {
-    if (this.model) return;
+  private readying: Promise<void> | null = null;
+  /** a pick is waiting: finish the remaining steps without waiting for quiet */
+  private urgent = false;
+
+  /**
+   * Load (once) and normalise the model: grip point at the origin, one hand
+   * length = 1. Idempotent. The work is split into steps - parse, measure,
+   * compile the shaders, upload each texture, one warm-up frame - and each
+   * waits for a quiet moment (no scrolling, browser idle), so preparing the
+   * arm ahead of time never freezes a scroll. `urgent` (a pick is waiting)
+   * skips the waiting for whatever is left.
+   */
+  ready(urgent = false): Promise<void> {
+    if (urgent && !this.urgent) {
+      this.urgent = true;
+      // a step already waiting for a quiet moment goes now
+      this.hurry?.();
+    }
+    return (this.readying ??= this.prepare());
+  }
+
+  /** ends the quiet wait in progress, if any */
+  private hurry: (() => void) | null = null;
+
+  /** between steps: a quiet moment - or, with a pick waiting, just the next task, so the click paints first */
+  private pause() {
+    if (this.urgent) return new Promise<void>((resolve) => setTimeout(resolve, 0));
+    return new Promise<void>((resolve) => {
+      let done = false;
+      const go = () => {
+        if (done) return;
+        done = true;
+        if (this.hurry === go) this.hurry = null;
+        setTimeout(resolve, 0);
+      };
+      this.hurry = go;
+      void whenQuiet().then(go);
+    });
+  }
+
+  private async prepare(): Promise<void> {
     const scene = await loadArm();
+    await this.pause();
     const yaw = new THREE.Group();
     const flip = new THREE.Group();
     flip.rotation.z = Math.PI; // the arm hangs down in the file: point it up
@@ -174,17 +213,35 @@ export class ArmStage {
     yaw.position.set(-gx, -gripY, -gz);
     norm.add(yaw);
     this.root.add(norm);
-    this.model = norm;
 
-    // warm up: compile the shaders and the shadow map now, while nothing is
-    // on screen, so the first frame of the reach doesn't stall
+    // warm up now, while nothing is on screen, so the first frame of the
+    // reach doesn't stall: the shaders (compiled in parallel by the driver
+    // where it can - not blocking the page), then each texture's upload,
+    // then one frame for the shadow map - each step at its own quiet moment
+    await this.pause();
     this.root.visible = true;
     this.occluder.visible = true;
-    this.renderer.compile(this.scene, this.camera);
+    await this.renderer.compileAsync(this.scene, this.camera);
+    const textures = new Set<THREE.Texture>();
+    this.scene.traverse((o) => {
+      const materials = (o as THREE.Mesh).material;
+      for (const m of Array.isArray(materials) ? materials : materials ? [materials] : []) {
+        for (const value of Object.values(m)) if ((value as THREE.Texture | null)?.isTexture) textures.add(value as THREE.Texture);
+      }
+    });
+    for (const texture of textures) {
+      await this.pause();
+      this.renderer.initTexture(texture);
+    }
+    await this.pause();
+    this.root.visible = true;
+    this.occluder.visible = true;
     this.renderer.render(this.scene, this.camera);
     this.root.visible = false;
     this.occluder.visible = false;
     this.renderer.clear();
+    // for performance checks: when the hand became available
+    performance.mark('arm:ready');
   }
 
   resize() {

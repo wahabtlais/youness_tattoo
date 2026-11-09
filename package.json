@@ -10,7 +10,7 @@
   "scripts": {
     "dev": "vite",
     "dev:api": "npm run dev --workspace server",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && node scripts/prerender-hero.mjs",
     "build:api": "npm run build --workspace server",
     "lint": "oxlint",
     "typecheck": "tsc -b && npm run typecheck --workspace server && npm run typecheck --workspace @younes/contracts",

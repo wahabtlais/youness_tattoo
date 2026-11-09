@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { useMatch, useNavigate } from 'react-router';
 import ropeSrc from '../../../assets/work/rope.png';
 import { useReducedMotion } from '../../../hooks/useReducedMotion';
+import { whenQuiet } from '../../../hooks/useAfterLoad';
 import type { TattooWork } from '../../../domain/work';
 import { useArchiveMotion } from './useArchiveMotion';
 import { WorkArchiveIntro } from './WorkArchiveIntro';
@@ -57,34 +58,81 @@ export function PhysicalWorkArchive({ pieces, onFindSimilar }: PhysicalWorkArchi
   const titleRef = useRef<HTMLHeadingElement>(null);
   const armCanvasRef = useRef<HTMLCanvasElement>(null);
   const arm = useRef<ArmStage | null>(null);
+  /** the arm while its code and model are on their way (a pick made meanwhile waits for it) */
+  const armLoading = useRef<Promise<ArmStage | null> | null>(null);
 
-  // the 3D arm: three.js and the model load once the archive is in view (never
-  // with reduced motion), and the same stage serves every pick
+  // the 3D arm: three.js and the model load once the archive is near the
+  // screen AND nobody is scrolling (never with reduced motion) - creating
+  // the WebGL renderer and preparing the scene never land in the middle of
+  // the scroll into the archive (ArmStage.ready waits likewise between its
+  // steps) - and the same stage serves every pick. Reaching for a print
+  // starts it at once, quiet or not: pressing on one, focusing one, or
+  // resting the pointer on one for a moment (not a pointer merely passing
+  // over the line while scrolling). A pick made while it is still on its way
+  // waits for it (the print lifted meanwhile) up to ~2.8s, then goes ahead
+  // without it - the archive never hangs on the arm.
   useEffect(() => {
     const stage = stageRef.current;
     const canvas = armCanvasRef.current;
     if (reducedMotion || !stage || !canvas) return;
     let disposed = false;
+    let started = false;
+    let urgent = false;
+    const start = (now: boolean) => {
+      if (disposed) return;
+      urgent ||= now;
+      if (urgent) arm.current?.ready(true);
+      if (started) return;
+      started = true;
+      armLoading.current = import('./arm/armStage')
+        .then((mod) => {
+          if (disposed) return null;
+          const stage = new mod.ArmStage(canvas);
+          arm.current = stage;
+          // it could not prepare: the picks go on without it
+          stage.ready(urgent).catch(() => {
+            if (arm.current === stage) arm.current = null;
+          });
+          return stage;
+        })
+        .catch(() => (arm.current = null)); // the pick still works without the arm
+    };
     const io = new IntersectionObserver(
       ([entry]) => {
         if (!entry.isIntersecting) return;
         io.disconnect();
-        import('./arm/armStage')
-          .then(({ ArmStage }) => {
-            if (disposed) return;
-            arm.current = new ArmStage(canvas);
-            return arm.current.ready();
-          })
-          .catch(() => (arm.current = null)); // the pick still works without the arm
+        // not even its code downloads before the page has loaded and gone
+        // quiet: on a phone the archive is this close on arrival, and the
+        // arm (~2 MB with its model) must not compete with the first paint
+        void whenQuiet().then(() => start(false));
       },
       { rootMargin: '400px 0px' },
     );
     io.observe(stage);
+
+    let dwell = 0;
+    const now = () => start(true);
+    const onOver = (e: PointerEvent) => {
+      if (!(e.target as Element).closest?.('.pa-photo')) return;
+      clearTimeout(dwell);
+      dwell = window.setTimeout(now, 250);
+    };
+    const onOut = () => clearTimeout(dwell);
+    stage.addEventListener('pointerdown', now);
+    stage.addEventListener('focusin', now);
+    stage.addEventListener('pointerover', onOver);
+    stage.addEventListener('pointerout', onOut);
     return () => {
       disposed = true;
       io.disconnect();
+      clearTimeout(dwell);
+      stage.removeEventListener('pointerdown', now);
+      stage.removeEventListener('focusin', now);
+      stage.removeEventListener('pointerover', onOver);
+      stage.removeEventListener('pointerout', onOut);
       arm.current?.dispose();
       arm.current = null;
+      armLoading.current = null;
     };
   }, [reducedMotion]);
 
@@ -119,6 +167,7 @@ export function PhysicalWorkArchive({ pieces, onFindSimilar }: PhysicalWorkArchi
       clone: cloneRef.current,
       slot: slotRef.current,
       arm: arm.current,
+      armLoading: armLoading.current,
       text: Array.from(dialog.querySelectorAll<HTMLElement>('[data-detail-text]')),
     };
   }, [getEngine]);

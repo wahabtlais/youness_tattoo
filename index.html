@@ -4,12 +4,6 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..700;1,6..96,400..700&family=DM+Mono:wght@300;400&display=swap"
-      rel="stylesheet"
-    />
     <title>Younes Tattoo — the work is already in you</title>
     <!-- the private studio's theme before the first paint, so a dark studio
          never flashes light (src/dashboard/useStudioTheme.ts). Only on
@@ -27,6 +21,31 @@
         }
       } catch (e) {}
     </script>
+    <!-- the hero portrait is the home page's largest paint: start fetching it
+         now, before any stylesheet or JavaScript, at the size the screen needs. Only on the
+         home page (and a piece's address, which opens over it). Keep in step
+         with src/components/hero/heroPortrait.ts. -->
+    <script>
+      if (location.pathname === '/' || /^\/work\/[^/]+\/?$/.test(location.pathname)) {
+        var heroPreload = document.createElement('link');
+        heroPreload.rel = 'preload';
+        heroPreload.as = 'image';
+        heroPreload.href = '/hero/younes-1000.webp';
+        heroPreload.setAttribute('imagesrcset', '/hero/younes-640.webp 640w, /hero/younes-1000.webp 1000w');
+        heroPreload.setAttribute('imagesizes', 'min(max(62.3vh, 374px), 81.4vw)');
+        heroPreload.setAttribute('fetchpriority', 'high');
+        document.head.appendChild(heroPreload);
+      }
+    </script>
+    <!-- the fonts come after the scripts above: a script placed after a
+         stylesheet waits for it to arrive, which held the portrait's preload
+         back until the font CSS had loaded -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..700;1,6..96,400..700&family=DM+Mono:wght@300;400&display=swap"
+      rel="stylesheet"
+    />
   </head>
   <body>
     <div id="root"></div>

@@ -17,6 +17,12 @@ export interface PickParts {
   text: HTMLElement[];
   /** the 3D arm, once loaded (null: the print is taken without it) */
   arm: ArmStage | null;
+  /**
+   * the arm while its code and model are still arriving: a print taken
+   * before then waits for it (within the same limit) rather than going
+   * without the hand
+   */
+  armLoading?: Promise<ArmStage | null> | null;
 }
 
 /** a running pick or return; kill() stops whichever part is playing */
@@ -83,6 +89,8 @@ function addDetail(tl: gsap.core.Timeline, p: PickParts, at: string, onDetail: (
 }
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+/** the longest a pick waits for the hand after the print has lifted (long enough for a slow phone) */
+const ARM_WAIT_MS = 2800;
 
 /**
  * The pick. The hand goes to an EDGE of the print and the print comes to
@@ -102,7 +110,8 @@ const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
  * where the print ended up, so it runs as a second timeline.
  */
 export function playPick(p: PickParts, onDetail: () => void): PickRun {
-  const { engine, index, print, others, clone, text, arm } = p;
+  const { engine, index, print, others, clone, text } = p;
+  let arm = p.arm;
   let current: gsap.core.Timeline | null = null;
   let killed = false;
   engine.hold(true);
@@ -118,10 +127,17 @@ export function playPick(p: PickParts, onDetail: () => void): PickRun {
   current = select;
 
   async function takeDown() {
-    // the arm has normally loaded long before (when the archive came into view)
-    const ready = arm
-      ? await Promise.race([arm.ready().then(() => true), wait(1200).then(() => false)]).catch(() => false)
-      : false;
+    // the arm has normally loaded long before (when the archive came into
+    // view). A print taken the moment the archive arrived waits for it too -
+    // the print already lifted, the others receded, so the click has been
+    // answered - up to ARM_WAIT_MS (a slow phone prepares it in ~2.2-2.6s
+    // after this point); past that it goes ahead without the hand
+    const loaded = arm ? Promise.resolve(arm) : (p.armLoading ?? Promise.resolve(null));
+    arm = await Promise.race([
+      loaded.then((a) => (a ? a.ready(true).then(() => a) : null)),
+      wait(ARM_WAIT_MS).then(() => null),
+    ]).catch(() => null);
+    const ready = arm !== null;
     if (killed) return;
     const pose = engine.pose(index);
     if (!pose) return;

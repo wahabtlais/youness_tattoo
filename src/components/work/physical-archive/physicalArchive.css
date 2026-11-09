@@ -64,17 +64,70 @@
   filter: saturate(0.92) contrast(1.02);
 }
 
-.pa-photo:hover,
+/* the lift: for a real hover (mouse, pen) and for keyboard focus - never a
+   tap on a touch screen, where :hover would stick after the finger lifts */
+@media (hover: hover) {
+  .pa-photo:hover {
+    translate: 0 -6px;
+  }
+  .pa-photo:hover .pa-print {
+    box-shadow: var(--pa-lifted);
+  }
+}
 .pa-photo:focus-visible {
   translate: 0 -6px;
 }
-.pa-photo:hover .pa-print,
 .pa-photo:focus-visible .pa-print {
-  box-shadow:
+  box-shadow: var(--pa-lifted);
+}
+.pa-stage {
+  --pa-lifted:
     0 0 0 0.5px rgb(20 19 26 / 0.12),
     0 2px 2px rgb(20 19 26 / 0.12),
     0 14px 22px -8px rgb(20 19 26 / 0.3),
     0 30px 44px -20px rgb(20 19 26 / 0.26);
+}
+
+/* "Take it down": a small printed label just under the print, for a mouse
+   over it or keyboard focus on it. It fades and rises a few px; with
+   reduced motion it simply appears. */
+.pa-label {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 12px);
+  z-index: 1;
+  padding: 5px 9px 4px;
+  background: var(--color-ink);
+  color: var(--color-paper);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1.2;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  translate: -50% -4px;
+  transition:
+    opacity 0.25s var(--ease-editorial),
+    translate 0.35s var(--ease-material);
+}
+@media (hover: hover) {
+  .pa-photo:hover .pa-label {
+    opacity: 1;
+    translate: -50% 0;
+    transition-delay: 0.12s;
+  }
+}
+.pa-photo:focus-visible .pa-label {
+  opacity: 1;
+  translate: -50% 0;
+}
+/* not while dragging the line, or on a print that has just been re-hung */
+.pa-stage[data-dragging] .pa-label,
+.pa-photo[data-returned] .pa-label {
+  opacity: 0;
+  transition: none;
 }
 .pa-photo:focus-visible {
   outline: none;
@@ -199,7 +252,8 @@
 @media (prefers-reduced-motion: reduce) {
   .pa-photo,
   .pa-print,
-  .pa-thumb__print {
+  .pa-thumb__print,
+  .pa-label {
     transition: none;
   }
 }

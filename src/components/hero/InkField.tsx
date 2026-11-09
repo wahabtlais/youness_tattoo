@@ -21,7 +21,9 @@ import './InkField.css';
  * drops.
  *
  * Web Animations API, paused while the hero is off screen. The medium and
- * small ink elements live in InkDrops.
+ * small ink elements live in InkDrops. Its image (the largest on the page
+ * after the portrait) is attached once the portrait has loaded
+ * (`loaded`): decoration never competes with it for the first paint.
  *
  * Removable: delete this file, its CSS and the ink-large.* assets, then the
  * <InkField> line and its ref in Hero.tsx.
@@ -55,9 +57,11 @@ interface InkFieldProps {
   /** its own parallax plane, a little deeper than the portrait */
   parallaxRef: RefObject<HTMLDivElement | null>;
   reducedMotion: boolean;
+  /** the portrait has loaded: the ink's image may load now */
+  loaded: boolean;
 }
 
-export function InkField({ parallaxRef, reducedMotion }: InkFieldProps) {
+export function InkField({ parallaxRef, reducedMotion, loaded }: InkFieldProps) {
   const growRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -117,7 +121,7 @@ export function InkField({ parallaxRef, reducedMotion }: InkFieldProps) {
               key={i}
               className={`inkField__state${i === field.frames - 1 ? ' inkField__state--grown' : ''}`}
               style={{
-                backgroundImage: `url(${fieldUrl})`,
+                backgroundImage: loaded ? `url(${fieldUrl})` : undefined,
                 backgroundSize: `${field.frames * 100}% 100%`,
                 backgroundPosition: `${(i / (field.frames - 1)) * 100}% 0`,
               }}

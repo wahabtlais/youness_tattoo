@@ -33,7 +33,6 @@ export function VoiceTrigger({ onActivate }: VoiceTriggerProps) {
       type="button"
       className="voice unstyled"
       onClick={onActivate}
-      aria-label="Ask Younes - voice consultation, arriving soon"
     >
       <span className="voice__dial" aria-hidden="true">
         <span className="voice__echo" />

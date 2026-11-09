@@ -17,6 +17,11 @@ interface WorkPhotographProps {
  *   button        the touch: lift, shadow        (CSS hover / focus)
  *   [data-print]  the pick: recede, lift, hide    (pickTimeline, GSAP)
  * The clip stays on the rope when the print is taken.
+ *
+ * Under the print, a small "Take it down" label names what a click does -
+ * shown with a mouse over the print or keyboard focus on it, never on touch
+ * (the button's own name already says it). It sits inside the print, so it
+ * leaves with it when the print is taken.
  */
 export function WorkPhotograph({ piece, index, total, onPick, onHover, onFocus }: WorkPhotographProps) {
   return (
@@ -58,6 +63,9 @@ export function WorkPhotograph({ piece, index, total, onPick, onHover, onFocus }
             draggable={false}
             className="block size-full object-cover"
           />
+          <span className="pa-label" aria-hidden="true">
+            Take it down
+          </span>
         </span>
       </button>
     </div>
