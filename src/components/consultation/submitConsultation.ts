@@ -1,4 +1,5 @@
 import { contactSchema, PRIVACY_NOTICE_VERSION, type ConsultationReceipt } from '@younes/contracts';
+import { clientApi, ClientApiError } from '../../client/api';
 import type { DraftContact, DraftState } from './consultationDraft';
 
 /**
@@ -12,7 +13,38 @@ import type { DraftContact, DraftState } from './consultationDraft';
 
 type FieldErrors = Partial<Record<keyof DraftContact | 'consent', string>>;
 
-export type SendResult = { ok: true; receipt: ConsultationReceipt } | { ok: false; message: string; fields?: FieldErrors };
+export type SendResult = { ok: true; receipt: ConsultationReceipt & { requestId?: string } } | { ok: false; message: string; fields?: FieldErrors };
+
+/**
+ * Sending it from the client's account (POST /api/client/requests) - how
+ * every consultation is sent now. Their name and email come from the
+ * account; the answers and their consent from the draft.
+ */
+export async function sendFromAccount(draft: DraftState): Promise<SendResult> {
+  const { references: _ignored, ...answers } = draft.consultation.summary;
+  void _ignored;
+  try {
+    const r = await clientApi<{ id: string; ref: string; receivedAt: string; duplicate: boolean }>('/requests', {
+      body: {
+        kind: 'consultation',
+        idempotencyKey: draft.submissionKey,
+        entry: draft.consultation.entry,
+        summary: answers,
+        referenceUploads: draft.uploads?.map((u) => u.id),
+        consent: draft.consent,
+        privacyNoticeVersion: PRIVACY_NOTICE_VERSION,
+      },
+    });
+    return { ok: true, receipt: { receiptId: r.ref, receivedAt: r.receivedAt, duplicate: r.duplicate, requestId: r.id } };
+  } catch (e) {
+    if (!(e instanceof ClientApiError)) return { ok: false, message: 'Something went wrong and nothing was sent. Please try again - your answers are still here.' };
+    if (e.status === 0) return { ok: false, message: 'Your idea couldn’t reach the studio - check your connection and try again. Nothing was sent, and your answers are still here.' };
+    if (e.status === 401 || e.status === 403) return { ok: false, message: 'Your session has ended. Please sign in again - your answers are still here.' };
+    if (e.status === 429) return { ok: false, message: 'Too many requests were sent from here just now. Please wait a few minutes and try again - your answers are still here.' };
+    if (e.status === 400) return { ok: false, message: e.message, fields: e.fields.consent ? { consent: e.fields.consent } : undefined };
+    return { ok: false, message: 'Something went wrong on the studio’s side and nothing was sent. Please try again in a moment - your answers are still here.' };
+  }
+}
 
 /** the contact step's own check, before anything is sent */
 export function checkContact(contact: DraftContact, consent: boolean) {

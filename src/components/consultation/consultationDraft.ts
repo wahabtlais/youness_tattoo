@@ -46,8 +46,10 @@ export interface DraftState {
   submissionKey: string;
   /** when the draft began - the server notices a form filled faster than a person could */
   startedAt: string;
+  /** reference images uploaded with it (private, the client's own) - they go with the request when it's sent */
+  uploads?: { id: string; url: string }[];
   /** the studio's receipt, once the server has stored it */
-  receipt?: { receiptId: string; receivedAt: string };
+  receipt?: { receiptId: string; receivedAt: string; /** the request in the client's account */ requestId?: string };
 }
 
 /** the choices offered - starting points for a conversation, never specifications */

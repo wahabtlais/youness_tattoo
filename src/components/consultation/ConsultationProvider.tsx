@@ -1,9 +1,13 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import type { ConsultationEntry } from '../../domain/consultation';
-import { ConsultationContext } from './consultationContext';
-import { ConsultationPanel } from './ConsultationPanel';
+import { useAfterLoad } from '../../hooks/useAfterLoad';
+import { ConsultationContext, RESUME_KEY } from './consultationContext';
 import { draftKey, newDraft, reopenDraft, type DraftState } from './consultationDraft';
+
+// the panel's code isn't needed for the first paint: it loads once the page is
+// idle - or at once, if the consultation is opened before that
+const ConsultationPanel = lazy(() => import('./ConsultationPanel').then((m) => ({ default: m.ConsultationPanel })));
 
 /** the open consultation's mark in the address (one history entry, so Back closes it) */
 const PARAM = 'consult';
@@ -74,13 +78,36 @@ export function ConsultationProvider({ children }: { children: ReactNode }) {
     [active],
   );
 
+  // back from signing in (pages/AccountPage leaves a one-time mark): the
+  // consultation they'd started reopens where it was. The mark is used up
+  // either way, so closing it and going Back never reopens it.
+  useEffect(() => {
+    let marked = false;
+    try {
+      marked = sessionStorage.getItem(RESUME_KEY) === '1';
+      if (marked) sessionStorage.removeItem(RESUME_KEY);
+    } catch {
+      /* storage blocked: nothing to resume */
+    }
+    if (!marked || !active || !drafts[active] || isOpenInUrl()) return;
+    // once the page they came back to has drawn
+    const entry = drafts[active].consultation.entry;
+    const t = window.setTimeout(() => open(entry), 0);
+    return () => window.clearTimeout(t);
+  }, [location.pathname, active, drafts, open]);
+
   const controls = useMemo(() => ({ open, close }), [open, close]);
   const draft = inUrl && active ? (drafts[active] ?? null) : null;
+  const idle = useAfterLoad();
 
   return (
     <ConsultationContext value={controls}>
       {children}
-      <ConsultationPanel draft={draft} onChange={update} onClose={close} />
+      {(idle || draft) && (
+        <Suspense fallback={null}>
+          <ConsultationPanel draft={draft} onChange={update} onClose={close} />
+        </Suspense>
+      )}
     </ConsultationContext>
   );
 }

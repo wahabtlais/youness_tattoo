@@ -1,4 +1,5 @@
 import type { TattooWork } from '../../domain/work';
+import { ButtonLink } from '../ui/ButtonLink';
 import { Button } from '../ui/Button';
 import { ConsultationReferences } from './ConsultationReferences';
 import { ConsultationCall } from './ConsultationCall';
@@ -25,8 +26,8 @@ export function ConsultationDone({ draft, pieces, onClose }: ConsultationDonePro
         Thank you — I’ve received your idea.
       </h2>
       <p className="mt-3 max-w-measure text-body leading-copy text-ink-soft">
-        I read every consultation myself, and I’ll reply to {draft.contact.email} to talk it through. Nothing is
-        booked yet — that comes once we’ve spoken.
+        I read every consultation myself, and I’ll reply in your account - you’ll get an email at {draft.contact.email}{' '}
+        when I do. Nothing is booked yet — that comes once we’ve spoken.
       </p>
       {draft.receipt && (
         <p className="mt-4 type-meta text-ink">
@@ -44,6 +45,11 @@ export function ConsultationDone({ draft, pieces, onClose }: ConsultationDonePro
         </div>
       )}
       <div className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-3 border-t border-rule pt-6">
+        {draft.receipt?.requestId && (
+          <ButtonLink to={`/portal/requests/${draft.receipt.requestId}`} variant="primary" arrow>
+            Follow it in your account
+          </ButtonLink>
+        )}
         <Button variant="secondary" onClick={onClose}>
           Close
         </Button>

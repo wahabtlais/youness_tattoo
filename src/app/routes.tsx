@@ -34,9 +34,30 @@ export const routes: RouteObject[] = [
           { path: '/journal/:slug', lazy: async () => ({ Component: (await import('../pages/JournalPostPage')).JournalPostPage }) },
           { path: '/canvas-calls', lazy: async () => ({ Component: (await import('../pages/CanvasCallsPage')).CanvasCallsPage }) },
           { path: '/canvas-calls/:slug', lazy: async () => ({ Component: (await import('../pages/CanvasCallPage')).CanvasCallPage }) },
+          // a client's way in (signing in, creating an account, confirming the email, a new password) - on the site's own pages,
+          // so a consultation begun on the site is kept while they sign in
+          ...['/account', '/account/verify', '/account/forgot', '/account/reset'].map((path) => ({ path, lazy: async () => ({ Component: (await import('../pages/AccountPage')).AccountPage }) })),
           { path: '*', element: <NotFoundPage /> },
         ],
       },
+    ],
+  },
+  // the client portal (src/portal): a client's own pages - their own frame, loaded only when visited
+  {
+    path: '/portal',
+    lazy: async () => ({ Component: (await import('../portal/PortalLayout')).PortalLayout }),
+    hydrateFallbackElement: <div className="min-h-svh bg-paper" />,
+    errorElement: <RouteError />,
+    children: [
+      { index: true, lazy: async () => ({ Component: (await import('../portal/pages/OverviewPage')).OverviewPage }) },
+      { path: 'projects', lazy: async () => ({ Component: (await import('../portal/pages/ProjectsPage')).ProjectsPage }) },
+      { path: 'projects/:projectId', lazy: async () => ({ Component: (await import('../portal/pages/ProjectsPage')).ProjectPage }) },
+      { path: 'requests', lazy: async () => ({ Component: (await import('../portal/pages/RequestsPage')).RequestsPage }) },
+      { path: 'requests/new', lazy: async () => ({ Component: (await import('../portal/pages/RequestsPage')).BookingRequestPage }) },
+      { path: 'requests/:requestId', lazy: async () => ({ Component: (await import('../portal/pages/RequestsPage')).RequestPage }) },
+      { path: 'appointments', lazy: async () => ({ Component: (await import('../portal/pages/AppointmentsPage')).AppointmentsPage }) },
+      { path: 'aftercare', lazy: async () => ({ Component: (await import('../portal/pages/AftercarePage')).AftercarePage }) },
+      { path: 'profile', lazy: async () => ({ Component: (await import('../portal/pages/ProfilePage')).ProfilePage }) },
     ],
   },
   // the private studio dashboard (src/dashboard): its own frame, none of the
@@ -64,6 +85,8 @@ export const routes: RouteObject[] = [
       },
       // the other sections - each a lazy page; deeper addresses (a client, a piece, a post) are read by the page itself
       { path: 'clients', lazy: async () => ({ Component: (await import('../dashboard/pages/ClientsPage')).ClientsPage }), children: [{ path: ':clientId', element: null }] },
+      { path: 'projects', lazy: async () => ({ Component: (await import('../dashboard/pages/ProjectsPage')).ProjectsPage }), children: [{ path: ':projectId', element: null }] },
+      { path: 'aftercare', lazy: async () => ({ Component: (await import('../dashboard/pages/AftercarePage')).AftercarePage }) },
       { path: 'calendar', lazy: async () => ({ Component: (await import('../dashboard/pages/CalendarPage')).CalendarPage }) },
       { path: 'portfolio', lazy: async () => ({ Component: (await import('../dashboard/pages/PortfolioPage')).PortfolioPage }), children: [{ path: ':pieceId', element: null }] },
       {

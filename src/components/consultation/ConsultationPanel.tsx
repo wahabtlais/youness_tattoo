@@ -8,8 +8,9 @@ import { TextField } from '../ui/TextField';
 import { ChoiceGroup } from './ChoiceGroup';
 import { ConsultationReferences } from './ConsultationReferences';
 import { ConsultationCall } from './ConsultationCall';
-import { ConsultationContact } from './ConsultationContact';
-import { checkContact, sendConsultation } from './submitConsultation';
+import { signedIn, useClientSession } from '../../client/session';
+import { AccountContact, AccountGate, ConsultationUploads } from './ConsultationAccount';
+import { checkContact, sendFromAccount } from './submitConsultation';
 import { ConsultationDone } from './ConsultationDone';
 import { ConsultationReview } from './ConsultationReview';
 import {
@@ -47,8 +48,16 @@ export function ConsultationPanel({ draft, onChange, onClose }: ConsultationPane
   const [sending, setSending] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
 
+  const session = useClientSession();
+  const account = signedIn(session);
   const step = draft?.step;
   const at = STEPS.findIndex((s) => s.step === step);
+
+  // signed in: the account's name and email are the consultation's contact
+  const contactEmail = draft?.contact.email;
+  useEffect(() => {
+    if (account && contactEmail !== undefined && contactEmail !== account.email) onChange((d) => ({ ...d, contact: { ...d.contact, name: account.name, email: account.email } }));
+  }, [account, contactEmail, onChange]);
 
   // a new step: back to its top, focus on its question (after the dialog's
   // own effect, which opens it and focuses its first control), and say where
@@ -91,7 +100,7 @@ export function ConsultationPanel({ draft, onChange, onClose }: ConsultationPane
     setSending(true);
     setFailure(null);
     setSaid('Sending your idea to Younes…');
-    const r = await sendConsultation(draft);
+    const r = await sendFromAccount(draft);
     setSending(false);
     if (r.ok) {
       setSaid(`Sent. Your reference is ${r.receipt.receiptId}.`);
@@ -99,7 +108,7 @@ export function ConsultationPanel({ draft, onChange, onClose }: ConsultationPane
         ...d,
         step: 'done',
         fromReview: false,
-        receipt: { receiptId: r.receipt.receiptId, receivedAt: r.receipt.receivedAt },
+        receipt: { receiptId: r.receipt.receiptId, receivedAt: r.receipt.receivedAt, requestId: r.receipt.requestId },
         consultation: { ...d.consultation, status: 'submitted', reviewedAt: d.consultation.reviewedAt ?? new Date().toISOString(), submittedAt: r.receipt.receivedAt },
       }));
       return;
@@ -128,7 +137,7 @@ export function ConsultationPanel({ draft, onChange, onClose }: ConsultationPane
         <div className="flex items-start justify-between gap-6">
           <p className="pt-1 type-eyebrow text-burgundy">
             Consultation
-            {at >= 0 && (
+            {account && at >= 0 && (
               <span className="text-ink-soft">
                 {' '}
                 · {at + 1} of {STEPS.length} · {STEPS[at].name}
@@ -141,7 +150,7 @@ export function ConsultationPanel({ draft, onChange, onClose }: ConsultationPane
           </Button>
         </div>
         {/* quiet progress: a hairline per step, burgundy up to this one */}
-        {at >= 0 && (
+        {account && at >= 0 && (
           <ol aria-hidden="true" className="mt-4 grid grid-cols-5 gap-1.5">
             {STEPS.map((s, i) => (
               <li key={s.step} className={cx('h-px', i <= at ? 'bg-burgundy' : 'bg-rule')} />
@@ -152,8 +161,9 @@ export function ConsultationPanel({ draft, onChange, onClose }: ConsultationPane
           {said}
         </p>
 
-        <div key={draft.step} className="mt-8 motion-safe:animate-rise-in">
-          {draft.step === 'idea' && (
+        <div key={account ? draft.step : 'account'} className="mt-8 motion-safe:animate-rise-in">
+          {!account && draft.step !== 'done' && <AccountGate checking={session.status === 'loading'} />}
+          {account && draft.step === 'idea' && (
             <>
               <Heading>Let’s talk about your tattoo.</Heading>
               <Lede>Tell me what you’re imagining. You don’t need to have everything figured out yet.</Lede>
@@ -187,11 +197,12 @@ export function ConsultationPanel({ draft, onChange, onClose }: ConsultationPane
                   onChange={answer('meaning')}
                   placeholder="Why it matters to you, or what it should feel like."
                 />
+                <ConsultationUploads uploads={draft.uploads ?? []} onChange={(uploads) => onChange((d) => ({ ...d, uploads }))} />
               </div>
             </>
           )}
 
-          {draft.step === 'placement' && (
+          {account && draft.step === 'placement' && (
             <>
               <Heading>Where, and how big?</Heading>
               <Lede>Rough is fine — we’ll settle placement and size together.</Lede>
@@ -235,7 +246,7 @@ export function ConsultationPanel({ draft, onChange, onClose }: ConsultationPane
             </>
           )}
 
-          {draft.step === 'timing' && (
+          {account && draft.step === 'timing' && (
             <>
               <Heading>Timing, and anything else.</Heading>
               <Lede>There’s no booking here — this just helps me understand where you are.</Lede>
@@ -261,18 +272,14 @@ export function ConsultationPanel({ draft, onChange, onClose }: ConsultationPane
             </>
           )}
 
-          {draft.step === 'contact' && (
+          {account && draft.step === 'contact' && (
             <>
-              <Heading>How can Younes reach you?</Heading>
-              <Lede>He reads every idea himself and replies personally, usually by email.</Lede>
-              <ConsultationContact
-                contact={draft.contact}
+              <Heading>How Younes will reach you.</Heading>
+              <Lede>He reads every idea himself and replies personally, in your account.</Lede>
+              <AccountContact
+                account={account}
                 consent={draft.consent}
-                errors={errors}
-                onContact={(key, value) => {
-                  setErrors((e) => ({ ...e, [key]: undefined }));
-                  onChange((d) => ({ ...d, contact: { ...d.contact, [key]: value } }));
-                }}
+                error={errors.consent}
                 onConsent={(value) => {
                   setErrors((e) => ({ ...e, consent: undefined }));
                   onChange((d) => ({ ...d, consent: value }));
@@ -281,7 +288,7 @@ export function ConsultationPanel({ draft, onChange, onClose }: ConsultationPane
             </>
           )}
 
-          {draft.step === 'review' && (
+          {account && draft.step === 'review' && (
             <ConsultationReview
               draft={draft}
               pieces={pieces}
@@ -297,7 +304,7 @@ export function ConsultationPanel({ draft, onChange, onClose }: ConsultationPane
             <ConsultationDone draft={draft} pieces={pieces} onReview={() => go('review')} onClose={onClose} />
           )}
 
-          {(draft.step === 'idea' || draft.step === 'placement' || draft.step === 'timing' || draft.step === 'contact') && (
+          {account && (draft.step === 'idea' || draft.step === 'placement' || draft.step === 'timing' || draft.step === 'contact') && (
             <div className="mt-10 flex flex-wrap items-center justify-between gap-x-8 gap-y-3 border-t border-rule pt-6">
               {at > 0 ? (
                 <Button variant="text" className={TAP} onClick={back}>
