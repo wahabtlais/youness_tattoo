@@ -22,6 +22,11 @@ export interface ClientDetailData {
   notes: { id: string; body: string; source: 'user' | 'assistant'; createdAt: string }[];
   followUps: { id: string; kind: FollowKind; reason: string; dueAt: string; doneAt: string | null; inquiryId: string | null; demo: boolean }[];
   activity: { id: string; at: string; actor: string; text: string }[];
+  /** their client account and projects (the client portal) */
+  account?: { email: string; verified: boolean; createdAt: string } | null;
+  projects?: { id: string; title: string; status: string; unreadMessages: number; unansweredPhotos: number }[];
+  /** their requests about the account itself (closing it) */
+  accountRequests?: { id: string; kind: 'deletion'; status: 'pending' | 'completed' | 'cancelled'; reason: string | null; requestedAt: string; resolvedAt: string | null; resolution: string | null }[];
 }
 
 function Card({ id, title, aside, children }: { id: string; title: string; aside?: string; children: React.ReactNode }) {

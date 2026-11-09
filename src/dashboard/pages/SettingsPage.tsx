@@ -117,8 +117,8 @@ function StudioCard({ s, onSaved }: { s: Settings; onSaved: () => void }) {
           <input type="text" required maxLength={120} value={form.studioName} onChange={(e) => setForm({ ...form, studioName: e.target.value })} className={cx(field, 'min-h-10')} />
         </label>
         <label className={label}>
-          Time zone <span className="font-normal text-ink-muted">e.g. Europe/Berlin - used for opening hours</span>
-          <input type="text" required maxLength={64} value={form.timezone} onChange={(e) => setForm({ ...form, timezone: e.target.value })} className={cx(field, 'min-h-10')} />
+          Time zone <span className="font-normal text-ink-muted">- fixed: every appointment and opening hour is in Detroit time</span>
+          <input type="text" readOnly aria-readonly="true" value="America/Detroit" className={cx(field, 'min-h-10 bg-(--studio-sunken)')} />
         </label>
         <label className={label}>
           Send new-inquiry notices to <span className="font-normal text-ink-muted">leave empty for none</span>

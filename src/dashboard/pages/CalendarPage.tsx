@@ -8,7 +8,7 @@ import { ApptActions, NewAppointment } from '../calendar/Booking';
 import { useAppointments } from '../calendar/useAppointments';
 import { PageHeader } from '../components/PageHeader';
 import { Segmented } from '../components/Segmented';
-import { clock, dayName, fullDate, plural } from '../format';
+import { clock, dayName, fullDate, plural, studioDay, studioHour, studioToday } from '../format';
 import { clientPath, clientsOf, inquiryPath, localDay } from '../records';
 import type { Appointment, AppointmentKind } from '../types';
 import { button } from '../ui';
@@ -29,11 +29,10 @@ const parseDay = (s: string | null) => {
 };
 const addDays = (d: Date, n: number) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
 const startOfWeek = (d: Date) => addDays(d, -((d.getDay() + 6) % 7)); // weeks start on Monday
-const sameDay = (a: Date, b: Date) => localDay(a) === localDay(b);
-const hourOf = (iso: string) => {
-  const d = new Date(iso);
-  return d.getHours() + d.getMinutes() / 60;
-};
+/** a day label (a column's date) against an instant's day in Detroit - the calendar is the studio's, wherever it's open */
+const sameDay = (label: Date, instant: Date) => localDay(label) === studioDay(instant);
+/** an instant's hour on the studio's clock */
+const hourOf = (iso: string) => studioHour(iso);
 
 /**
  * /studio/calendar - sessions, consultations and aftercare check-ins. Week
@@ -51,7 +50,7 @@ export function CalendarPage() {
   const overview = useOverview(now);
   const [params, setParams] = useSearchParams();
   const view: View = (['day', 'week', 'month'] as const).find((v) => v === params.get('view')) ?? 'week';
-  const date = parseDay(params.get('date')) ?? new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const date = parseDay(params.get('date')) ?? studioToday(now);
   const [openId, setOpenId] = useState<string | null>(null);
   const [booking, setBooking] = useState(false);
   useDocumentTitle('Calendar');
@@ -62,7 +61,8 @@ export function CalendarPage() {
     return { from: first, to: addDays(first, view === 'month' ? 42 : 7) };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, localDay(date)]);
-  const live = useAppointments(range.from, range.to);
+  // a day either side: the columns are Detroit's days, the fetch is in instants
+  const live = useAppointments(addDays(range.from, -1), addDays(range.to, 1));
   const appts = useMemo(() => [...(live.list ?? [])].sort((a, b) => (a.startsAt < b.startsAt ? -1 : 1)), [live.list]);
   if (overview.status !== 'success') return <StateMessage kind={overview.status === 'loading' ? 'loading' : 'error'} title="The calendar couldn’t be loaded." />;
   if (live.error && !live.list) return <StateMessage kind="error" title="The calendar couldn’t be loaded." />;
@@ -79,7 +79,7 @@ export function CalendarPage() {
       { replace: true },
     );
   const step = (dir: -1 | 1) => go({ date: view === 'day' ? addDays(date, dir) : view === 'week' ? addDays(date, 7 * dir) : new Date(date.getFullYear(), date.getMonth() + dir, 1) });
-  const on = (d: Date) => appts.filter((a) => sameDay(new Date(a.startsAt), d));
+  const on = (d: Date) => appts.filter((a) => sameDay(d, new Date(a.startsAt)));
   const open = appts.find((a) => a.id === openId) ?? null;
   // what's ahead comes from the overview (every proposed or confirmed appointment from now on)
   const ahead = overview.data.appointments.filter((a) => a.status === 'proposed' || a.status === 'confirmed');
@@ -243,7 +243,7 @@ const HOUR_PX = 52;
 
 /** a day or a week as columns of time, 9:00 to 20:00 - an agenda list instead where the space is narrow */
 function Timeline({ days, now, on, openId, onOpen }: { days: Date[]; now: Date; on: (d: Date) => Appointment[]; openId: string | null; onOpen: (id: string) => void }) {
-  const today0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const today0 = studioToday(now);
   // the sample calendar covers today and the next six days: only there is an empty day "free"
   const covered = (d: Date) => d >= today0 && d < addDays(today0, 7);
   const hours = Array.from({ length: DAY_END - DAY_START + 1 }, (_, i) => DAY_START + i);

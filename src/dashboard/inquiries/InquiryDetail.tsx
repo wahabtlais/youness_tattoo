@@ -13,6 +13,7 @@ import { api, errorText } from '../api';
 import { button, field } from '../ui';
 import { reloadOverview } from '../useOverview';
 import { AssistantPanel } from './AssistantPanel';
+import { InquiryPortalPanel } from '../portal/InquiryPortalPanel';
 import { useInquiryDetail, type InquiryDetailData } from './useInquiryDetail';
 import { BODY_AREAS, entryLabel, labelOf, SCALES, STATUSES, TIMEFRAMES } from './inquiryText';
 import { StatusBadge } from './StatusBadge';
@@ -306,9 +307,10 @@ export function InquiryDetail({
             </div>
           </Section>
 
-          {(q.entry.from === 'find-similar' || q.entry.from === 'canvas-call') && (
+          {(q.entry.from === 'find-similar' || q.entry.from === 'canvas-call' || (detail.data?.references ?? []).some((r) => r.image)) && (
             <Section title="References">
-              <References inquiry={q} />
+              {(q.entry.from === 'find-similar' || q.entry.from === 'canvas-call') && <References inquiry={q} />}
+              <UploadedReferences refs={detail.data?.references ?? []} />
             </Section>
           )}
 
@@ -416,6 +418,8 @@ export function InquiryDetail({
               </button>
             )}
           </Section>
+
+          {q.clientId && !q.demo && <InquiryPortalPanel inquiryId={q.id} clientId={q.clientId} clientName={q.clientName} concept={s.concept} now={now} />}
 
           <Notes inquiryId={q.id} notes={detail.data?.notes ?? []} onChanged={() => void detail.reload()} />
 
@@ -621,4 +625,24 @@ function References({ inquiry: q }: { inquiry: InquiryRecord }) {
     );
   }
   return null;
+}
+
+/** the images the client sent with the request - private, served behind the studio's session */
+function UploadedReferences({ refs }: { refs: { image?: string | null; note: string | null }[] }) {
+  const images = refs.filter((r) => r.image);
+  if (!images.length) return null;
+  return (
+    <div className="mt-4 grid gap-2">
+      <p className="text-[0.8125rem] font-semibold text-ink">Sent with the request · {images.length}</p>
+      <ul className="flex flex-wrap gap-3">
+        {images.map((r, i) => (
+          <li key={r.image}>
+            <a href={r.image!} target="_blank" rel="noreferrer" className="block w-[min(100%,10rem)] overflow-hidden rounded-(--studio-r-md) border border-rule hover:border-burgundy/60" aria-label={`Their reference image ${i + 1} (opens full size)`}>
+              <img src={`${r.image}?w=640`} alt="" loading="lazy" className="aspect-[4/5] w-full object-cover" />
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }

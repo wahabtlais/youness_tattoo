@@ -12,7 +12,8 @@ export interface InquiryDetailData {
   anonymized: boolean;
   client: { id: string; name: string; email: string | null; phone: string | null; instagram: string | null };
   notes: { id: string; body: string; source: 'user' | 'assistant'; createdAt: string }[];
-  references: { kind: string; workId: string | null; note: string | null; url: string | null }[];
+  /** `image`: a reference the client uploaded - a private image, at the studio's own address */
+  references: { kind: string; workId: string | null; note: string | null; url: string | null; image?: string | null }[];
   proposals: { id: string; task: 'inquiry-summary' | 'reply-draft'; content: string; status: 'pending' | 'approved' | 'rejected'; model: string | null; createdAt: string; decidedAt: string | null }[];
 }
 

@@ -1,3 +1,4 @@
+import { zonedTimeToInstant } from '@younes/contracts';
 import { useState } from 'react';
 import { cx } from '../../lib/cx';
 import { api, ApiError, errorText } from '../api';
@@ -29,7 +30,8 @@ export function NewAppointment({ clients, day, onDone, onCancel }: { clients: Cl
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const start = new Date(`${form.date}T${form.time}`);
+    // the time typed is Detroit's, whatever this computer's time zone
+    const start = form.date && form.time ? zonedTimeToInstant(form.date, form.time) : new Date(NaN);
     if (Number.isNaN(start.getTime())) return setProblem('Choose a date and time.');
     const end = new Date(start.getTime() + form.minutes * 60_000);
     const client = choosable.find((c) => c.id === form.clientId);
@@ -105,7 +107,7 @@ export function NewAppointment({ clients, day, onDone, onCancel }: { clients: Cl
               <input type="date" required value={form.date} onChange={(e) => set('date', e.target.value)} className={cx(field, 'min-h-10')} />
             </label>
             <label className={label}>
-              Starts
+              Starts <span className="font-normal text-ink-muted">(Detroit time)</span>
               <input type="time" required step={900} value={form.time} onChange={(e) => set('time', e.target.value)} className={cx(field, 'min-h-10')} />
             </label>
           </div>

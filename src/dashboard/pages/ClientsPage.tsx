@@ -14,6 +14,7 @@ import { STUDIO_ROOT } from '../navigation';
 import { calendarPath, clientsOf, inquiryPath, RELATIONSHIP, type ClientRecord, type Relationship } from '../records';
 import { ClientHistoryCard, ClientNotesCard, ContactCard, FollowUpsCard } from '../clients/ClientPanels';
 import { useClientDetail } from '../clients/useClientDetail';
+import { ClientPortalCard } from '../portal/ClientPortalCard';
 import { useOverview } from '../useOverview';
 
 const ROOT = `${STUDIO_ROOT}/clients`;
@@ -270,6 +271,7 @@ function ClientRecordView({ c, now }: { c: ClientRecord; now: Date }) {
           {detail.data ? (
             <>
               <ContactCard key={detail.data.id + detail.data.name} c={detail.data} onSaved={() => void detail.reload()} />
+              {!detail.data.demo && !detail.data.anonymized && <ClientPortalCard clientId={detail.data.id} data={detail.data} onChanged={() => void detail.reload()} />}
               <FollowUpsCard c={detail.data} now={now} onChanged={() => void detail.reload()} />
               <ClientNotesCard c={detail.data} onChanged={() => void detail.reload()} />
               <ClientHistoryCard c={detail.data} now={now} />

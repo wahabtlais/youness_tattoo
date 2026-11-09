@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { signIn } from './owner.ts';
+import { registerClient } from './client.ts';
 
 const consultationDialog = (page: Page) => page.locator('dialog[open][aria-labelledby="consultationTitle"]');
 
@@ -7,6 +8,18 @@ test('a consultation sent from the website arrives in the studio, with its conta
   // the public site, in a separate visitor's browser (no studio session)
   const visitor = await browser.newContext({ baseURL: 'http://localhost:5301', storageState: { cookies: [], origins: [] } });
   const site = await visitor.newPage();
+  // signed out, the consultation asks for an account first
+  await site.goto('/');
+  await site.locator('#book').getByRole('button', { name: /Start a consultation/ }).click();
+  await expect(consultationDialog(site).getByRole('heading', { name: 'Your idea starts in your account.' })).toBeVisible();
+  await site.keyboard.press('Escape');
+  // an account, confirmed by its email; Instagram added to the profile
+  await registerClient(site, { name: 'E2E Visitor', email: 'visitor@e2e.test' });
+  await site.goto('/portal/profile');
+  await site.getByRole('textbox', { name: /Instagram/ }).fill('@e2e.visitor');
+  await site.getByRole('button', { name: 'Save' }).click();
+  await expect(site.getByText('Saved')).toBeVisible();
+
   await site.goto('/');
   await site.locator('#book').getByRole('button', { name: /Start a consultation/ }).click();
   const c = consultationDialog(site);
@@ -15,13 +28,10 @@ test('a consultation sent from the website arrives in the studio, with its conta
   await next();
   await next();
   await next();
-  // the contact step: name and email required, consent required
-  await expect(c.getByText(/Your email/)).toBeVisible();
+  // the contact step: the account's details; consent required
+  await expect(c.getByText('visitor@e2e.test')).toBeVisible();
   await next();
   await expect(c.locator('[aria-invalid=true]').first()).toBeVisible();
-  await c.getByLabel(/Your name/).fill('E2E Visitor');
-  await c.getByLabel(/Your email/).fill('visitor@e2e.test');
-  await c.getByLabel(/Instagram/).fill('@e2e.visitor');
   await c.getByLabel(/I’ve read how my details are used/).check();
   await next();
   await expect(c.getByText('An e2e heron in the reeds')).toBeVisible();

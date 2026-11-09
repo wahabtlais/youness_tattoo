@@ -1,5 +1,5 @@
 import type { ConsultationStatus } from '../domain/consultation';
-import { daysFrom } from './format';
+import { daysFrom, studioToday } from './format';
 import { calendarPath, clientPath } from './records';
 import type { Appointment, AppointmentKind, Overview } from './types';
 
@@ -29,7 +29,8 @@ export const realRecords = (o: Overview): Overview => ({
  */
 export const overviewRecords = (o: Overview, includeSamples = false): Overview => (includeSamples ? o : realRecords(o));
 
-const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+/** today in Detroit, as a day label */
+const startOfDay = (now: Date) => studioToday(now);
 /** the calendar day `n` days after the date's (by the calendar, not 24-hour steps: a clock change can't shift it) */
 const plusDays = (d: Date, n: number) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
 /** whole days since the date (0 today) */

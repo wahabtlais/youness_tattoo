@@ -21,6 +21,8 @@ export const DASHBOARD_SECTIONS: DashboardSection[] = [
   { slug: '', label: 'Overview', icon: 'overview', purpose: 'The studio at a glance.', built: true },
   { slug: 'inquiries', label: 'Inquiries', icon: 'inquiries', purpose: 'Every consultation that arrives from the website, with its references and status.', built: true },
   { slug: 'clients', label: 'Clients', icon: 'clients', purpose: 'The people behind the work: their ideas, appointments and what you owe them, in one record.', built: true },
+  { slug: 'projects', label: 'Projects', icon: 'prepare', purpose: 'Accepted ideas as clients follow them in their accounts: details, images, conversation, sessions and healing photos.', built: true },
+  { slug: 'aftercare', label: 'Aftercare', icon: 'check', purpose: 'Your aftercare instructions, by the days of healing - given to a client only once you approve them.', built: true },
   { slug: 'calendar', label: 'Calendar', icon: 'calendar', purpose: 'Sessions, consultations and aftercare check-ins, by day, week and month.', built: true },
   { slug: 'portfolio', label: 'Portfolio', icon: 'portfolio', purpose: 'The work on the public site: photographs, what is confirmed about them, and where they are used.', built: true },
   { slug: 'publishing', label: 'Journal & Canvas Calls', icon: 'publishing', purpose: 'Journal stories and canvas calls on the public site, with what each links to.', built: true },

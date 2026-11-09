@@ -1,3 +1,4 @@
+import { zonedDate } from '@younes/contracts';
 import type { ConsultationStatus } from '../domain/consultation';
 import { STUDIO_ROOT } from './navigation';
 import type { Appointment, FollowUp, InquiryRecord, Overview } from './types';
@@ -58,7 +59,8 @@ const keyOf = (r: { clientId?: string; clientName: string }) => r.clientId ?? cl
 export const clientPath = (r: { clientId?: string; clientName: string }) => `${STUDIO_ROOT}/clients/${keyOf(r)}`;
 export const inquiryPath = (q: InquiryRecord) => `${STUDIO_ROOT}/inquiries/${q.id}`;
 /** the calendar's week holding a date (yyyy-mm-dd) */
-export const calendarPath = (iso: string, view: 'week' | 'day' = 'day') => `${STUDIO_ROOT}/calendar?view=${view}&date=${localDay(new Date(iso))}`;
+/** the calendar at an instant's day - its day in Detroit */
+export const calendarPath = (iso: string, view: 'week' | 'day' = 'day') => `${STUDIO_ROOT}/calendar?view=${view}&date=${zonedDate(iso)}`;
 
 /** yyyy-mm-dd in local time */
 export const localDay = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;

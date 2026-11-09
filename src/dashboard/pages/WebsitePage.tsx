@@ -130,7 +130,7 @@ const SECTIONS: Section[] = [
     id: 'book',
     name: 'Start a consultation',
     icon: 'reply',
-    about: 'The closing invitation - “Ready to make it yours?” - and its button.',
+    about: 'The closing invitation at the foot of every page - “Bring the idea. We’ll find the work in it.” - and its button.',
     locked: 'It’s the main way in at the end of the page. Its headline is part of the design; only the line under it is editable.',
     fields: [{ path: 'book.intro', label: 'Line under the headline', kind: 'area', max: 160 }],
   },
