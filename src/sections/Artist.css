@@ -1,0 +1,61 @@
+/*
+ * The Artist chapter's watermark (Artist.tsx): YOUNES drifts sideways by
+ * 2% of its width while the chapter crosses the screen - tied to the scroll
+ * by the browser itself (a scroll-driven animation: no script, no work per
+ * frame). It moves with transform; its placement uses translate, so the
+ * two never fight. Where scroll timelines aren't supported, or motion is
+ * reduced, it simply stands still.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .artist-signature {
+      animation: artistSignatureDrift linear both;
+      animation-timeline: view();
+      animation-range: entry 0% exit 100%;
+    }
+  }
+}
+
+@keyframes artistSignatureDrift {
+  from {
+    transform: translateX(2%);
+  }
+  to {
+    transform: translateX(-2%);
+  }
+}
+
+/*
+ * The portrait has no frame: its top edge fades into the ink (the letters of
+ * his name show above it, then pass behind the cap), and its foot fades too,
+ * so the shirt sinks into the page. On wide screens its right edge fades
+ * into the ink before the burgundy rule. A mask changes only the edges'
+ * transparency - the photograph itself is untouched.
+ *
+ * Wide screens: the photograph stands on the column's foot, from about two
+ * thirds of the way down his name (the name's top, plus a set share of the
+ * width - its height) to the bottom. It keeps its own proportions - the
+ * whole frame, nothing cropped - unless the column is too narrow for that,
+ * when it fills the column and crops at the sides. Narrow screens: in the
+ * flow, at the aspect set in Artist.tsx.
+ */
+.artist-portrait {
+  mask-image: linear-gradient(to bottom, transparent 0, #000 12%, #000 78%, transparent 100%);
+}
+
+@media (min-width: 1100px) {
+  .artist-portrait {
+    --artist-portrait-top: calc(clamp(6rem, 14vh, 8.5rem) + 7.5vw);
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: auto;
+    max-width: 100%;
+    height: calc(100% - var(--artist-portrait-top));
+    aspect-ratio: auto;
+    mask-image:
+      linear-gradient(to bottom, transparent 0, #000 12%, #000 80%, transparent 100%),
+      linear-gradient(to right, #000 72%, transparent 100%);
+    mask-composite: intersect;
+  }
+}

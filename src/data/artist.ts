@@ -1,6 +1,12 @@
 import type { ImageAsset } from '../domain/media';
-import portrait1400 from '../assets/artist/portrait-1400.webp';
-import portrait700 from '../assets/artist/portrait-700.webp';
+// the portrait in use: the real photograph on its deep navy backdrop
+// (assets-src/artist-portrait-dark.png, kept byte for byte), with a
+// controlled low-key lighting treatment - scripts/build-artist-portrait.mjs,
+// brightness only, the face as shot. Earlier portraits are kept beside it as
+// backups: portrait-paper-* (assets-src/artist-portrait-paper.png) and
+// portrait-1400/700 (assets-src/artist-section.png).
+import portrait1402 from '../assets/artist/portrait-night-1402.webp';
+import portrait700 from '../assets/artist/portrait-night-700.webp';
 
 /**
  * The Artist section's content - kept apart from its layout so Younes's
@@ -34,18 +40,16 @@ export const ARTIST: ArtistContent = {
   meta: ['Tattoo artist', 'Detroit, Michigan', 'By appointment'],
   intro: null,
   portrait: {
-    // the portrait chosen for this section, shown whole - its paper-and-ink
-    // panel on the right is part of the photograph (original, not served:
-    // assets-src/artist-section.png)
+    // Younes in low-key light against deep navy (see the imports above)
     image: {
-      src: portrait1400,
-      width: 1400,
+      src: portrait1402,
+      width: 1402,
       height: 1122,
       variants: [
         { src: portrait700, width: 700 },
-        { src: portrait1400, width: 1400 },
+        { src: portrait1402, width: 1402 },
       ],
     },
-    alt: 'Portrait of Younes in a black cap and black T-shirt, looking straight into the camera against a dark backdrop, with ink-drawn leaves on aged paper at the right.',
+    alt: 'Portrait of Younes in a black Sullen Art Company cap and a black T-shirt, lit low and from one side, looking into the camera against a dark backdrop.',
   },
 };

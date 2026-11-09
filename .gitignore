@@ -36,6 +36,10 @@ assets-src/reference/
 # the original studio photograph (source of src/assets/hero/*) stays local
 assets-src/artist.png
 assets-src/artist-section.png
+# ...and the Artist section's portrait originals (sources of src/assets/artist/*;
+# portrait-night-* is rebuilt from the dark one by scripts/build-artist-portrait.mjs)
+assets-src/artist-portrait-dark.png
+assets-src/artist-portrait-paper.png
 # source 3D models and the prepared arm package (CC BY 4.0, see
 # docs/THIRD_PARTY_ASSETS.md); the site ships the optimised copy in
 # src/assets/work/glb/
