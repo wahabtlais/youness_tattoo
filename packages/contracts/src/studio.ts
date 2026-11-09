@@ -40,6 +40,8 @@ export const appointmentCreateSchema = z
   .object({
     clientId: uuid,
     inquiryId: uuid.optional(),
+    /** the client's project this session is for (they see it on the project) */
+    projectId: uuid.optional(),
     kind: z.enum(APPOINTMENT_KINDS),
     title: z.string().trim().min(1).max(200),
     startsAt: z.iso.datetime({ offset: true }),

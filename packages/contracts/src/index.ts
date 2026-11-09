@@ -1,7 +1,9 @@
 export * from './auth.ts';
+export * from './client.ts';
 export * from './consultation.ts';
 export * from './content.ts';
 export * from './studio.ts';
+export * from './studioTime.ts';
 
 /** an API error, as every endpoint returns it (application/problem+json) */
 export interface ApiProblem {
