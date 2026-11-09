@@ -11,6 +11,8 @@ import { publicRoutes } from './modules/public/routes.ts';
 import { studioRoutes } from './modules/studio/routes.ts';
 import { mediaRoutes } from './modules/media/routes.ts';
 import { siteRoutes, siteScriptHashes } from './modules/content/site.ts';
+import { CLIENT_COOKIE, clientFromToken } from './modules/client/auth.ts';
+import { clientRoutes } from './modules/client/routes.ts';
 
 const UNSAFE = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
@@ -43,6 +45,7 @@ export async function buildApp(deps: Deps): Promise<FastifyInstance> {
   });
 
   app.decorateRequest('auth', null);
+  app.decorateRequest('client', null);
   // every route, as registered - the authorisation tests sweep this list
   const routeList: { method: string; url: string }[] = [];
   app.decorate('routeList', routeList);
@@ -88,16 +91,21 @@ export async function buildApp(deps: Deps): Promise<FastifyInstance> {
   const policy = sessionPolicy(config);
   app.addHook('onRequest', async (req) => {
     if (!req.url.startsWith('/api/')) return;
-    req.auth = await sessionFromToken(deps.db, req.cookies[config.cookieName], policy);
+    // two separate worlds: the studio's session is read for everything but
+    // the client portal, the client's only for the portal (modules/client)
+    if (req.url.startsWith('/api/client')) req.client = await clientFromToken(deps.db, req.cookies[CLIENT_COOKIE]);
+    else req.auth = await sessionFromToken(deps.db, req.cookies[config.cookieName], policy);
   });
 
   // cross-site request forgery: a state-changing request must come from the site itself,
-  // and the studio's own calls carry a header a plain HTML form can't send
+  // and the studio's and the client portal's own calls each carry a header a plain HTML form can't send
   app.addHook('onRequest', async (req, reply) => {
     if (!UNSAFE.has(req.method) || !req.url.startsWith('/api/')) return;
     const origin = requestOrigin(req);
     const studio = req.url.startsWith('/api/studio') || req.url.startsWith('/api/auth');
-    if (!origin || !config.allowedOrigins.includes(origin) || (studio && req.headers['x-requested-with'] !== 'younes-studio')) {
+    const portal = req.url.startsWith('/api/client');
+    const marked = studio ? req.headers['x-requested-with'] === 'younes-studio' : portal ? req.headers['x-requested-with'] === 'younes-client' : true;
+    if (!origin || !config.allowedOrigins.includes(origin) || !marked) {
       return reply.code(403).type('application/problem+json').send({ status: 403, code: 'csrf', title: 'This request didn’t come from the studio’s own pages.' });
     }
   });
@@ -140,6 +148,7 @@ export async function buildApp(deps: Deps): Promise<FastifyInstance> {
   await app.register((i) => authRoutes(i, deps), { prefix: '/api/auth' });
   await app.register((i) => publicRoutes(i, deps), { prefix: '/api/public' });
   await app.register((i) => studioRoutes(i, deps), { prefix: '/api/studio' });
+  await app.register((i) => clientRoutes(i, deps), { prefix: '/api/client' });
   await app.register((i) => mediaRoutes(i, deps));
   if (config.serveSite) await app.register((i) => siteRoutes(i, deps));
 

@@ -47,6 +47,8 @@ export async function makeCtx(opts: { ai?: AiClient | null; env?: Record<string,
     SERVE_SITE: 'false',
     AI_ENABLED: 'false',
     RATE_LIMITS: 'false',
+    // the anonymous form's own tests keep exercising its pipeline (client.test.ts checks it's off by default)
+    ANONYMOUS_CONSULTATIONS: 'true',
     // the full sign-in, whatever server/.env says (two-factor-off.test.ts covers off)
     TWO_FACTOR: 'true',
     ...opts.env,

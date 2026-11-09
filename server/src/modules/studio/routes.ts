@@ -1,6 +1,13 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import {
+  aftercareAssignSchema,
+  aftercareGuideSchema,
+  healingResponseSchema,
+  deletionResolutionSchema,
+  messageSchema,
+  projectCreateSchema,
+  projectUpdateSchema,
   appointmentCreateSchema,
   appointmentUpdateSchema,
   availabilitySchema,
@@ -25,6 +32,8 @@ import * as inquiries from '../inquiries/service.ts';
 import * as media from '../media/service.ts';
 import * as outbox from '../notify/service.ts';
 import * as portfolio from '../portfolio/service.ts';
+import * as portal from '../client/studio.ts';
+import * as clientAccounts from '../client/account.ts';
 
 const idParam = z.object({ id: z.uuid() });
 const WRITE = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
@@ -64,8 +73,79 @@ export async function studioRoutes(app: FastifyInstance, deps: Deps) {
     return reply.code(201).send(await inquiries.addNote(db, actor(req), { inquiryId: id(req) }, body));
   });
 
+  // ---------------- the client portal: requests' conversations ----------------
+  app.get('/inquiries/:id/portal', async (req) => portal.inquiryMessages(db, id(req)));
+  app.post('/inquiries/:id/messages', async (req, reply) => {
+    const { body } = parse(messageSchema, req.body);
+    return reply.code(201).send(await portal.studioMessage(db, config, actor(req), { inquiryId: id(req) }, body));
+  });
+  app.get('/portal/inbox', async () => portal.portalInbox(db));
+  /** clients' requests about their accounts (closing) - reviewed here; nothing is deleted automatically */
+  app.get('/account-requests', async () => clientAccounts.accountRequests(db));
+  app.patch('/account-requests/:id', { config: { permission: 'settings:write' } }, async (req) => {
+    const body = parse(deletionResolutionSchema, req.body);
+    await clientAccounts.resolveAccountRequest(db, actor(req), id(req), body.action, body.note);
+    return { ok: true };
+  });
+
+  // ---------------- projects ----------------
+  app.get('/projects', async (req) => {
+    const { clientId } = parse(z.object({ clientId: z.uuid().optional() }), req.query);
+    return portal.listProjects(db, { clientId });
+  });
+  app.get('/projects/:id', async (req) => portal.projectDetail(db, id(req)));
+  app.post('/projects', async (req, reply) => reply.code(201).send({ id: await portal.createProject(db, actor(req), parse(projectCreateSchema, req.body)) }));
+  app.patch('/projects/:id', async (req) => {
+    await portal.updateProject(db, actor(req), id(req), parse(projectUpdateSchema, req.body));
+    return { ok: true };
+  });
+  app.post('/projects/:id/messages', async (req, reply) => {
+    const { body } = parse(messageSchema, req.body);
+    return reply.code(201).send(await portal.studioMessage(db, config, actor(req), { projectId: id(req) }, body));
+  });
+  app.post('/projects/:id/designs', { config: { rateLimit: { max: 30, timeWindow: '1 minute' } } }, async (req, reply) => {
+    const projectId = id(req);
+    const file = await req.file();
+    if (!file) throw badRequest('Choose an image to upload.', { file: 'Missing' });
+    let data: Buffer;
+    try {
+      data = await file.toBuffer();
+    } catch {
+      throw badRequest('That file is too large (at most 20 MB).', { file: 'Too large' });
+    }
+    const caption = (file.fields.caption as { value?: unknown } | undefined)?.value;
+    return reply.code(201).send(await portal.addDesign(db, storage, actor(req), projectId, data, typeof caption === 'string' ? caption : undefined));
+  });
+  app.put('/projects/:id/aftercare', async (req) => portal.assignAftercare(db, config, actor(req), id(req), parse(aftercareAssignSchema, req.body), deps.now()));
+  app.patch('/healing-photos/:id', async (req) => {
+    await portal.respondToPhoto(db, config, actor(req), id(req), parse(healingResponseSchema, req.body).response);
+    return { ok: true };
+  });
+
+  // ---------------- aftercare guides (written and approved by Younes) ----------------
+  app.get('/aftercare/guides', async () => portal.listGuides(db));
+  app.post('/aftercare/guides', async (req, reply) => reply.code(201).send({ id: await portal.saveGuide(db, actor(req), null, parse(aftercareGuideSchema, req.body)) }));
+  app.put('/aftercare/guides/:id', async (req) => ({ id: await portal.saveGuide(db, actor(req), id(req), parse(aftercareGuideSchema, req.body)) }));
+  app.post('/aftercare/guides/:id/approve', { config: { permission: 'aftercare:approve' } }, async (req) => {
+    await portal.approveGuide(db, actor(req), id(req));
+    return { ok: true };
+  });
+  app.delete('/aftercare/guides/:id', async (req) => {
+    await portal.deleteGuide(db, actor(req), id(req));
+    return { ok: true };
+  });
+
   // ---------------- clients and follow-ups ----------------
-  app.get('/clients/:id', async (req) => clients.clientDetail(db, id(req)));
+  app.get('/clients/:id', async (req) => {
+    const clientId = id(req);
+    const [detail, account, projects, accountRequests] = await Promise.all([
+      clients.clientDetail(db, clientId),
+      portal.clientAccount(db, clientId),
+      portal.listProjects(db, { clientId }),
+      clientAccounts.accountRequests(db, clientId),
+    ]);
+    return { ...detail, account, projects, accountRequests };
+  });
   app.patch('/clients/:id', async (req) => {
     await clients.updateClient(db, actor(req), id(req), parse(clientUpdateSchema, req.body));
     return { ok: true };
@@ -88,7 +168,7 @@ export async function studioRoutes(app: FastifyInstance, deps: Deps) {
     if (to <= from || to.getTime() - from.getTime() > 400 * 86_400_000) throw badRequest('Choose a range of up to about a year.');
     return calendar.list(db, from, to);
   });
-  app.post('/appointments', async (req, reply) => reply.code(201).send({ id: await calendar.create(db, actor(req), parse(appointmentCreateSchema, req.body)) }));
+  app.post('/appointments', async (req, reply) => reply.code(201).send({ id: await calendar.create(db, actor(req), parse(appointmentCreateSchema, req.body), config) }));
   app.patch('/appointments/:id', async (req) => {
     await calendar.update(db, actor(req), id(req), parse(appointmentUpdateSchema, req.body));
     return { ok: true };

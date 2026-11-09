@@ -62,6 +62,12 @@ const schema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   MAIL_FROM: z.string().default('Younes Tattoo <studio@localhost>'),
+  /**
+   * the website's original consultation form, without an account. Off: a
+   * consultation is sent from a client account (the client portal), and the
+   * anonymous endpoint answers 403. On only for the tests of that pipeline.
+   */
+  ANONYMOUS_CONSULTATIONS: bool.default(false),
   /** the email worker: off in tests, which drive it by hand */
   WORKER_ENABLED: bool,
   AI_ENABLED: bool.default(false),

@@ -111,6 +111,23 @@ export function pickVariant(variants: ImageVariantRow[], width?: number) {
  * between writing and recording) go after a day.
  */
 export async function cleanupMedia(db: DB, storage: Storage, now = new Date()) {
+  // references uploaded for a request that was never sent: after a day they're let go
+  // (marked deleted - then removed with the rest a week later - unless something else uses the image)
+  const dayAgo = new Date(now.getTime() - 86_400_000);
+  const unsent = await db.selectFrom('client_uploads').select(['id', 'media_id']).where('attached_at', 'is', null).where('created_at', '<', dayAgo).execute();
+  for (const u of unsent) {
+    await db.deleteFrom('client_uploads').where('id', '=', u.id).execute();
+    const used = await db
+      .selectNoFrom((eb) => [
+        eb.exists(eb.selectFrom('client_uploads').select('id').where('media_id', '=', u.media_id)).as('upload'),
+        eb.exists(eb.selectFrom('inquiry_references').select('id').where('media_id', '=', u.media_id)).as('reference'),
+        eb.exists(eb.selectFrom('project_media').select('id').where('media_id', '=', u.media_id)).as('project'),
+        eb.exists(eb.selectFrom('healing_photos').select('id').where('media_id', '=', u.media_id)).as('healing'),
+        eb.exists(eb.selectFrom('works').select('id').where('image_id', '=', u.media_id)).as('work'),
+      ])
+      .executeTakeFirstOrThrow();
+    if (!Object.values(used).some(Boolean)) await db.updateTable('media_assets').set({ deleted_at: now }).where('id', '=', u.media_id).where('deleted_at', 'is', null).execute();
+  }
   const weekAgo = new Date(now.getTime() - 7 * 86_400_000);
   const dead = await db
     .selectFrom('media_assets as m')
@@ -118,6 +135,10 @@ export async function cleanupMedia(db: DB, storage: Storage, now = new Date()) {
     .where('m.deleted_at', '<', weekAgo)
     .where((eb) => eb.not(eb.exists(eb.selectFrom('works').select('id').whereRef('works.image_id', '=', 'm.id'))))
     .where((eb) => eb.not(eb.exists(eb.selectFrom('inquiry_references').select('id').whereRef('inquiry_references.media_id', '=', 'm.id'))))
+    // a client's references and healing photos, and the studio's designs for them
+    .where((eb) => eb.not(eb.exists(eb.selectFrom('project_media').select('id').whereRef('project_media.media_id', '=', 'm.id'))))
+    .where((eb) => eb.not(eb.exists(eb.selectFrom('healing_photos').select('id').whereRef('healing_photos.media_id', '=', 'm.id'))))
+    .where((eb) => eb.not(eb.exists(eb.selectFrom('client_uploads').select('id').whereRef('client_uploads.media_id', '=', 'm.id'))))
     .execute();
   for (const d of dead) {
     for (const v of d.variants) await storage.delete(v.key);

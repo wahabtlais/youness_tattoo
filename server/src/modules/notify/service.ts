@@ -37,7 +37,7 @@ export function smtpMailer(config: Config): Mailer {
 
 export async function enqueue(
   db: Executor,
-  m: { to: string; template: Template; payload: Record<string, unknown>; related?: { type: string; id: string } },
+  m: { to: string; template: Template; payload: Record<string, unknown>; related?: { type: string; id: string }; /** not before (default: now) */ sendAfter?: Date },
 ) {
   const { subject } = render(m.template, m.payload);
   await db
@@ -49,6 +49,7 @@ export async function enqueue(
       payload: JSON.stringify(m.payload) as never,
       related_type: m.related?.type ?? null,
       related_id: m.related?.id ?? null,
+      ...(m.sendAfter ? { send_after: m.sendAfter } : {}),
     })
     .execute();
 }

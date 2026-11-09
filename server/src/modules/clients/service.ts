@@ -1,4 +1,5 @@
 import { sql } from 'kysely';
+import { STUDIO_TIME_ZONE } from '@younes/contracts';
 import type { DB, Executor } from '../../db/index.ts';
 import { notFound } from '../../lib/errors.ts';
 import { record, recent, type Actor } from '../audit/service.ts';
@@ -147,7 +148,7 @@ export async function settings(db: Executor) {
   const s = await db.selectFrom('studio_settings').selectAll().executeTakeFirstOrThrow();
   return {
     studioName: s.studio_name,
-    timezone: s.timezone,
+    timezone: STUDIO_TIME_ZONE,
     notifyEmail: s.notify_email,
     retentionMonths: s.retention_months,
     aiDailyBudgetUsd: Number(s.ai_daily_budget_usd),
@@ -160,13 +161,10 @@ export async function updateSettings(
   actor: Actor & { type: 'user' },
   patch: { studioName?: string; timezone?: string; notifyEmail?: string | null; retentionMonths?: number; aiDailyBudgetUsd?: number; aiMonthlyBudgetUsd?: number },
 ) {
-  if (patch.timezone) {
-    try {
-      new Intl.DateTimeFormat('en-US', { timeZone: patch.timezone });
-    } catch {
-      const { badRequest } = await import('../../lib/errors.ts');
-      throw badRequest('Unknown time zone.', { timezone: 'Use a name like America/Detroit' });
-    }
+  // the studio's time is Detroit's (contracts: studioTime) - every appointment is read in it
+  if (patch.timezone && patch.timezone !== STUDIO_TIME_ZONE) {
+    const { badRequest } = await import('../../lib/errors.ts');
+    throw badRequest('The studio’s time zone is America/Detroit.', { timezone: 'Fixed to America/Detroit' });
   }
   await db.transaction().execute(async (tx) => {
     await tx

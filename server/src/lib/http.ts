@@ -68,6 +68,8 @@ const PERMISSIONS = {
   'content:publish': ['owner'],
   'settings:write': ['owner'],
   'ai:use': ['owner'],
+  /** what a healing client is told to do: only the artist approves it */
+  'aftercare:approve': ['owner'],
 } as const satisfies Record<string, readonly ('owner' | 'staff')[]>;
 export type Permission = keyof typeof PERMISSIONS;
 

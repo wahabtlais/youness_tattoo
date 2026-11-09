@@ -1,8 +1,10 @@
-import type { AppointmentStatus } from '@younes/contracts';
+import { formatInZone, type AppointmentStatus } from '@younes/contracts';
 import { sql } from 'kysely';
+import type { Config } from '../../config.ts';
 import type { DB, Executor } from '../../db/index.ts';
 import { AppError, notFound } from '../../lib/errors.ts';
 import { record, type Actor } from '../audit/service.ts';
+import { enqueue } from '../notify/service.ts';
 
 /**
  * Appointments. Times are stored as instants (timestamptz, UTC) and shown
@@ -81,19 +83,32 @@ export async function list(db: Executor, from: Date, to: Date) {
 export async function create(
   db: DB,
   actor: Actor & { type: 'user' },
-  input: { clientId: string; inquiryId?: string; kind: 'session' | 'consultation' | 'aftercare'; title: string; startsAt: string; endsAt: string; status: 'proposed' | 'confirmed'; prep?: string },
+  input: { clientId: string; inquiryId?: string; projectId?: string; kind: 'session' | 'consultation' | 'aftercare'; title: string; startsAt: string; endsAt: string; status: 'proposed' | 'confirmed'; prep?: string },
+  /** given: a time proposed on a client's project tells them (an email to their verified account) */
+  config?: Config,
 ) {
   try {
     return await db.transaction().execute(async (tx) => {
       await lockAppointments(tx);
       if (!(await tx.selectFrom('clients').select('id').where('id', '=', input.clientId).where('anonymized_at', 'is', null).executeTakeFirst())) throw notFound('That client doesn’t exist.');
+      // a project named must be this client's own
+      if (input.projectId && !(await tx.selectFrom('projects').select('id').where('id', '=', input.projectId).where('client_id', '=', input.clientId).executeTakeFirst())) {
+        throw new AppError(400, 'validation', 'That project isn’t this client’s.', { projectId: 'Not this client’s' });
+      }
       await yieldSamples(tx, input.startsAt, input.endsAt);
       const a = await tx
         .insertInto('appointments')
-        .values({ client_id: input.clientId, inquiry_id: input.inquiryId ?? null, kind: input.kind, title: input.title, starts_at: input.startsAt, ends_at: input.endsAt, status: input.status, prep: input.prep ?? null })
+        .values({ client_id: input.clientId, inquiry_id: input.inquiryId ?? null, project_id: input.projectId ?? null, kind: input.kind, title: input.title, starts_at: input.startsAt, ends_at: input.endsAt, status: input.status, prep: input.prep ?? null })
         .returning('id')
         .executeTakeFirstOrThrow();
       await record(tx, actor, 'appointment.created', { type: 'client', id: input.clientId }, { appointment: a.id, kind: input.kind, status: input.status });
+      // a time proposed on a client's project: they're told it's waiting for their answer (verified accounts only)
+      if (config && input.projectId && input.status === 'proposed') {
+        const acct = await tx.selectFrom('client_accounts').select(['email', 'email_verified_at']).where('client_id', '=', input.clientId).where('disabled_at', 'is', null).executeTakeFirst();
+        if (acct?.email_verified_at) {
+          await enqueue(tx, { to: acct.email, template: 'client-appointment-proposed', payload: { when: studioWhen(input.startsAt), link: `${config.PUBLIC_ORIGIN}/portal/appointments` }, related: { type: 'appointment', id: a.id } });
+        }
+      }
       return a.id;
     });
   } catch (e) {
@@ -141,4 +156,56 @@ export async function setAvailability(db: DB, actor: Actor & { type: 'user' }, w
     if (windows.length) await tx.insertInto('availability').values(windows.map((w) => ({ weekday: w.weekday, start_time: w.start, end_time: w.end }))).execute();
     await record(tx, actor, 'availability.updated', { type: 'settings', id: 'availability' }, { windows: windows.length });
   });
+}
+
+/** an instant as the studio's clock reads it, for an email: "Wednesday, November 18 at 11:00 AM (Detroit time)" */
+export const studioWhen = (iso: string | Date) => `${formatInZone(iso, { weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' })} (Detroit time)`;
+
+/**
+ * A client answers a proposed time - from their portal, for their own
+ * appointment only. Accepting confirms the very appointment that was
+ * proposed (no new one is made, so nothing is booked twice); declining
+ * cancels it. Both run under the appointments' lock, and accepting checks
+ * again that the time is still the client's to take: still proposed, not
+ * passed, and no other appointment holding any of it (the database's own
+ * constraint refuses that too). Answering twice the same way changes
+ * nothing. The calendar is the record; both sides are told by email.
+ */
+export async function respondToProposal(db: DB, config: Config, clientId: string, id: string, accept: boolean, now: Date) {
+  try {
+    return await db.transaction().execute(async (tx) => {
+      await lockAppointments(tx);
+      const a = await tx.selectFrom('appointments').selectAll().where('id', '=', id).where('client_id', '=', clientId).forUpdate().executeTakeFirst();
+      if (!a) throw notFound('That appointment doesn’t exist.');
+      const target = accept ? 'confirmed' : 'cancelled';
+      if (a.status === target) return { status: a.status, changed: false };
+      if (a.status !== 'proposed') throw new AppError(409, 'not_proposed', 'This time isn’t open for an answer any more - Younes may have changed it. Refresh to see where it stands.');
+      if (new Date(a.starts_at) <= now) throw new AppError(409, 'passed', 'This proposed time has already passed. Write to Younes to find another.');
+      if (accept) {
+        const clash = await tx
+          .selectFrom('appointments')
+          .select('id')
+          .where('id', '!=', id)
+          .where('demo', '=', false)
+          .where('status', 'in', HOLDS_SLOT)
+          .where(overlaps(a.starts_at, a.ends_at))
+          .executeTakeFirst();
+        if (clash) throw slotTaken();
+      }
+      await tx.updateTable('appointments').set({ status: target, updated_at: now }).where('id', '=', id).execute();
+      await record(tx, { type: 'website' }, accept ? 'appointment.accepted' : 'appointment.declined', { type: 'client', id: clientId }, { appointment: id });
+
+      const when = studioWhen(a.starts_at);
+      const settings = await tx.selectFrom('studio_settings').select('notify_email').executeTakeFirstOrThrow();
+      const owner = await tx.selectFrom('users').select('email').where('role', '=', 'owner').where('disabled_at', 'is', null).executeTakeFirst();
+      const notify = settings.notify_email ?? owner?.email ?? null;
+      const client = await tx.selectFrom('clients').select('name').where('id', '=', clientId).executeTakeFirstOrThrow();
+      if (notify) await enqueue(tx, { to: notify, template: 'owner-appointment-response', payload: { name: client.name, accepted: accept, when, link: `${config.PUBLIC_ORIGIN}/studio/calendar` }, related: { type: 'appointment', id } });
+      const acct = await tx.selectFrom('client_accounts').select(['email', 'email_verified_at']).where('client_id', '=', clientId).executeTakeFirst();
+      if (acct?.email_verified_at) await enqueue(tx, { to: acct.email, template: 'client-appointment-answered', payload: { accepted: accept, when, link: `${config.PUBLIC_ORIGIN}/portal/appointments` }, related: { type: 'appointment', id } });
+      return { status: target, changed: true };
+    });
+  } catch (e) {
+    translate(e);
+  }
 }

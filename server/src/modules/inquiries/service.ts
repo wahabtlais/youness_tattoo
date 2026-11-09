@@ -185,7 +185,7 @@ export async function inquiryDetail(db: Executor, id: string) {
   if (!q) throw notFound('That inquiry doesn’t exist.');
   const [notes, references, proposals] = await Promise.all([
     db.selectFrom('notes').select(['id', 'body', 'source', 'created_at']).where('inquiry_id', '=', id).orderBy('created_at', 'desc').execute(),
-    db.selectFrom('inquiry_references').select(['kind', 'work_number', 'note', 'url', 'position']).where('inquiry_id', '=', id).orderBy('position').execute(),
+    db.selectFrom('inquiry_references').select(['kind', 'work_number', 'note', 'url', 'position', 'media_id']).where('inquiry_id', '=', id).orderBy('position').execute(),
     db.selectFrom('ai_proposals').select(['id', 'task', 'content', 'status', 'model', 'created_at', 'decided_at']).where('inquiry_id', '=', id).orderBy('created_at', 'desc').execute(),
   ]);
   return {
@@ -201,7 +201,8 @@ export async function inquiryDetail(db: Executor, id: string) {
     anonymized: !!q.anonymized_at,
     client: { id: q.client_id, name: q.client_name, email: q.email, phone: q.phone, instagram: q.instagram },
     notes: notes.map((n) => ({ id: n.id, body: n.body, source: n.source, createdAt: new Date(n.created_at).toISOString() })),
-    references: references.map((r) => ({ kind: r.kind, workId: r.work_number ? String(r.work_number).padStart(2, '0') : null, note: r.note, url: r.url })),
+    // an uploaded reference is a private image: its address is the studio's own, behind the session
+    references: references.map((r) => ({ kind: r.kind, workId: r.work_number ? String(r.work_number).padStart(2, '0') : null, note: r.note, url: r.url, image: r.media_id ? '/api/studio/media/' + r.media_id : null })),
     proposals: proposals.map((p) => ({ id: p.id, task: p.task, content: p.content, status: p.status, model: p.model, createdAt: new Date(p.created_at).toISOString(), decidedAt: p.decided_at ? new Date(p.decided_at).toISOString() : null })),
   };
 }

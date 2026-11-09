@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { consultationSubmissionSchema } from '@younes/contracts';
-import { parse } from '../../lib/errors.ts';
+import { AppError, parse } from '../../lib/errors.ts';
 import type { Deps } from '../../lib/http.ts';
 import { publicBundle } from '../content/service.ts';
 import { submitConsultation } from '../inquiries/service.ts';
@@ -18,6 +18,8 @@ export async function publicRoutes(app: FastifyInstance, { db, config, now }: De
   });
 
   app.post('/consultations', { config: { rateLimit: { max: 5, timeWindow: '10 minutes' } } }, async (req, reply) => {
+    // a consultation starts from a client account now (/api/client/requests)
+    if (!config.ANONYMOUS_CONSULTATIONS) throw new AppError(403, 'account_required', 'Please sign in or create an account to send your idea.');
     const input = parse(consultationSubmissionSchema, req.body);
     const receipt = await submitConsultation(db, config, input, { ip: req.ip, userAgent: String(req.headers['user-agent'] ?? ''), now: now() });
     return reply.code(receipt.duplicate ? 200 : 201).send(receipt);

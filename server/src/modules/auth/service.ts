@@ -92,12 +92,13 @@ export async function createOwner(db: DB, input: { name: string; email: string; 
 const WINDOW_MS = 15 * 60 * 1000;
 const FREE_FAILURES = 5;
 
-async function checkLock(db: Executor, key: string) {
+/** shared with the client portal (modules/client), under its own keys */
+export async function checkLock(db: Executor, key: string) {
   const row = await db.selectFrom('auth_attempts').selectAll().where('key', '=', key).executeTakeFirst();
   if (row?.locked_until && new Date(row.locked_until) > new Date()) throw tooMany('Too many attempts. Please wait a few minutes and try again.');
 }
 
-async function fail(db: Executor, key: string) {
+export async function fail(db: Executor, key: string) {
   const now = new Date();
   const row = await db.selectFrom('auth_attempts').selectAll().where('key', '=', key).executeTakeFirst();
   const fresh = !row || now.getTime() - new Date(row.window_start).getTime() > WINDOW_MS;
@@ -111,7 +112,7 @@ async function fail(db: Executor, key: string) {
     .execute();
 }
 
-const clearFailures = (db: Executor, key: string) => db.deleteFrom('auth_attempts').where('key', '=', key).execute();
+export const clearFailures = (db: Executor, key: string) => db.deleteFrom('auth_attempts').where('key', '=', key).execute();
 
 // ---------------- sessions ----------------
 
