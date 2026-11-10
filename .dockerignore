@@ -3,6 +3,11 @@
 .env.*
 **/.env
 docker/.env
+# on the server these sit inside the checkout (deploy.sh): the live secrets,
+# and backups holding full database dumps and copies of them
+docker/production/production.env
+docker/production/backups/
+**/*.dump
 storage/
 test-results/
 playwright-report/
